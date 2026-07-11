@@ -29,21 +29,23 @@ let currentMode = 'pet'; // 'pet' | 'dashboard'
 
 let cursorTimer = null; // 全局光标轮询句柄
 
-// 每 ~16ms 把全局光标坐标推给渲染进程。仅宠物态运行。
+// 使用递归 setTimeout（非 setInterval）：上一次 send 完成后才排下一次，
+// 防止事件循环短暂阻塞后积压的定时器一口气轰炸渲染进程。
+// 50ms（20fps）对光标检测和拖拽跟随足够流畅。
 function startCursorPolling() {
   if (cursorTimer) return;
-  cursorTimer = setInterval(() => {
+  function poll() {
     if (!mainWindow || mainWindow.isDestroyed()) return;
     const { x, y } = screen.getCursorScreenPoint();
     mainWindow.webContents.send('cursor:pos', { x, y });
-  }, 32);
+    cursorTimer = setTimeout(poll, 50);
+  }
+  poll();
 }
 
 function stopCursorPolling() {
-  if (cursorTimer) {
-    clearInterval(cursorTimer);
-    cursorTimer = null;
-  }
+  clearTimeout(cursorTimer);
+  cursorTimer = null;
 }
 
 // ── 创建窗口 ──

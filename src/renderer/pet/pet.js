@@ -95,15 +95,24 @@ async function isDashboard() {
   return (await window.electronAPI.getWindowMode()) === 'dashboard'
 }
 
+// 光标处理节流：非拖拽时不检查躲避太频繁（给 IPC/渲染留呼吸空间）
+let lastCursorProcessTime = 0
+const CURSOR_THROTTLE_MS = 50
+
 // ── 光标事件：拖拽跟随 / 躲避 ──
 function onCursor(cursor) {
   lastCursor = cursor
 
   if (dragging) {
-    // 拖拽：窗口原点 = 光标 - 抓取偏移，直接跟随不缓动
+    // 拖拽：每帧都跟（commitMove 自带 coalesce，不会堆积）
     commitMove({ x: cursor.x - dragOffset.x, y: cursor.y - dragOffset.y })
     return
   }
+
+  // 非拖拽：节流躲避检查，防止和 glideTo 的 rAF 循环叠加导致死亡螺旋
+  const now = performance.now()
+  if (now - lastCursorProcessTime < CURSOR_THROTTLE_MS) return
+  lastCursorProcessTime = now
 
   if (fleeing) return // 正在弹开，等它结束再判断
 
