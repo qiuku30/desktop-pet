@@ -1,17 +1,15 @@
-// 宠物渲染进程 —— 外观、闲置、拖拽、随机走动、靠近才躲鼠标。
-// 大脑在这里：维护窗口坐标 + 状态机（DRAGGING > FLEEING > WANDERING > IDLE）。
+// 宠物渲染进程 —— 外观、闲置、拖拽、随机走动。
+// 大脑在这里：维护窗口坐标 + 状态机（DRAGGING > WANDERING > IDLE）。
 // 纯几何在 pet-motion.mjs；窗口移动/光标由主进程 IPC 提供。
+// 躲避鼠标暂时禁用（FIXME），待 IPC 稳定性问题解决后再启。
 
 import {
-  distance, isCursorNear, fleeCenter, wanderTarget,
+  distance, wanderTarget,
   centerToTopLeft, topLeftToCenter,
 } from './pet-motion.mjs'
 
 // ── 常量 ──
 const WIN = { w: 200, h: 200 }      // 对齐主进程 PET_MODE
-const FLEE_THRESHOLD = 120          // 光标进入此半径触发躲避
-const FLEE_PUSH = 150               // 一次弹开距离
-const FLEE_MS = 300                 // 弹开滑行时长
 const WANDER_MIN_MS = 5000
 const WANDER_MAX_MS = 12000
 const WANDER_RADIUS = 200           // 随机目标偏移半径
@@ -23,7 +21,6 @@ const body = document.getElementById('pet-body')
 let winPos = { x: 0, y: 0 }         // 窗口左上角（屏幕坐标），渲染进程侧真值
 let lastCursor = { x: 0, y: 0 }
 let dragging = false
-let fleeing = false
 let dragOffset = { x: 0, y: 0 }
 let dragStartCursor = { x: 0, y: 0 }
 let glideToken = 0                  // 每次新滑行 +1，旧帧靠它自我作废
@@ -56,7 +53,7 @@ async function commitMove(pos) {
 }
 
 // 缓动滑行到目标左上角。durationMs 内逐帧 moveWindow。
-// 高优先级动作（拖拽/新的躲避）通过 ++glideToken 让当前滑行的后续帧作废。
+// 高优先级动作（拖拽）通过 ++glideToken 让当前滑行的后续帧作废。
 function glideTo(target, durationMs, { onDone, moving } = {}) {
   const token = ++glideToken
   const start = { ...winPos }
@@ -95,46 +92,18 @@ async function isDashboard() {
   return (await window.electronAPI.getWindowMode()) === 'dashboard'
 }
 
-// 光标处理节流：非拖拽时不检查躲避太频繁（给 IPC/渲染留呼吸空间）
-let lastCursorProcessTime = 0
-const CURSOR_THROTTLE_MS = 50
-
-// ── 光标事件：拖拽跟随 / 躲避 ──
+// ── 光标事件：拖拽跟随 ──
 function onCursor(cursor) {
   lastCursor = cursor
 
   if (dragging) {
-    // 拖拽：每帧都跟（commitMove 自带 coalesce，不会堆积）
     commitMove({ x: cursor.x - dragOffset.x, y: cursor.y - dragOffset.y })
-    return
-  }
-
-  // 非拖拽：节流躲避检查，防止和 glideTo 的 rAF 循环叠加导致死亡螺旋
-  const now = performance.now()
-  if (now - lastCursorProcessTime < CURSOR_THROTTLE_MS) return
-  lastCursorProcessTime = now
-
-  if (fleeing) return // 正在弹开，等它结束再判断
-
-  const center = topLeftToCenter(winPos, WIN)
-  if (isCursorNear(center, cursor, FLEE_THRESHOLD)) {
-    fleeing = true
-    if (wanderTimer) { clearTimeout(wanderTimer); wanderTimer = null }
-    const fleeC = fleeCenter(center, cursor, FLEE_PUSH)
-    glideTo(centerToTopLeft(fleeC, WIN), FLEE_MS, {
-      onDone: () => {
-        fleeing = false
-        // 弹完若光标仍近会在下一帧再弹；否则回归走动
-        scheduleWander()
-      },
-    })
   }
 }
 
 // ── 拖拽 ──
 function onMouseDown() {
   dragging = true
-  fleeing = false
   cancelGlide()
   if (wanderTimer) { clearTimeout(wanderTimer); wanderTimer = null }
   dragOffset = { x: lastCursor.x - winPos.x, y: lastCursor.y - winPos.y }
@@ -161,12 +130,10 @@ function scheduleWander() {
 
 async function doWander() {
   wanderTimer = null
-  if (dragging || fleeing) return
+  if (dragging) return
   if (await isDashboard()) { scheduleWander(); return }
-  // 光标近时不走动（交给躲避），稍后再试
-  const center = topLeftToCenter(winPos, WIN)
-  if (isCursorNear(center, lastCursor, FLEE_THRESHOLD)) { scheduleWander(); return }
 
+  const center = topLeftToCenter(winPos, WIN)
   const target = wanderTarget(center, WANDER_RADIUS, Math.random)
   glideTo(centerToTopLeft(target, WIN), WANDER_MS, {
     moving: true,
