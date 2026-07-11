@@ -48,6 +48,7 @@ function glideTo(target, durationMs, { onDone, moving } = {}) {
   const start = { ...winPos }
   const t0 = performance.now()
   if (moving) body.classList.add('moving')
+  else body.classList.remove('moving')
 
   function frame(now) {
     if (token !== glideToken) return            // 被更高优先级动作接管
