@@ -95,6 +95,15 @@
 
 ---
 
+## 已知问题
+
+- [ ] 🔴 **关键**: pet.html 的 `<script>` 标签缺少 `type="module"`。
+      不加则浏览器环境无法解析 ES6 import/export，宠物模块一加载就 SyntaxError。
+      所有三个 `<script>`（event-bus.js、pet-state.js、pet.js）都要加 `type="module"`。
+      pet 模块窗口接到后第一时间修。
+
+---
+
 ## 待授权（下一轮）
 
 - [ ] `events.js`: 新增 `PET_STATE_CHANGED` 通用事件，payload `{ key, value, oldValue }`
