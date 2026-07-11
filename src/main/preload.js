@@ -13,4 +13,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 菜单事件监听
   onMenuFeed: (callback) => ipcRenderer.on('menu:feed', callback),
   onMenuStatus: (callback) => ipcRenderer.on('menu:status'),
+
+  // 窗口移动（桌面级）
+  getWindowPosition: () => ipcRenderer.invoke('window:position:get'),
+  moveWindow: (x, y) => ipcRenderer.invoke('window:move', { x, y }),
+  onCursorPos: (callback) => ipcRenderer.on('cursor:pos', callback),
 });

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, dialog, screen } = require('electron');
 const path = require('path');
 const { initStore, getState, setState } = require('./storage/store');
 
@@ -26,6 +26,25 @@ const DASHBOARD_MODE = {
 let mainWindow = null;
 let currentMode = 'pet'; // 'pet' | 'dashboard'
 
+let cursorTimer = null; // 全局光标轮询句柄
+
+// 每 ~16ms 把全局光标坐标推给渲染进程。仅宠物态运行。
+function startCursorPolling() {
+  if (cursorTimer) return;
+  cursorTimer = setInterval(() => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    const { x, y } = screen.getCursorScreenPoint();
+    mainWindow.webContents.send('cursor:pos', { x, y });
+  }, 16);
+}
+
+function stopCursorPolling() {
+  if (cursorTimer) {
+    clearInterval(cursorTimer);
+    cursorTimer = null;
+  }
+}
+
 // ── 创建窗口 ──
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -39,6 +58,15 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, '../renderer/pet/pet.html'));
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    startCursorPolling();
+  });
+
+  mainWindow.on('closed', () => {
+    stopCursorPolling();
+    mainWindow = null;
+  });
 
   // 右键菜单
   mainWindow.webContents.on('context-menu', (_, params) => {
@@ -63,6 +91,7 @@ function createWindow() {
 
 // ── 窗口模式切换 ──
 function switchToDashboard() {
+  stopCursorPolling();
   currentMode = 'dashboard';
 
   // 保存宠物态时的位置和大小
@@ -89,6 +118,7 @@ function switchToPet() {
   // 缩回宠物大小
   mainWindow.setSize(PET_MODE.width, PET_MODE.height);
   mainWindow.center();
+  startCursorPolling();
 }
 
 // ── IPC 处理 ──
@@ -117,6 +147,23 @@ function setupIPC() {
 
   // 获取当前窗口模式
   ipcMain.handle('window:mode', () => currentMode);
+
+  // 取窗口左上角坐标
+  ipcMain.handle('window:position:get', () => {
+    const [x, y] = mainWindow.getPosition();
+    return { x, y };
+  });
+
+  // 移窗到屏幕绝对坐标，clamp 到当前显示器工作区，返回真实落点
+  ipcMain.handle('window:move', (_, { x, y }) => {
+    const [w, h] = mainWindow.getSize();
+    const { workArea } = screen.getDisplayNearestPoint({ x, y });
+    const clampedX = Math.max(workArea.x, Math.min(x, workArea.x + workArea.width - w));
+    const clampedY = Math.max(workArea.y, Math.min(y, workArea.y + workArea.height - h));
+    mainWindow.setPosition(Math.round(clampedX), Math.round(clampedY));
+    const [ax, ay] = mainWindow.getPosition();
+    return { x: ax, y: ay };
+  });
 }
 
 // ── 应用生命周期 ──
