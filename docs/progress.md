@@ -1,7 +1,7 @@
 # 开发进度
 
 > 每次会话结束时更新此文件。
-> 当前分支：待建（本地项目尚未关联 Git）
+> 当前分支：feature/pet-movement
 
 ---
 
@@ -37,8 +37,8 @@
 
 | 任务 | 状态 | 备注 |
 |------|------|------|
-| index.js — 窗口创建 + 模式切换 | ✅ | 单窗口双状态 + 右键菜单 + IPC；宠物状态通道已委托给 pet-ipc |
-| preload.js — 安全 IPC 桥接 | ✅ | contextBridge |
+| index.js — 窗口创建 + 模式切换 | ✅ | 单窗口双状态 + 右键菜单 + IPC；宠物状态通道已委托给 pet-ipc；新增移窗 IPC + 全局光标推流（宠物态） |
+| preload.js — 安全 IPC 桥接 | ✅ | contextBridge；新增 moveWindow / getWindowPosition / onCursorPos |
 | store.js — 统一数据存取层 | ✅ | JSON 文件，initStore/getState/setState |
 | ipc/pet-ipc.js — 宠物 IPC | ✅ | 导出 registerPetIPC(ipcMain)；整体覆盖写盘 + 空快照保护；已接线 |
 | ipc/storage-ipc.js — 存储 IPC | ⏳ | 占位，待实现 |
@@ -59,9 +59,10 @@
 | 任务 | 状态 | 备注 |
 |------|------|------|
 | pet.html — 宠物窗口结构 | ✅ | emoji + 气泡容器 |
-| pet.js — 宠物逻辑 | ⏳ | 动画、拖拽、走动、气泡（待实现） |
-| pet.css — 宠物样式 | ⏳ | 待实现 |
-| DESIGN.md | 🟡 | 有基本结构，待细化 |
+| pet.js — 宠物逻辑 | ✅ | 状态机：拖拽 / 随机走动 / 靠近才躲鼠标 / 闲置；桌面级移窗（气泡待后续子任务） |
+| pet-motion.mjs — 纯几何计算 | ✅ | distance/isCursorNear/fleeCenter/wanderTarget/中心↔左上角换算；node --test 6/6 |
+| pet.css — 宠物样式 | ✅ | 透明背景 + 居中 emoji + 呼吸/轻晃闲置动画 + .grabbed/.moving 钩子 |
+| DESIGN.md | ✅ | 已细化：状态机、pet-motion 清单、坐标契约、class 钩子 |
 
 ### 渲染进程 — 面板 (src/renderer/dashboard/)
 
@@ -76,9 +77,9 @@
 
 ## 待实现（按优先级）
 
-1. `pet.js` + `pet.css` — 宠物外观、动画、交互
+1. ~~`pet.js` + `pet.css` — 宠物外观、动画、交互~~ ✅ 已完成（移动系统：拖拽/走动/躲鼠标/闲置）
 4. `dashboard.js` + `dashboard.css` — 面板切换和模块加载
-5. 对话气泡系统
+5. 对话气泡系统（pet.js 已留 tap 空钩子）
 6. 右键菜单交互（IPC 对接）
 7. 面板状态页（宠物属性展示）
 
@@ -151,3 +152,29 @@
   `registerPetIPC(ipcMain)`。只动 IPC 接线，未碰窗口移动 / 光标推流等其他逻辑。
 - **验证**：mock `ipcMain` + stub `store` 驱动真实模块 + stub electron 启动真实 `index.js`，
   断言：覆盖非 merge / lastSaved 回填 / 空·null·数组保护 / 幂等注册 / 其他 IPC 通道不受影响。
+
+---
+
+## 设计决策记录 — 宠物移动系统（pet.js / pet.css / pet-motion.mjs）
+
+详见 `docs/pet-movement-design.md`。要点：
+
+- **桌面级移动**：整个 200×200 窗口在屏幕上移动，非窗口内挪 emoji。渲染进程 `pet.js` 是大脑，
+  维护窗口左上角坐标；主进程只当手脚（新增 `window:move` / `window:position:get` / `cursor:pos` 推流）。
+- **坐标契约**：屏幕绝对像素，锚点为窗口左上角；clamp 到显示器 workArea 的逻辑在主进程 move handler，
+  返回真实落点回填渲染端 `winPos`。
+- **状态机优先级**：`DRAGGING > FLEEING > WANDERING > IDLE`。
+  - 拖拽：复用全局光标流，`moveWindow(cursor - offset)`，无缓动；位移 <5px 视为 tap（留空钩子给气泡子任务）。
+  - 躲避：光标 <120px 时一次性弹开 ~150px（缓动），拖拽时不躲；`fleeing` 标志防连触。
+  - 走动：每 5~12s 随机挑附近目标点，~1.2s 缓动滑过去，`.moving` 做 squash&stretch。
+  - 面板态：`getWindowMode()==='dashboard'` 全暂停，主进程也停光标推流。
+- **纯几何** `pet-motion.mjs`：`distance` / `isCursorNear` / `fleeCenter` / `wanderTarget` /
+  `centerToTopLeft` / `topLeftToCenter`，无 DOM/IPC，`node --test` 覆盖。
+- **滑行取消**：`glideTo` 用自增 token 让被更高优先级动作接管的旧帧自我作废；非走动滑行开始时归一化清 `.moving`。
+- **协作教训**：本轮曾因两个窗口并发改同一 `feature/pet-movement` 分支导致改动互相还原（详见 git 历史 e8b58e4/3adcd92）。
+  已按 CLAUDE.md：同一时间只在一个窗口/设备改，切换前先 pull。
+
+### 遗留 Minor（下一轮可清理）
+- pet.css：`.moving` 动画列表里的 `breathe` 被 `waddle` 覆盖，是死代码，可删。
+- pet.js：`commitMove` 在 await 前先写 `winPos=pos`（未 clamp），屏幕边缘按下抓取可能有小跳；
+  在途 glide 帧未做面板态守卫（主进程已 gate 光标流，风险低）。
