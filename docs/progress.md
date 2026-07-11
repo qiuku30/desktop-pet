@@ -49,8 +49,8 @@
 |------|------|------|
 | events.js — 事件常量 | ✅ | 14 个事件常量 |
 | module-registry.js — 模块注册表 | ✅ | pet-status 已注册 |
-| event-bus.js — 事件总线核心 | ⏳ | 占位，待实现 |
-| pet-state.js — 宠物状态管理器 | ⏳ | 占位，接口已定 (get/set/subscribe) |
+| event-bus.js — 事件总线核心 | ✅ | on(返回取消函数)/off/once/emit，逐个 try-catch 隔离，DEBUG 日志 |
+| pet-state.js — 宠物状态管理器 | ✅ | 薄：init/get(副本)/set(映射发事件+防抖存盘)/subscribe |
 | constants.js | ⏳ | 占位 |
 | utils.js | ⏳ | 占位 |
 
@@ -76,9 +76,7 @@
 
 ## 待实现（按优先级）
 
-1. `event-bus.js` — 事件总线核心
-2. `pet-state.js` — 宠物状态管理器
-3. `pet.js` + `pet.css` — 宠物外观、动画、交互
+1. `pet.js` + `pet.css` — 宠物外观、动画、交互
 4. `dashboard.js` + `dashboard.css` — 面板切换和模块加载
 5. 对话气泡系统
 6. 右键菜单交互（IPC 对接）
@@ -94,3 +92,36 @@
 - 超市模块 (待规划)
 - 窗口边框攀爬 (Phase 2)
 - 模块错误隔离 (Phase 3)
+
+---
+
+## 待授权（下一轮）
+
+- [ ] `events.js`: 新增 `PET_STATE_CHANGED` 通用事件，payload `{ key, value, oldValue }`
+      用途：面板/新模块不 care 具体哪个 key，只想知道「宠物状态变了」，监听一个即可。
+      配合 `pet-state.js` 的 `set()`：每个 key 都额外发此事件（监听方自行按 key 过滤）。
+      当前先不加，不阻塞进度。
+
+---
+
+## 设计决策记录 — event-bus.js / pet-state.js（本轮）
+
+**event-bus.js**
+- API：`on`（返回取消订阅函数）/ `off` / `once`（触发一次自动移除，也返回取消函数）/ `emit`
+- 错误隔离：`emit` 逐个调用监听器，每个包 try-catch，单个报错只 `console.error`，不影响其他监听器与 emit 方（ADR-006）
+- 遍历前复制监听器数组，防止回调里 on/off 改动导致漏发/重复
+- `const DEBUG = true` 开关：为 true 时打印每次 emit（ADR-002）
+- 单例导出 `EventBus`
+
+**pet-state.js（薄）**
+- 职责：纯 key-value 存储 + 发事件 + 防抖存盘；**不含升级逻辑**（升级由宠物模块自己算好再 `set('level', n)`）
+- API（严格按 ADR-005）：`async init()` / `get(key)` / `set(key, value)` / `subscribe(event, cb)`
+- `init()`：启动时 await 一次，走 `getPetState()` 把存档灌进内存
+- `get()`：对象/数组返回**副本**，防止外部绕过 `set()` 篡改内部状态（ADR-005）
+- `set()`：改内存 → 按映射发事件 → 防抖存盘
+  - key→事件映射：`hunger`→`PET_HUNGER_CHANGED{value}`、`mood`→`PET_MOOD_CHANGED{mood}`、`level`→`PET_LEVEL_UP{level}`（payload 字段名对齐 docs/events.md）
+  - 其余 key（exp/intimacy/coins/foodInventory）只存不发；金币赚/花等语义由调用方自己 emit
+- 持久化：**防抖写盘** 500ms；`_save()` 发整份内存快照给 `setPetState()`（store.js 整体覆盖写）
+- 单例导出 `PetState`
+
+> ⚠️ 跨进程契约假设：`_save()` 传的是**完整状态快照**（非增量），由 `src/main/ipc/pet-ipc.js`（待实现，不在本轮授权内）接住转发给 `store.setState()`。主进程实现方注意对齐。
