@@ -35,15 +35,24 @@ function rand(min, max) {
 }
 
 // 命令主进程移窗，用 clamp 后的真实落点回填 winPos，保持同步。
-// 加 pending 锁防止 glideTo 的 rAF 循环逐帧堆积 IPC 请求导致主进程卡死。
+// coalesce：上一条 IPC 未返回时记住最新位置，回来后接着发，不丢帧。
 let movePending = false
+let pendingPos = null
 async function commitMove(pos) {
-  if (movePending) return
+  if (movePending) {
+    pendingPos = pos
+    return
+  }
   movePending = true
   winPos = pos
   const actual = await window.electronAPI.moveWindow(pos.x, pos.y)
   winPos = actual
   movePending = false
+  if (pendingPos) {
+    const next = pendingPos
+    pendingPos = null
+    commitMove(next)
+  }
 }
 
 // 缓动滑行到目标左上角。durationMs 内逐帧 moveWindow。

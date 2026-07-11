@@ -36,7 +36,7 @@ function startCursorPolling() {
     if (!mainWindow || mainWindow.isDestroyed()) return;
     const { x, y } = screen.getCursorScreenPoint();
     mainWindow.webContents.send('cursor:pos', { x, y });
-  }, 16);
+  }, 32);
 }
 
 function stopCursorPolling() {
