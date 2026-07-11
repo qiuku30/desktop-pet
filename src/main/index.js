@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, Menu, dialog, screen } = require('electron');
 const path = require('path');
-const { initStore, getState, setState } = require('./storage/store');
+const { initStore } = require('./storage/store');
+const { registerPetIPC } = require('./ipc/pet-ipc');
 
 // ── 窗口状态常量 ──
 const PET_MODE = {
@@ -133,17 +134,8 @@ function setupIPC() {
     return currentMode;
   });
 
-  // 宠物状态读写
-  ipcMain.handle('pet:state:get', async () => {
-    return await getState();
-  });
-
-  ipcMain.handle('pet:state:set', async (_, updates) => {
-    const current = await getState();
-    const merged = { ...current, ...updates };
-    await setState(merged);
-    return merged;
-  });
+  // 宠物状态读写 — 委托给 pet-ipc 模块（整体覆盖 + 空快照保护）
+  registerPetIPC(ipcMain);
 
   // 获取当前窗口模式
   ipcMain.handle('window:mode', () => currentMode);

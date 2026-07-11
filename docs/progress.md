@@ -37,10 +37,10 @@
 
 | 任务 | 状态 | 备注 |
 |------|------|------|
-| index.js — 窗口创建 + 模式切换 | ✅ | 单窗口双状态 + 右键菜单 + IPC |
+| index.js — 窗口创建 + 模式切换 | ✅ | 单窗口双状态 + 右键菜单 + IPC；宠物状态通道已委托给 pet-ipc |
 | preload.js — 安全 IPC 桥接 | ✅ | contextBridge |
 | store.js — 统一数据存取层 | ✅ | JSON 文件，initStore/getState/setState |
-| ipc/pet-ipc.js — 宠物 IPC | ⏳ | 占位，待实现 |
+| ipc/pet-ipc.js — 宠物 IPC | ✅ | 导出 registerPetIPC(ipcMain)；整体覆盖写盘 + 空快照保护；已接线 |
 | ipc/storage-ipc.js — 存储 IPC | ⏳ | 占位，待实现 |
 
 ### 渲染进程 — 共享层 (src/renderer/shared/)
@@ -132,3 +132,22 @@
 - 单例导出 `PetState`
 
 > ⚠️ 跨进程契约假设：`_save()` 传的是**完整状态快照**（非增量），由 `src/main/ipc/pet-ipc.js`（待实现，不在本轮授权内）接住转发给 `store.setState()`。主进程实现方注意对齐。
+
+---
+
+## 设计决策记录 — pet-ipc.js（宠物状态 IPC 接线）
+
+对齐上面 pet-state.js 的跨进程契约，实现并接线 `src/main/ipc/pet-ipc.js`。
+
+- **形态**：导出 `registerPetIPC(ipcMain)`，由 `index.js` 的 `setupIPC()` 调用一次。
+- **写盘语义**：**整体覆盖**（`store.setState(snapshot)`），对齐「完整快照」契约，不做 merge。
+  替换了 `index.js` 里原来的 `{ ...current, ...updates }` 内联 merge handler。
+- **空快照保护**：`{}` / `null` / 数组 / 非对象一律拒绝写盘，`console.warn` 后返回当前存档，
+  防止渲染端 `init()` 失败（`_data` 退化为 `{}`）时 `_save()` 发来空对象把磁盘存档清空。
+- **幂等注册**：每个通道先 `removeHandler` 再 `handle`，可安全重入。
+- **通道**：`pet:state:get`（返回完整状态，供 `PetState.init()` 灌入）、`pet:state:set`（接完整快照写盘）。
+- **接线**：`index.js` 删除内联的 `pet:state:get` / `pet:state:set` handler（及其专用的
+  `getState`/`setState` import），改为 `require('./ipc/pet-ipc')` + 在 `setupIPC()` 中调用
+  `registerPetIPC(ipcMain)`。只动 IPC 接线，未碰窗口移动 / 光标推流等其他逻辑。
+- **验证**：mock `ipcMain` + stub `store` 驱动真实模块 + stub electron 启动真实 `index.js`，
+  断言：覆盖非 merge / lastSaved 回填 / 空·null·数组保护 / 幂等注册 / 其他 IPC 通道不受影响。
