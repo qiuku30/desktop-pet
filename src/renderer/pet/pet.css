@@ -1,2 +1,72 @@
-/* 宠物窗口样式 */
-/* 透明背景、宠物外观、气泡动画 */
+/* 宠物窗口样式 —— 透明背景、居中 emoji、呼吸/轻晃闲置动画 */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+
+#pet-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  overflow: visible;
+}
+
+#pet-body {
+  font-size: 72px;
+  line-height: 1;
+  cursor: grab;
+  /* 闲置：呼吸 + 偶尔轻晃。transform-origin 底部中心，晃动更自然 */
+  transform-origin: 50% 90%;
+  animation: breathe 2.5s ease-in-out infinite, sway 6s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* 被拖拽：放大表示「被抓住」，暂停闲置动画 */
+#pet-body.grabbed {
+  cursor: grabbing;
+  animation: none;
+  transform: scale(1.15);
+}
+
+/* 走动：轻微 squash & stretch，让滑行有生气 */
+#pet-body.moving {
+  animation: breathe 2.5s ease-in-out infinite, waddle 0.5s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
+}
+
+@keyframes sway {
+  0%, 92%, 100% { rotate: 0deg; }
+  95%           { rotate: 5deg; }
+  98%           { rotate: -5deg; }
+}
+
+@keyframes waddle {
+  0%, 100% { transform: scale(1, 1); }
+  25%      { transform: scale(1.08, 0.92); }
+  75%      { transform: scale(0.94, 1.06); }
+}
+
+#speech-bubbles {
+  /* 气泡容器占位 —— 本轮不实现气泡，仅保留结构不影响布局 */
+  position: absolute;
+  pointer-events: none;
+}
