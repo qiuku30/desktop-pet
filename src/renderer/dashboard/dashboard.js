@@ -6,7 +6,8 @@ const EDGE = 8
 const CORNER = 16
 
 // ── 返回宠物 ──
-document.getElementById('btn-close').addEventListener('click', () => {
+document.getElementById('btn-close').addEventListener('click', async () => {
+  await PetState.flush()
   window.electronAPI.toggleWindow()
 })
 
@@ -90,11 +91,11 @@ document.addEventListener('pointerup', () => {
 import { PetState } from '../shared/pet-state.js'
 
 const FOOD_META = {
-  apple:  { name: '苹果', emoji: '🍎', hunger: -20 },
-  cake:   { name: '蛋糕', emoji: '🍰', hunger: -30 },
-  fish:   { name: '小鱼干', emoji: '🐟', hunger: -25 },
-  milk:   { name: '牛奶', emoji: '🥛', hunger: -15 },
-  cookie: { name: '饼干', emoji: '🍪', hunger: -10 },
+  apple:  { id: 'apple',  name: '苹果', emoji: '🍎', hunger: -20 },
+  cake:   { id: 'cake',   name: '蛋糕', emoji: '🍰', hunger: -30 },
+  fish:   { id: 'fish',   name: '小鱼干', emoji: '🐟', hunger: -25 },
+  milk:   { id: 'milk',   name: '牛奶', emoji: '🥛', hunger: -15 },
+  cookie: { id: 'cookie', name: '饼干', emoji: '🍪', hunger: -10 },
 }
 
 function buildStatusDOM() {
