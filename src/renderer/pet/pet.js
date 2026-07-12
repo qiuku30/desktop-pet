@@ -24,6 +24,7 @@ let autoPaused = false
 let resumeTimer = null
 let glideToken = 0
 let wanderTimer = null
+let wanderEnabled = true
 
 // ── 工具 ──
 function rand(min, max) { return min + Math.random() * (max - min) }
@@ -67,6 +68,7 @@ function scheduleWander() {
 
 async function doWander() {
   wanderTimer = null
+  if (!wanderEnabled) return
   if (autoPaused) { scheduleWander(); return }
 
   try {
@@ -82,6 +84,20 @@ async function doWander() {
     moving: true,
     onDone: scheduleWander,
   })
+}
+
+// ── 走动开关 ──
+function onWanderToggle(enabled) {
+  wanderEnabled = enabled
+  if (!enabled) {
+    // 关闭：取消当前走动
+    if (wanderTimer) { clearTimeout(wanderTimer); wanderTimer = null }
+    glideToken++
+    body.classList.remove('moving')
+  } else {
+    // 开启：恢复走动
+    scheduleWander()
+  }
 }
 
 // ── 用户拖拽：暂停走动，松手 300ms 后恢复 ──
@@ -171,6 +187,7 @@ body.addEventListener('click', (e) => {
   if (clickTimer) {
     clearTimeout(clickTimer)
     clickTimer = null
+    window.electronAPI.toggleWindow()  // 双击 → 切换面板
     return
   }
   clickTimer = setTimeout(() => {
@@ -187,6 +204,7 @@ async function init() {
   winPos = pos
 
   window.electronAPI.onUserDrag(onUserDrag)
+  window.electronAPI.onWanderToggle(onWanderToggle)
 
   scheduleWander()
 }

@@ -59,7 +59,7 @@
 | 任务 | 状态 | 备注 |
 |------|------|------|
 | pet.html — 宠物窗口结构 | ✅ | emoji + 气泡容器 |
-| pet.js — 宠物逻辑 | ✅ | 状态机：原生拖拽 / 随机走动 / 对话气泡（mood×level 台词库，300ms 延迟 + 拖拽检测）/ PetState.init() / 动态窗口尺寸 |
+| pet.js — 宠物逻辑 | ✅ | 状态机：原生拖拽 / 随机走动 / 对话气泡（mood×level 台词库，300ms 延迟 + 拖拽检测）/ 双击切换面板 / PetState.init() / 动态窗口尺寸 |
 | pet-motion.mjs — 纯几何计算 | ✅ | distance/isCursorNear/fleeCenter/wanderTarget/中心↔左上角换算；node --test 6/6 |
 | pet.css — 宠物样式 | ✅ | 透明背景 + padding 拖拽手柄 + no-drag 点击穿透 + 呼吸/轻晃闲置动画 + .moving 钩子 + 气泡样式 + bubble-pop 动画 |
 | DESIGN.md | ✅ | 已细化：状态机、pet-motion 清单、坐标契约、class 钩子 |
@@ -68,9 +68,9 @@
 
 | 任务 | 状态 | 备注 |
 |------|------|------|
-| dashboard.html — 面板框架 | ✅ | 导航 + 内容区 |
-| dashboard.js — 面板逻辑 | ⏳ | 导航切换、模块加载（待实现） |
-| dashboard.css — 面板样式 | ⏳ | 待实现 |
+| dashboard.html — 面板框架 | ✅ | 顶部栏（标题 + 关闭按钮）+ 导航 + 内容区 |
+| dashboard.js — 面板逻辑 | ✅ | 窗口切换（toggleWindow），导航切换、模块加载（待实现） |
+| dashboard.css — 面板样式 | ✅ | 顶部栏样式 + 关闭按钮 hover 效果 + 布局 |
 | DESIGN.md | 🟡 | 有基本结构，待细化 |
 
 ---
@@ -78,7 +78,7 @@
 ## 待实现（按优先级）
 
 1. ~~`pet.js` + `pet.css` — 宠物外观、动画、交互~~ ✅ 已完成（移动系统：拖拽/走动/躲鼠标/闲置）
-4. `dashboard.js` + `dashboard.css` — 面板切换和模块加载
+4. ~~`dashboard.js` + `dashboard.css` — 面板切换和模块加载~~ ✅ 已完成（双击切换 + loadFile + 顶部栏 + 返回按钮）
 5. ~~对话气泡系统~~ ✅ 已完成（mood×level 台词库 16 条、300ms 延迟 + 拖拽检测、2s 气泡动画、窗口动态缩放、右键缩放菜单）
 6. 右键菜单交互 — 喂食/状态（IPC 对接）
 7. 面板状态页（宠物属性展示）
@@ -189,3 +189,21 @@
   - `isAutoMoving` 标记：`window:move` handler 设为 true → setPosition → false，防止自动移动被误判为用户拖拽。
   - `mainWindow.on('move')`：`!isAutoMoving` 时推送 `user:drag` 到渲染端。
   - `preload.js`：暴露 `onUserDrag(callback)` — 注册/取消 `user:drag` 事件监听。
+
+---
+
+## 设计决策记录 — 对话气泡 + 窗口动态缩放（2026-07-12）
+
+**对话气泡**
+- 台词库：~16 条，按 `心情(happy/neutral/hungry/sad)` × `等级(low 1-3 / mid 4-6 / high 7+)` 分层
+- 交互：单击 `#pet-body` → 300ms 延迟（为双击预留）→ 弹出气泡；`pointerdown`/`click` 位移 > 3px 视为拖拽不出气泡
+- DOM：`#speech-bubbles` 内动态创建 `.speech-bubble`，`flex-direction: column-reverse` 垂直堆叠
+- 动画：`@keyframes bubble-pop` 2s ease-out，`animationend` 移除 DOM，`setTimeout` 2500ms 兜底
+- no-drag：`#pet-body` 加 `-webkit-app-region: no-drag` 让 click 穿透，父级 padding 保留拖拽区域
+
+**窗口动态缩放**
+- 尺寸公式：`getPetSize() = 200 × screen.scaleFactor × zoomLevel`
+- 锁定：`lockPetSize()` 用 `min=max` 硬锁定（`resizable:false` + `setBounds` 在 Windows 上不可靠）
+- 缩放：右键菜单四档 radio（75/100/125/150%），`applyZoom()` 保持位置不变 + 持久化到 store
+- 持久化保护：`pet:state:set` handler 在 index.js 重注册，防止渲染端整体覆盖写盘冲掉 zoomLevel
+- 响应式：所有 CSS 尺寸从固定 px → vw 单位，窗口变大内容等比放大

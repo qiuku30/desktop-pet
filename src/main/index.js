@@ -18,6 +18,9 @@ let mainWindow = null;
 let currentMode = 'pet'; // 'pet' | 'dashboard'
 let isAutoMoving = false; // 区分自动走动 vs 用户拖拽
 let currentZoom = 1.0;   // 用户缩放倍率（0.75 / 1.0 / 1.25 / 1.5）
+let savedPetBounds = null; // 切面板前记下宠物位置，切回时恢复
+let wanderEnabled = true;  // 随机走动开关
+let currentPetSize = 200;  // 当前宠物窗口的基准尺寸（防 DPI 漂移）
 
 // 动态窗口尺寸：基准 200px × 显示器缩放 × 用户缩放
 function getPetSize(zoomLevel) {
@@ -49,6 +52,7 @@ function createWindow() {
     },
     hasShadow: false,
   });
+  currentPetSize = size;
   lockPetSize(mainWindow, size);
 
   mainWindow.loadFile(path.join(__dirname, '../renderer/pet/pet.html'));
@@ -87,6 +91,16 @@ function createWindow() {
       },
       { type: 'separator' },
       {
+        label: '自动走动',
+        type: 'checkbox',
+        checked: wanderEnabled,
+        click: () => {
+          wanderEnabled = !wanderEnabled
+          mainWindow.webContents.send('wander:toggle', wanderEnabled)
+        },
+      },
+      { type: 'separator' },
+      {
         label: '退出',
         click: () => app.quit(),
       },
@@ -99,10 +113,17 @@ function createWindow() {
 async function applyZoom(zoom) {
   currentZoom = zoom
   if (currentMode === 'pet' && mainWindow) {
-    const size = getPetSize(zoom)
-    lockPetSize(mainWindow, size)
+    const newSize = getPetSize(zoom)
+    // 以窗口中心为锚点缩放，避免位置偏移
     const [x, y] = mainWindow.getPosition()
-    mainWindow.setBounds({ x, y, width: size, height: size })
+    const [w, h] = mainWindow.getSize()
+    const cx = x + w / 2
+    const cy = y + h / 2
+    const newX = Math.round(cx - newSize / 2)
+    const newY = Math.round(cy - newSize / 2)
+    currentPetSize = newSize
+    lockPetSize(mainWindow, newSize)
+    mainWindow.setBounds({ x: newX, y: newY, width: newSize, height: newSize })
   }
   // 持久化：合并现有 state 保留其他字段
   try {
@@ -116,8 +137,8 @@ async function applyZoom(zoom) {
 function switchToDashboard() {
   currentMode = 'dashboard';
 
-  // 保存宠物态时的位置和大小
-  const petBounds = mainWindow.getBounds();
+  // 保存宠物态位置，切回时恢复
+  savedPetBounds = mainWindow.getBounds();
 
   mainWindow.setMinimumSize(600, 400);
   mainWindow.setMaximumSize(0, 0);     // 解除宠物态的尺寸锁定
@@ -125,20 +146,31 @@ function switchToDashboard() {
   mainWindow.setResizable(true);
   mainWindow.setSkipTaskbar(false);
 
-  // 展开到面板大小，居中
+  // 展开到面板大小
   mainWindow.setSize(DASHBOARD_MODE.width, DASHBOARD_MODE.height);
   mainWindow.center();
+
+  mainWindow.loadFile(path.join(__dirname, '../renderer/dashboard/dashboard.html'));
 }
 
 function switchToPet() {
   currentMode = 'pet';
   const size = getPetSize(currentZoom)
+  currentPetSize = size
   lockPetSize(mainWindow, size)
   mainWindow.setResizable(false)
   mainWindow.setAlwaysOnTop(true)
   mainWindow.setSkipTaskbar(true)
-  mainWindow.setSize(size, size)
-  mainWindow.center()
+
+  if (savedPetBounds) {
+    // 恢复宠物原来的位置（面板从哪来，回哪去）
+    mainWindow.setBounds({ x: savedPetBounds.x, y: savedPetBounds.y, width: size, height: size })
+  } else {
+    mainWindow.setSize(size, size)
+    mainWindow.center()
+  }
+
+  mainWindow.loadFile(path.join(__dirname, '../renderer/pet/pet.html'));
 }
 
 // ── IPC 处理 ──
@@ -185,9 +217,10 @@ function setupIPC() {
   });
 
   // 自动走动：标记 isAutoMoving，防止被 move 事件误判为用户拖拽
+  // 用 currentPetSize 而非 getSize()：高 DPI 下 getSize 会读到已被漂移污染的尺寸
   ipcMain.handle('window:move', (_, { x, y }) => {
     isAutoMoving = true;
-    mainWindow.setPosition(Math.round(x), Math.round(y));
+    mainWindow.setBounds({ x: Math.round(x), y: Math.round(y), width: currentPetSize, height: currentPetSize })
     isAutoMoving = false;
     return { x, y };
   });
