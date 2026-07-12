@@ -69,8 +69,8 @@
 | 任务 | 状态 | 备注 |
 |------|------|------|
 | dashboard.html — 面板框架 | ✅ | 顶部栏（标题 + 关闭按钮）+ 导航 + 内容区 |
-| dashboard.js — 面板逻辑 | ✅ | 窗口切换（toggleWindow），导航切换、模块加载（待实现） |
-| dashboard.css — 面板样式 | ✅ | 顶部栏样式 + 关闭按钮 hover 效果 + 布局 |
+| dashboard.js — 面板逻辑 | ✅ | 窗口切换 + 边缘拖拽缩放 + 光标控制（RAF 循环） |
+| dashboard.css — 面板样式 | ✅ | 顶部栏（标题 drag + 关闭按钮）+ 布局 + 暗色主题 |
 | DESIGN.md | 🟡 | 有基本结构，待细化 |
 
 ---
@@ -80,7 +80,7 @@
 1. ~~`pet.js` + `pet.css` — 宠物外观、动画、交互~~ ✅ 已完成（移动系统：拖拽/走动/躲鼠标/闲置）
 4. ~~`dashboard.js` + `dashboard.css` — 面板切换和模块加载~~ ✅ 已完成（双击切换 + loadFile + 顶部栏 + 返回按钮）
 5. ~~对话气泡系统~~ ✅ 已完成（mood×level 台词库 16 条、300ms 延迟 + 拖拽检测、2s 气泡动画、窗口动态缩放、右键缩放菜单）
-6. 右键菜单交互 — 喂食/状态（IPC 对接）
+6. ~~右键菜单交互 — 喂食/状态（IPC 对接）~~ ✅ 已完成（pet-04）
 7. 面板状态页（宠物属性展示）
 
 ---
@@ -207,3 +207,22 @@
 - 缩放：右键菜单四档 radio（75/100/125/150%），`applyZoom()` 保持位置不变 + 持久化到 store
 - 持久化保护：`pet:state:set` handler 在 index.js 重注册，防止渲染端整体覆盖写盘冲掉 zoomLevel
 - 响应式：所有 CSS 尺寸从固定 px → vw 单位，窗口变大内容等比放大
+
+---
+
+## 设计决策记录 — 双击面板切换 + 高 DPI 修复（2026-07-12）
+
+**双击面板切换**
+- 交互：pet.js `click` 中 `if (clickTimer)` 分支（300ms 内第二次点击）→ `window.electronAPI.toggleWindow()`
+- 主进程：`switchToDashboard()` 保存 `savedPetBounds` + `loadFile(dashboard.html)`；`switchToPet()` 恢复位置 + `loadFile(pet.html)`
+- 面板：顶部栏（标题 "摸鱼面板" + ❌ 关闭按钮），关闭按钮调用 `toggleWindow()` 回到宠物态
+- pet.js 重初始化：`loadFile` 重新执行脚本，`PetState.init()` 幂等安全，走动从当前位置恢复
+
+**高 DPI 三连修复**（ADR-008）
+- **bug 1 — 走动时窗口越变越大**：`window:move` handler 从 `setPosition(x,y)` 改为 `setBounds({x,y,width,height})`，原子设位置+尺寸。用 `currentPetSize` 变量不用 `getSize()`（后者会被漂移污染）
+- **bug 2 — 缩放时窗口瞬移**：`applyZoom()` 从左上角锚点 → 中心锚点（`cx = x + w/2` → 新尺寸反推左上角）
+- **bug 3 — 切面板瞬移**：`switchToDashboard()` 保存 `savedPetBounds`，`switchToPet()` 恢复（不再无脑 `center()`）
+- `currentPetSize` 三处同步：`createWindow` / `applyZoom` / `switchToPet`
+
+**wanderEnabled 开关**
+- 右键菜单新增 "自动走动" checkbox，主进程 `wanderEnabled` 变量 + `wander:toggle` IPC 推送到渲染端

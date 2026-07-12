@@ -152,10 +152,10 @@ function pickDialog(mood, level) {
   return pool[Math.floor(Math.random() * pool.length)]
 }
 
-function showBubble() {
+function showBubble(customText) {
   const mood = PetState.get('mood')
   const level = PetState.get('level')
-  const text = pickDialog(mood, level)
+  const text = customText || pickDialog(mood, level)
   const bubble = document.createElement('div')
   bubble.className = 'speech-bubble'
   bubble.textContent = text
@@ -205,6 +205,30 @@ async function init() {
 
   window.electronAPI.onUserDrag(onUserDrag)
   window.electronAPI.onWanderToggle(onWanderToggle)
+
+  // 右键菜单 — 喂食
+  window.electronAPI.onMenuFeed(() => {
+    const foodInventory = PetState.get('foodInventory') || []
+    if (foodInventory.length === 0) {
+      showBubble('没有食物了... 🥺')
+      return
+    }
+    const [, ...remaining] = foodInventory
+    PetState.set('foodInventory', remaining)
+
+    const hunger = PetState.get('hunger') || 0
+    PetState.set('hunger', Math.max(0, hunger - 20))
+
+    const intimacy = PetState.get('intimacy') || 0
+    PetState.set('intimacy', intimacy + 5)
+
+    showBubble('好吃！')
+  })
+
+  // 右键菜单 — 状态
+  window.electronAPI.onMenuStatus(() => {
+    window.electronAPI.toggleWindow()
+  })
 
   scheduleWander()
 }
