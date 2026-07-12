@@ -27,7 +27,7 @@
 | 目录结构搭建 | ✅ | 37 个文件骨架 |
 | .gitignore | ✅ | 含 node_modules/ dist/ .claude/ |
 | CLAUDE.md | ✅ | 含架构、规则、协作模板 |
-| docs/architecture.md | ✅ | 7 条 ADR |
+| docs/architecture.md | ✅ | 8 条 ADR |
 | docs/conventions.md | ✅ | 含禁止跨模块 import |
 | docs/events.md | ✅ | 14 个事件，含参数和触发时机 |
 | docs/progress.md | ✅ | 本文件 |
@@ -70,7 +70,7 @@
 | pet.html — 宠物窗口结构 | ✅ | emoji + 气泡容器 |
 | pet.js — 宠物逻辑 | ✅ | 状态机：原生拖拽 / 随机走动 / 对话气泡 / 双击面板 / PetState.init() / 喂食 flyout（原则5：FOODS 配置 + foodInventory 数据分离） |
 | pet-motion.mjs — 纯几何计算 | ✅ | distance/isCursorNear/fleeCenter/wanderTarget/中心↔左上角换算；node --test 6/6 |
-| pet.css — 宠物样式 | ✅ | 透明背景 + padding 拖拽手柄 + no-drag 点击穿透 + 闲置/走动动画 + 气泡 + feed-flyout 样式 |
+| pet.css — 宠物样式 | ✅ | 透明背景 + padding 拖拽手柄 + no-drag 点击穿透 + 闲置/走动动画 + 气泡样式 |
 | DESIGN.md | ✅ | 已细化：状态机、pet-motion 清单、坐标契约、class 钩子 |
 
 ### 渲染进程 — 面板 (src/renderer/dashboard/)
@@ -80,6 +80,7 @@
 | dashboard.html — 面板框架 | ✅ | 顶部栏（标题 + 关闭按钮）+ 导航 + 内容区 |
 | dashboard.js — 面板逻辑 | ✅ | 窗口切换 + 边缘拖拽缩放 + 光标控制（RAF 循环） |
 | dashboard.css — 面板样式 | ✅ | 顶部栏（标题 drag + 关闭按钮）+ 布局 + 暗色主题 |
+| 宠物状态展示卡片 | ✅ | 等级/经验/心情/饥饿/亲密度/金币/食物库存 + 快速投喂 |
 | DESIGN.md | 🟡 | 有基本结构，待细化 |
 
 ---
@@ -90,7 +91,7 @@
 4. ~~`dashboard.js` + `dashboard.css` — 面板切换和模块加载~~ ✅ 已完成（双击切换 + loadFile + 顶部栏 + 返回按钮）
 5. ~~对话气泡系统~~ ✅ 已完成（mood×level 台词库 16 条、300ms 延迟 + 拖拽检测、2s 气泡动画、窗口动态缩放、右键缩放菜单）
 6. ~~右键菜单交互 — 喂食/状态（IPC 对接）~~ ✅ 已完成（pet-04）
-7. 面板状态页（宠物属性展示）
+7. ~~面板状态页（宠物属性展示）~~ ✅ 已完成（dash-01）
 
 ---
 
