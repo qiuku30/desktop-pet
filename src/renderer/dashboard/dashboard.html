@@ -5,12 +5,16 @@
   <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
-  <!-- 面板框架 -->
+  <header id="top-bar">
+    <span id="drag-area">摸鱼面板</span>
+    <button id="btn-close" title="返回宠物">✕</button>
+  </header>
   <div id="dashboard">
-    <nav id="nav-bar"><!-- 导航由 module-registry.js 自动渲染 --></nav>
-    <main id="content-area"><!-- 模块内容动态加载 --></main>
+    <nav id="nav-bar"></nav>
+    <main id="content-area"></main>
   </div>
   <script type="module" src="../shared/event-bus.js"></script>
+  <script type="module" src="../shared/pet-state.js"></script>
   <script type="module" src="../shared/module-registry.js"></script>
   <script type="module" src="dashboard.js"></script>
 </body>
