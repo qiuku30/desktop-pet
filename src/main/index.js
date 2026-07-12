@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, Menu, dialog, screen } = require('electron'
 const path = require('path');
 const { initStore, getState, setState } = require('./storage/store');
 const { registerPetIPC } = require('./ipc/pet-ipc');
+const { initOverlayIPC, showOverlayWindow } = require('./overlay-manager');
 
 // ── 窗口状态常量 ──
 const DASHBOARD_MODE = {
@@ -140,17 +141,16 @@ function switchToDashboard() {
   // 保存宠物态位置，切回时恢复
   savedPetBounds = mainWindow.getBounds();
 
+  // 先加载面板页面，再展开窗口，避免宠物闪现
+  mainWindow.loadFile(path.join(__dirname, '../renderer/dashboard/dashboard.html'));
+
+  mainWindow.setMaximumSize(0, 0);
   mainWindow.setMinimumSize(600, 400);
-  mainWindow.setMaximumSize(0, 0);     // 解除宠物态的尺寸锁定
   mainWindow.setAlwaysOnTop(false);
-  mainWindow.setResizable(true);
   mainWindow.setSkipTaskbar(false);
 
-  // 展开到面板大小
   mainWindow.setSize(DASHBOARD_MODE.width, DASHBOARD_MODE.height);
   mainWindow.center();
-
-  mainWindow.loadFile(path.join(__dirname, '../renderer/dashboard/dashboard.html'));
 }
 
 function switchToPet() {
@@ -188,6 +188,12 @@ function setupIPC() {
   // 宠物状态读写 — 委托给 pet-ipc 模块（整体覆盖 + 空快照保护）
   registerPetIPC(ipcMain);
 
+  // Overlay 悬浮面板
+  initOverlayIPC(ipcMain);
+  ipcMain.handle('overlay:show', async (_, opts) => {
+    return await showOverlayWindow(mainWindow, opts);
+  });
+
   // 保护 zoomLevel 不被渲染端存盘整体覆盖冲掉
   ipcMain.removeHandler('pet:state:set')
   ipcMain.handle('pet:state:set', async (_, snapshot) => {
@@ -214,6 +220,20 @@ function setupIPC() {
   ipcMain.handle('window:position:get', () => {
     const [x, y] = mainWindow.getPosition();
     return { x, y };
+  });
+
+  // 面板缩放：渲染端拖拽边缘 → 设窗口 bounds
+  ipcMain.handle('window:setBounds', (_, bounds) => {
+    if (currentMode !== 'dashboard') return
+    const minW = 600, minH = 400
+    if (bounds.width < minW) bounds.width = minW
+    if (bounds.height < minH) bounds.height = minH
+    mainWindow.setBounds(bounds)
+  });
+
+  // 面板缩放：渲染端取当前 bounds
+  ipcMain.handle('window:bounds:get', () => {
+    return mainWindow.getBounds()
   });
 
   // 自动走动：标记 isAutoMoving，防止被 move 事件误判为用户拖拽
