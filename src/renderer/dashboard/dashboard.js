@@ -218,3 +218,74 @@ function renderAll() {
   renderCoins()
   renderInventory()
 }
+
+// ── 事件监听：按 key 增量刷新 ──
+function onStateChanged({ key }) {
+  switch (key) {
+    case 'level':
+    case 'exp':
+      renderLevel()
+      break
+    case 'mood':
+      renderMood()
+      break
+    case 'hunger':
+      renderHunger()
+      break
+    case 'intimacy':
+      renderIntimacy()
+      break
+    case 'coins':
+      renderCoins()
+      break
+    case 'foodInventory':
+      renderInventory()
+      break
+  }
+}
+
+// ── 快速投喂 ──
+function handleFeed(foodId) {
+  const food = FOOD_META[foodId]
+  if (!food) return
+
+  const foodInventory = PetState.get('foodInventory') || []
+  const entry = foodInventory.find(item => item.id === foodId)
+  if (!entry || entry.count <= 0) return
+
+  // 消耗 1 个食物
+  const newInventory = foodInventory
+    .map(item => item.id === foodId ? { ...item, count: item.count - 1 } : item)
+    .filter(item => item.count > 0)
+  PetState.set('foodInventory', newInventory)
+
+  // 更新饥饿值（饥饿值减小 = 吃饱，clamp 到 0）
+  const hunger = PetState.get('hunger') || 0
+  PetState.set('hunger', Math.max(0, hunger + food.hunger))
+
+  // 亲密度 +5
+  const intimacy = PetState.get('intimacy') || 0
+  PetState.set('intimacy', intimacy + 5)
+}
+
+// ── 初始化 ──
+async function initStatus() {
+  await PetState.init()
+  buildStatusDOM()
+
+  // 库存点击：事件委托
+  document.getElementById('card-inventory').addEventListener('click', (e) => {
+    const item = e.target.closest('.inventory-item')
+    if (!item) return
+    const foodId = item.dataset.foodId
+    if (item.classList.contains('inventory-item--empty')) return
+    handleFeed(foodId)
+  })
+
+  // 监听状态变化
+  PetState.subscribe('pet:state:changed', onStateChanged)
+
+  renderAll()
+}
+
+initStatus()
