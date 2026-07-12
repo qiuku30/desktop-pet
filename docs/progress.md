@@ -59,9 +59,9 @@
 | 任务 | 状态 | 备注 |
 |------|------|------|
 | pet.html — 宠物窗口结构 | ✅ | emoji + 气泡容器 |
-| pet.js — 宠物逻辑 | ✅ | 状态机：原生拖拽（CSS -webkit-app-region: drag）/ 随机走动（moveWindow IPC）；躲避光标已搁置；气泡待后续 |
+| pet.js — 宠物逻辑 | ✅ | 状态机：原生拖拽 / 随机走动 / 对话气泡（mood×level 台词库，300ms 延迟 + 拖拽检测）/ PetState.init() / 动态窗口尺寸 |
 | pet-motion.mjs — 纯几何计算 | ✅ | distance/isCursorNear/fleeCenter/wanderTarget/中心↔左上角换算；node --test 6/6 |
-| pet.css — 宠物样式 | ✅ | 透明背景 + 居中 emoji + 呼吸/轻晃闲置动画 + .grabbed/.moving 钩子 |
+| pet.css — 宠物样式 | ✅ | 透明背景 + padding 拖拽手柄 + no-drag 点击穿透 + 呼吸/轻晃闲置动画 + .moving 钩子 + 气泡样式 + bubble-pop 动画 |
 | DESIGN.md | ✅ | 已细化：状态机、pet-motion 清单、坐标契约、class 钩子 |
 
 ### 渲染进程 — 面板 (src/renderer/dashboard/)
@@ -79,8 +79,8 @@
 
 1. ~~`pet.js` + `pet.css` — 宠物外观、动画、交互~~ ✅ 已完成（移动系统：拖拽/走动/躲鼠标/闲置）
 4. `dashboard.js` + `dashboard.css` — 面板切换和模块加载
-5. 对话气泡系统（pet.js 已留 tap 空钩子）
-6. 右键菜单交互（IPC 对接）
+5. ~~对话气泡系统~~ ✅ 已完成（mood×level 台词库 16 条、300ms 延迟 + 拖拽检测、2s 气泡动画、窗口动态缩放、右键缩放菜单）
+6. 右键菜单交互 — 喂食/状态（IPC 对接）
 7. 面板状态页（宠物属性展示）
 
 ---
@@ -107,9 +107,9 @@
 
 - [x] 🔴 **关键（已修复）**: dashboard.html 的 `<script>` 标签缺少 `type="module"`。
       和 pet.html 同样的 bug，加 `type="module"` 解决。
-- [ ] 🟡 **后续窗口注意**: `#pet-container` 使用 `-webkit-app-region: drag` 实现原生拖拽，
-      但会拦截子元素的 `click`/`mousedown`/`mouseup`。后续做气泡（单击）和面板（双击）时，
-      需在交互元素上加 `-webkit-app-region: no-drag`。详见 `docs/pet-movement-design.md` 第 6 节。
+- [x] 🟡 **已修复**: `#pet-container` 使用 `-webkit-app-region: drag` 会拦截子元素的 `click` 事件。
+      解决方案：`#pet-body` 加 `-webkit-app-region: no-drag`，`#pet-container` 加 `padding: 15px` 保留边框拖拽区域。
+      同时：窗口尺寸改为动态（基准 200px × scaleFactor × 用户缩放），右键菜单增加缩放四档（0.75/1/1.25/1.5x），zoomLevel 持久化保护。
 
 ---
 

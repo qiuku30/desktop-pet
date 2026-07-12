@@ -24,13 +24,17 @@ html, body {
   justify-content: center;
   background: transparent;
   overflow: visible;
-  /* OS 原生拖拽（整窗可拖） */
+  padding: 7.5vw;    /* 15px / 200px */
+  /* OS 原生拖拽（边框区域可拖，中间 no-drag 可点击） */
   -webkit-app-region: drag;
 }
 
 #pet-body {
-  font-size: 72px;
+  font-size: 28vw;   /* 56px / 200px */
   line-height: 1;
+  /* no-drag：让 click 事件生效；OS 会把拖拽冒泡给父级 drag 区域 */
+  -webkit-app-region: no-drag;
+  cursor: pointer;
   /* 闲置：呼吸 + 偶尔轻晃 */
   transform-origin: 50% 90%;
   animation: breathe 2.5s ease-in-out infinite, sway 6s ease-in-out infinite;
@@ -60,7 +64,46 @@ html, body {
 }
 
 #speech-bubbles {
-  /* 气泡容器占位 —— 本轮不实现气泡，仅保留结构不影响布局 */
   position: absolute;
+  bottom: 68%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 3vw;          /* 6px / 200px */
   pointer-events: none;
+  z-index: 10;
+}
+
+.speech-bubble {
+  position: relative;
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  padding: 2.5vw 7vw;              /* 5px 14px / 200px */
+  border-radius: 7vw;               /* 14px / 200px */
+  font-size: 6.5vw;                 /* 13px / 200px */
+  white-space: nowrap;
+  box-shadow: 0 1vw 4vw rgba(0, 0, 0, 0.12);
+  animation: bubble-pop 2s ease-out forwards;
+}
+
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -2.5vw;                   /* -5px / 200px */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 3vw solid transparent;
+  border-right: 3vw solid transparent;
+  border-top: 3vw solid rgba(255, 255, 255, 0.95);
+}
+
+@keyframes bubble-pop {
+  0%   { opacity: 0; transform: translateY(4vw) scale(0.9); }
+  10%  { opacity: 1; transform: translateY(0) scale(1); }
+  75%  { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-2vw) scale(0.95); }
 }
