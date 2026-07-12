@@ -1,0 +1,73 @@
+/* Overlay 悬浮面板样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+}
+
+#overlay-root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  background: rgba(30, 30, 30, 0.94);
+  backdrop-filter: blur(12px);
+  color: #eee;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+}
+
+/* ── 拖拽把手 ── */
+#overlay-handle {
+  height: 28px;
+  min-height: 28px;
+  -webkit-app-region: drag;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px 12px 0 0;
+}
+
+#overlay-handle::after {
+  content: '';
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ── 内容区 ── */
+#overlay-content {
+  flex: 1;
+  padding: 10px 14px 14px;
+  -webkit-app-region: no-drag;
+  overflow-y: auto;
+}
+
+/* ── 内容区按钮基础样式 ── */
+#overlay-content button[data-overlay-result] {
+  display: inline-block;
+  padding: 6px 14px;
+  margin: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #eee;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.15s;
+}
+
+#overlay-content button[data-overlay-result]:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
