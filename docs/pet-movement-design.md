@@ -1,6 +1,6 @@
 # 宠物移动系统设计（pet.js + pet.css）
 
-> 日期：2026-07-11
+> 日期：2026-07-11 最后更新：2026-07-12
 > 范围：Phase 1 宠物外观、闲置动画、拖拽移动、随机走动、躲避鼠标。
 > 不含：气泡、右键菜单对接、双击切面板、赶跑、成长系统（均为独立子任务）。
 
@@ -8,87 +8,105 @@
 
 | 决策点 | 结论 |
 |--------|------|
-| 移动范围 | **桌面级**：整个 BrowserWindow 在屏幕上移动，不是窗口内挪 emoji |
-| 主进程改动 | 已授权，仅加「移窗 IPC + 全局光标位置」，不碰其他逻辑 |
-| 躲鼠标触发 | **靠近才躲**（光标 <120px），**拖拽时不躲**，弹一下即可（非持续逃） |
-| 闲置动画 | 呼吸（scale）+ 偶尔轻晃（rotate），emoji 无法眨眼 |
-| 大脑位置 | 渲染进程（pet.js）算一切，主进程只当手脚 |
+| 拖拽方式 | **CSS `-webkit-app-region: drag`（OS 原生）**，不用 JS+IPC。理由见 ADR-007 |
+| 自动移动 | `window:move` IPC（fire-and-forget），走动/躲避精度要求不高 |
+| 拖拽/自动互斥 | 主进程 `isAutoMoving` 标记 + `user:drag` 事件通知渲染端暂停 |
+| 闲置动画 | 呼吸（scale）+ 偶尔轻晃（rotate） |
 
-## 1. 进程职责划分
+## 1. 拖拽：CSS 原生方案
 
-渲染进程 `pet.js` 是唯一「大脑」，维护窗口当前坐标、判断距离、决定移动目标。主进程保持哑，只提供最小接口。
+### 为什么不用 JS 驱动
 
-### preload.js 新增（仅这三项）
+JS 拖拽 = `pointermove` → `ipcRenderer.invoke('window:move')` → `setPosition`。这条 IPC 链路有不可消除的延迟，导致拖拽时持续偏移。尝试过 5 个版本的坐标计算（含 DPI 对齐），均无法解决。**桌面级拖拽必须用 OS 原生机制。**
 
-```
-moveWindow(x, y)        // 移动窗口到屏幕绝对坐标（窗口左上角）
-getWindowPosition()     // 返回当前窗口左上角坐标 {x, y}，初始化用
-onCursorPos(callback)   // 订阅主进程推送的全局光标坐标 {x, y}
-```
+### 方案
 
-### index.js 新增（仅这些，不改现有逻辑）
-
-- `ipcMain.handle('window:move', (_, {x, y}))` → `mainWindow.setPosition(x, y)`，
-  **在此 clamp 到当前显示器 workArea**，防止窗口被移出屏幕。
-- `ipcMain.handle('window:position:get')` → 返回 `mainWindow.getPosition()`。
-- 全局光标轮询：`setInterval(~40ms)` 调 `screen.getCursorScreenPoint()`，
-  `mainWindow.webContents.send('cursor:pos', {x, y})`。
-  **仅宠物态运行**；切到面板态时暂停轮询，切回时恢复。
-
-> 契约：所有坐标为屏幕绝对像素，窗口左上角为锚点。clamp 逻辑归主进程 move handler，
-> 渲染进程无需知道屏幕尺寸。
-
-## 2. 行为状态机
-
-单一 `mode` 变量，优先级从高到低：
-
-```
-DRAGGING  >  FLEEING  >  WANDERING  >  IDLE
+```css
+#pet-container {
+  -webkit-app-region: drag;    /* 整窗可拖（OS 原生，零延迟） */
+}
 ```
 
-### DRAGGING（拖拽）
-- `mousedown`（在 #pet-body）记录光标与窗口原点的偏移量 `offset`。
-- 拖拽期间复用全局光标流：每帧 `moveWindow(cursor.x - offset.x, cursor.y - offset.y)`。
-- `mouseup` 结束，回 IDLE。
-- 拖拽期间 **不触发躲避**。
-- 位移 <5px 视为「点一下（tap）」——本轮不做行为，仅留空钩子给后续气泡子任务。
+### 主进程配合
 
-### FLEEING（躲避）
-- 触发：非拖拽状态下，光标与宠物中心距离 <120px。
-- 反应：沿「光标→宠物中心」的反方向弹开约 150px（缓动滑行），**一次性弹开**，不是持续逃。
-- 弹开后若光标仍 <120px，则再弹一次；光标离开后回 WANDERING。
+`mainWindow.on('move')` 监听窗口位移。`isAutoMoving` 标记区分：
+- `window:move` handler → `isAutoMoving = true` → `setPosition` → `isAutoMoving = false`
+- `mainWindow.on('move')` → `!isAutoMoving` → 用户拖拽 → `webContents.send('user:drag')`
 
-### WANDERING（随机走动）
-- 每隔 5~12s（随机）挑一个目标点：当前位置 ±200px 内、由主进程 clamp 保证落在工作区。
-- 用缓动在约 1.2s 内滑到目标，然后回 IDLE 等待下次。
+渲染端收到 `user:drag` 后暂停走动 300ms，避免自动走动和用户拖拽打架。
 
-### IDLE（闲置）
-- 原地播放呼吸/轻晃动画，不移动窗口。
+### 新事件
 
-### 面板态暂停
-- `getWindowMode() === 'dashboard'` 时，所有移动行为与光标订阅全部暂停；切回宠物态恢复。
+| 事件 | 方向 | 时机 |
+|------|------|------|
+| `user:drag` | 主进程 → 渲染 | 用户拖拽宠物窗口（非自动移动） |
 
-## 3. 外观与闲置动画（pet.css）
+## 2. 自动移动：IPC 方案
 
-- 占位 emoji 保持 🐱；`#pet-container` 透明背景、`user-select: none`、`overflow: visible`。
-- `#pet-body` 居中显示，字号撑满可视区。
-- 闲置动画：
-  - **呼吸**：`scale(1 ↔ 1.05)`，约 2.5s 循环。
-  - **轻晃**：偶发 `rotate(±5°)`。
-- 走动时加方向性 squash & stretch，让滑行有生气。
-- 被拖时 emoji 略放大，表示「被抓住」。
-- 窗口整体位移由 `moveWindow` 完成；emoji 在窗内基本居中，CSS 动画只做形变、不做大位移。
+走动（随机）、躲避（光标靠近弹开）继续走 `window:move` IPC：
+- `commitMove` 为 fire-and-forget（不等返回值）
+- `glideTo` 用 rAF + easeOutCubic 缓动
+- 更高优先级动作通过 `glideToken` 作废旧的滑行帧
 
-## 4. 边界与暂停条件汇总
+走动和躲避不需要实时精度，IPC 延迟在这里可接受。
 
-| 条件 | 行为 |
-|------|------|
-| 面板态 | 全部暂停（含光标轮询） |
-| 拖拽中 | 暂停躲避、暂停随机走动 |
-| 躲避中 | 暂停随机走动 |
-| 光标近 | 触发躲避（除非在拖拽） |
+## 3. 行为状态机
+
+优先级：**用户拖拽（OS 原生）> 走动（WANDERING）> 闲置（IDLE）**
+
+- **用户拖拽**：OS 原生，收到 `user:drag` 后暂停走动 300ms
+- **躲避**：⚠️ 已搁置（IPC 延迟高，后续考虑主进程侧实现）
+- **走动**：每 5~12s 随机挑 ±200px 目标 → ~1.2s 缓动滑过去
+- **闲置**：原地呼吸 + 轻晃动画
+
+面板态全部暂停。
+
+## 4. 外观与闲置动画（pet.css）
+
+- 占位 emoji 🐱；`#pet-container` 透明、`user-select: none`
+- 闲置：`scale(1 ↔ 1.05)` 呼吸（2.5s）+ `rotate(±5°)` 轻晃（6s 循环）
+- 走动：`.moving` class → squash & stretch（waddle 0.5s）
 
 ## 5. 明确不在本轮范围
 
-气泡系统、右键菜单 IPC 对接、双击切面板、赶跑（拖到边缘跑出+自动回来）、成长系统。
-仅在拖拽逻辑里预留 tap 钩子，供后续气泡子任务接入。
+气泡系统、右键菜单 IPC 对接、双击切面板、赶跑、成长系统。
+
+## 6. ⚠️ 已知遗留问题：`-webkit-app-region: drag` 与点击事件冲突
+
+`#pet-container` 使用 `-webkit-app-region: drag` 让 Electron 把整个窗口变成原生拖拽手柄。
+**副作用**：该元素及其子元素上的 `click`、`mousedown`、`mouseup` 事件被 Electron 拦截，不触发。
+
+这意味着后续做对话气泡（单击说话）和双击面板时，**点击事件收不到**。
+
+### 解决方案（后续窗口实施）
+
+在需要点击交互的子元素上加 `-webkit-app-region: no-drag`：
+
+```css
+/* 宠物本体：需要双击 → 加 no-drag 让事件穿透 */
+#pet-body {
+  -webkit-app-region: no-drag;
+}
+
+/* 对话气泡：需要单击关闭 → 加 no-drag */
+.speech-bubble {
+  -webkit-app-region: no-drag;
+}
+```
+
+**但注意**：`no-drag` 区域内不能拖拽窗口。所以宠物本体加 `no-drag` 后，
+需要通过其他区域（如 `#pet-container` 的 padding/边缘）保持拖拽能力。
+
+**推荐布局**：
+```
+┌──────────────────────────┐ ← #pet-container (drag)
+│  padding: 10px           │ ← 边框保留 drag，用户拖这里
+│  ┌──────────────────┐   │
+│  │  #pet-body       │   │ ← no-drag，可接收点击/双击
+│  │  (no-drag)       │   │
+│  └──────────────────┘   │
+│  padding: 10px           │
+└──────────────────────────┘
+```
+
+用户拖拽窗口时抓边框，点击时点中间宠物。这是明确给气泡/面板窗口的交接事项。

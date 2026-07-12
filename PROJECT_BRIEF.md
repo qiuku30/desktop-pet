@@ -1,307 +1,119 @@
-# Desktop Pet — 项目启动总览
+# 架构窗口交接文档
 
-> 所有内容来自本次会话的讨论和决策。本文件持续更新。
-> 最后更新：2026-07-11
-
----
-
-## 一、项目定位
-
-桌面摸鱼伴侣 (Desktop Pet) — Electron 桌面悬浮宠物应用。
-
-- **最终目标**：上线给别人用
-- **当前阶段**：不纠结远期，先把最小可玩版本做出来
-- **核心体验**：外表是桌宠（能对话、喂食、升级），点开后内置多个摸鱼小模块
-- **架构关系**：宠物是核心外壳，游戏是喂养/升级宠物的手段（非平级）
+> 最后更新：2026-07-12
+> 架构窗口每次会话结束必须更新此文件。下一任架构窗口启动时读此文件恢复全局上下文。
 
 ---
 
-## 二、技术栈（已确认）
+## 项目定位
 
-| 项目 | 选择 |
+桌面摸鱼伴侣 (Desktop Pet) — Electron 桌面悬浮宠物应用。宠物是核心外壳，游戏是喂养手段（非平级）。
+
+GitHub：https://github.com/qiuku30/desktop-pet
+
+---
+
+## 技术决策（全部已定，不再讨论）
+
+| 决策 | 结论 |
 |------|------|
-| 框架 | Electron |
-| 语言 | JavaScript ES6 (import/export) |
-| 样式 | HTML + CSS |
-| 包管理 | npm |
+| 框架 | Electron + JavaScript ES6 |
 | 打包 | electron-forge |
-| 版本管理 | GitHub |
-| CI/CD | 暂不需要 |
-| 数据存储 | JSON 文件（主进程 IPC 读写，后续升级 SQLite） |
+| 存储 | JSON 文件（用户目录，主进程 IPC 读写）→ 后续升级 SQLite |
+| 窗口 | 单窗口双状态（宠物态 ↔ 面板态） |
+| 模块通信 | EventBus（模块间不互相 import） |
+| 事件命名 | `模块名:动作:状态` |
+| 面板导航 | module-registry.js 驱动 |
+| 数据存取 | store.js 统一层，模块不直接碰文件系统 |
+| PetState | 薄：get/set/subscribe，不含业务逻辑 |
+| 拖拽 | CSS `-webkit-app-region: drag`（OS 原生，IPC 延迟无法根除） |
+| 自动移动 | window:move IPC（fire-and-forget） |
+| 光标 | 拉模型：getCursorPos()（不推流，永远不积压） |
 
 ---
 
-## 三、模块规划
+## 架构文档索引
 
-共 5 个模块，目前只做第 1 个（宠物系统 Phase 1）：
-
-| # | 模块 | 状态 | 说明 |
-|---|------|------|------|
-| 1 | 🐾 宠物系统 | 🔨 Phase 1 | 核心：悬浮、对话、喂食、成长 |
-| 2 | 📝 英语单词 | ⏳ 待定 | 背单词 → 获得金币 |
-| 3 | 🎮 2048 | ⏳ 待定 | 休闲游戏 → 获得金币 |
-| 4 | 🌾 农场经营 | ⏳ 待定 | 种田 → 食材 → 合成食物 → 喂宠物 |
-| 5 | 🏪 超市经营 | ⏳ 待定 | 买卖管理 |
-
----
-
-## 四、项目结构（已确认）
-
-```
-desktop-pet/
-├── CLAUDE.md
-├── docs/
-│   ├── architecture.md          # 全局架构决策及理由
-│   ├── progress.md              # 开发进度追踪
-│   ├── conventions.md           # 编码规范
-│   └── events.md                # 事件清单（所有 EventBus 事件）
-├── specs/                       # 需求文档（用户视角）
-│   ├── pet-system.md
-│   ├── word-game.md
-│   ├── game-2048.md
-│   └── farm-system.md
-├── src/
-│   ├── main/
-│   │   ├── index.js              # Electron 入口
-│   │   ├── ipc/
-│   │   │   ├── pet-ipc.js
-│   │   │   └── storage-ipc.js
-│   │   ├── storage/
-│   │   │   └── store.js          # 统一数据存取层（唯一碰文件的地方）
-│   │   └── DESIGN.md
-│   ├── renderer/
-│   │   ├── pet/
-│   │   │   ├── pet.html
-│   │   │   ├── pet.js
-│   │   │   ├── pet.css
-│   │   │   └── DESIGN.md
-│   │   ├── dashboard/
-│   │   │   ├── dashboard.html
-│   │   │   ├── dashboard.js
-│   │   │   ├── dashboard.css
-│   │   │   └── DESIGN.md
-│   │   ├── games/
-│   │   │   ├── 2048/
-│   │   │   │   ├── game.js
-│   │   │   │   ├── game.css
-│   │   │   │   └── DESIGN.md
-│   │   │   └── farm/
-│   │   │       ├── game.js
-│   │   │       └── DESIGN.md
-│   │   ├── shared/               # 公共代码
-│   │   │   ├── event-bus.js      # 事件总线核心
-│   │   │   ├── events.js         # 事件常量定义
-│   │   │   ├── module-registry.js # 模块注册表（面板导航自动渲染）
-│   │   │   ├── pet-state.js      # 宠物状态管理器
-│   │   │   ├── constants.js
-│   │   │   └── utils.js
-│   │   └── assets/
-│   │       └── pet/
-├── package.json
-└── .gitignore
-```
-
----
-
-## 五、文档体系（两层分工）
-
-| 层级 | 位置 | 视角 | 内容 |
-|------|------|------|------|
-| 需求文档 | `specs/xxx.md` | 用户视角 | 功能列表、交互描述、验收标准 |
-| 设计文档 | `src/xxx/DESIGN.md` | 技术视角 | 组件树、数据结构、状态管理、关键算法、模块接口 |
-
-**上下文恢复**（新会话只需读 4 个文件）：
-```
-CLAUDE.md → 对应模块 spec → 对应模块 DESIGN.md → docs/progress.md
-```
-
-**规则**：每次改完代码，同步更新对应 DESIGN.md。
-
----
-
-## 六、架构设计（核心）
-
-### 6.1 模块通信：EventBus 事件总线
-
-```
-┌─────────────────────────────────────────────────┐
-│              事件总线 (EventBus)                  │
-│    模块之间不直接 import，都通过事件通信            │
-└──────┬────────────────┬────────────────┬─────────┘
-       │                │                │
-  ┌────▼────┐     ┌────▼────┐     ┌────▼────┐
-  │ 宠物模块  │     │ 农场模块  │     │ 单词模块  │
-  │ pet/    │     │ farm/   │     │ word/   │
-  └────┬────┘     └────┬────┘     └────┬────┘
-       │                │                │
-  ┌────▼────────────────▼────────────────▼─────────┐
-  │           宠物状态管理器 (PetState)               │
-  │  等级、心情、亲密度、食物库存……统一管理            │
-  │  各模块只能通过 getter/setter 方法读写             │
-  │  数据变更时自动 emit 事件通知订阅方               │
-  └─────────────────────────────────────────────────┘
-```
-
-**三条铁律**：
-1. 模块之间不互相 import — 农场不改宠物，宠物不改农场
-2. 所有通信走 EventBus：`emit(EVENTS.COIN_EARNED, data)`
-3. 状态集中管理（PetState 单例），读写都有门
-
-**事件命名规范**：`模块名:动作:状态`
-```
-pet:hunger:changed     → 宠物饥饿值变了
-coin:earned            → 获得金币
-game:2048:completed    → 2048 通关
-```
-
-**事件常量文件** `src/renderer/shared/events.js`：
-```js
-export const EVENTS = {
-  PET_HUNGER_CHANGED:  'pet:hunger:changed',
-  PET_MOOD_CHANGED:    'pet:mood:changed',
-  PET_LEVEL_UP:        'pet:level:up',
-  COIN_EARNED:         'coin:earned',
-  COIN_SPENT:          'coin:spent',
-  GAME_2048_COMPLETED: 'game:2048:completed',
-  GAME_FARM_HARVEST:   'game:farm:harvest',
-}
-```
-使用时：`EventBus.emit(EVENTS.COIN_EARNED, { amount: 100 })` — 杜绝拼写错误
-
-**事件清单文档**：`docs/events.md` — 所有事件名、参数、触发时机，新模块开发先查表
-
-**开发模式调试**：每个 `emit` 和 `on` 打 `console.log`，方便追踪事件链
-
-### 6.2 窗口架构：单窗口双状态
-
-```
-宠物态（小窗，悬浮）          面板态（展开，功能界面）
-┌──────────┐              ┌─────────────────────┐
-│   🐱    │   双击 →     │ 🐱  Lv.3  ❤️❤️❤️   │
-│          │   ← 关闭    │─────────────────────│
-│ "你好!"  │              │ 喂食 │ 农场 │ 单词  │
-└──────────┘              │─────────────────────│
-                          │    (当前页面内容)    │
-                          └─────────────────────┘
-```
-
-- 只有一个 BrowserWindow，大小和内容在两种状态间切换
-- 宠物态：透明无边框、置顶、小尺寸
-- 面板态：正常窗口、可调大小、导航由模块注册表驱动
-
-### 6.3 模块注册表
-
-`src/renderer/shared/module-registry.js`：
-```js
-export const MODULES = [
-  { id: 'pet-status',  label: '宠物状态', path: 'pet/status' },
-  { id: 'farm',        label: '农场',     path: 'games/farm' },
-  { id: 'word',        label: '背单词',   path: 'games/word' },
-  { id: 'travel',      label: '旅游小屋', path: 'games/travel-cabin' },  // ← 加一行即注册
-]
-```
-dashboard 自动遍历渲染导航，加模块不改逻辑。
-
-### 6.4 数据存取
-
-- 所有数据读写走 `src/main/storage/store.js`
-- 渲染进程通过 IPC 调用，绝不直接碰文件系统
-- 以后切 SQLite 只改 store.js 一个文件
-
----
-
-## 七、宠物系统详细规格
-
-### 7.1 Phase 1 范围（更多版）
-
-- 悬浮宠物窗口（透明无边框、置顶）
-- 外观：Emoji 占位，先跑通逻辑
-- 闲置动画 + 可拖拽 + 随机走动 + 躲避鼠标
-- 单击：对话气泡（心情/等级驱动，叠加显示，2秒消失）
-- 双击：窗口变形展开为面板
-- 右键菜单：喂食、状态、退出
-- 亲密度数值 + 基础喂食功能
-- 拖到屏幕边缘 → 赶跑（跑出屏幕，30秒~1分钟后回来）
-- 窗口边框攀爬：Phase 2 再做
-
-### 7.2 宠物成长系统
-
-| 维度 | 说明 |
+| 文档 | 内容 |
 |------|------|
-| 等级 | 数字变大，外观进化（团子 → 长大 → 进化形态） |
-| 解锁 | 新台词、新动作、服饰/道具购买、新游戏模块 |
-| 经济 | 农场产食材合成食物喂宠物；其他游戏产金币买服饰 |
-
-### 7.3 台词系统
-
-- 10~20 条基础台词库
-- 根据宠物心情和等级选择台词类别
-- 连续点击叠加气泡
+| `docs/architecture.md` | 7 条 ADR（全项目架构决策） |
+| `docs/conventions.md` | 编码规范 + 🚫 跨模块 import 禁止 |
+| `docs/events.md` | EventBus 事件清单 + 主进程推送事件 |
+| `docs/pet-movement-design.md` | 宠物移动系统详细设计 |
+| `specs/pet-system.md` | 宠物 Phase 1 需求 + 验收标准 |
 
 ---
 
-## 八、协作规则
+## 实现进度
 
-### 8.1 Win + Mac 双机协作
+### ✅ 已完成（在 main 分支）
 
-- 代码通过 GitHub 同步（本地跑通后关联仓库）
-- 每次切换设备前先 `git pull`
-- 同一时间只在一台设备上改代码
-- 两头都要改 → 各开 feature 分支，不直接在 main 上改
-
-### 8.2 多 Claude Code 窗口协作
-
-| 窗口 | 角色 | 职责 |
+| 组件 | 文件 | 备注 |
 |------|------|------|
-| 🏛️ 架构窗口（本窗口） | 决策中心 | 讨论需求、做架构决策、更新 CLAUDE.md / specs / architecture.md |
-| 🔨 实现窗口 | 写代码 | 读文档、按 spec 实现、不自作主张做重大决策 |
+| EventBus | `shared/event-bus.js` | on/off/once/emit，try-catch 隔离，DEBUG 日志 |
+| PetState | `shared/pet-state.js` | 薄：async init/get(副本)/set(发事件+防抖存盘)/subscribe |
+| 事件常量 | `shared/events.js` | 14 个 EventBus 事件 + 注意 PET_SHOOED 已修正 |
+| 模块注册表 | `shared/module-registry.js` | 目前只有 pet-status |
+| 统一存取 | `main/storage/store.js` | initStore/getState/setState |
+| 主进程窗口 | `main/index.js` | 单窗口双状态 + 移窗/光标/状态 IPC |
+| 安全桥接 | `main/preload.js` | 所有 IPC 接口（含 onUserDrag 返回取消函数） |
+| 宠物 HTML | `pet/pet.html` | type="module" 已加 ✅ |
 
-**所有窗口通用铁律**：
-> ⚠️ **不要猜测用户意图。不确定、不知道、重要决策点 → 必须询问用户。**
+### 🔨 已完成（在 feature/pet-movement 分支，待合并）
 
-- 每个窗口只负责自己模块的文件
-- 不同窗口绝不改同一个文件
-- 每次会话结束更新 `docs/progress.md`
+| 组件 | 文件 | 备注 |
+|------|------|------|
+| 宠物移动 | `pet/pet.js` | CSS 原生拖拽 + 随机走动，~110 行 |
+| 宠物样式 | `pet/pet.css` | 呼吸/轻晃/waddle 动画 |
+| 纯几何 | `pet/pet-motion.mjs` | distance/isCursorNear/wanderTarget 等，6/6 测试过 |
+| 状态 IPC | `main/ipc/pet-ipc.js` | 整体覆盖 + 空快照保护，已接线到 index.js |
 
-### 8.3 Win + Mac 并行开发
+### ⏳ 待实现
 
-```
-Win:  feature/pet-system     → 核心系统（主进程、宠物）
-Mac:  feature/word-game      → 独立模块（游戏、specs）
-```
+| 任务 | 依赖 |
+|------|------|
+| 对话气泡系统 | pet 移动完成 |
+| 双击面板切换 | pet 移动完成 |
+| 右键菜单 IPC 对接 | — |
+| 面板状态页（宠物属性展示）| dashboard.js |
+| dashboard.js + dashboard.css | — |
+| 躲避光标（搁置）| 需主进程侧方案 |
 
-注意：`src/main/` 和 `package.json` 是共享区，需协调谁改
+### ⏳ 未来模块
 
-### 8.4 Git 工作流
-
-- 分支命名：`feature/xxx`
-- Commit 语言：英文
-- main 保持稳定可运行
-
-### 8.5 子代理使用时机
-
-项目初期不用。以下场景再考虑：
-- 需要同时搜索/阅读大量文件
-- 修改完成后需要代码审查
-- 需要研究某个技术方案
-
----
-
-## 九、本会话实施步骤
-
-| # | 步骤 | 状态 |
-|---|------|------|
-| 1 | 讨论并确认所有规则和架构 | ✅ 基本完成 |
-| 2 | 生成 CLAUDE.md | ⏳ |
-| 3 | 初始化 Electron 项目（npm init + electron-forge） | ⏳ |
-| 4 | 创建目录结构和基础文档 | ⏳ |
-| 5 | 写出宠物悬浮窗口最小可运行版本 | ⏳ |
-| 6 | 验证 | ⏳ |
+单词（Phase 2）、2048（Phase 2）、农场（Phase 2）、超市（待规划）
 
 ---
 
-## 十、仍需讨论
+## 已知问题和交接注意事项
 
-- [ ] 宠物初始屏幕位置？（右下角？）
-- [ ] Phase 1 "喂食"功能具体怎么交互？
-- [ ] 模块做完宠物后，下一个做哪个？
+1. 🔴 **dashboard.html 脚本标签**：已加 type="module" ✅
+2. 🟡 **-webkit-app-region: drag 与点击冲突**：拖拽用了 CSS 原生拖拽，会拦截 click/mousedown。后续做气泡（单击）和面板（双击）时，需在交互元素上加 `-webkit-app-region: no-drag`。详见 `docs/pet-movement-design.md` 第 6 节。
+3. 🟡 **躲避光标已搁置**：IPC 拉光标延迟高，后续考虑主进程侧实现
+4. 🟡 **PET_STATE_CHANGED 通用事件**：待授权事件常量新增
+5. 🟡 **event-bus.js DEBUG=true**：开发模式日志，生产环境需要开关
+6. 🟢 **pet-state.js 直接依赖 window.electronAPI**：全局依赖，限制了单测。暂不改
+
+---
+
+## 待决策事项
+
+- [ ] 宠物做完后，下一个模块做哪个？
+- [ ] Phase 1 食物价格（初版不需要，先记着）
+
+---
+
+## 分支状态
+
+| 分支 | 状态 | 说明 |
+|------|------|------|
+| `main` | ✅ 稳定 | 含所有基础设施 |
+| `feature/pet-movement` | 🔨 进行中 | pet 移动系统，待合并回 main |
+
+---
+
+## 协作要点
+
+- 每一任架构窗口在此文件末尾追加 "202X-XX-XX — 架构窗口会话记录"
+- 实现窗口只读不写此文件
+- 架构决策变更时更新对应的 docs/* 文件，不要只改此文件

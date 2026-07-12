@@ -7,7 +7,7 @@ export const EVENTS = {
   PET_MOOD_CHANGED:    'pet:mood:changed',
   PET_LEVEL_UP:        'pet:level:up',
   PET_FED:             'pet:fed',
-  PET_SHOOD:           'pet:shooed',
+  PET_SHOOED:          'pet:shooed',
   PET_RETURNED:        'pet:returned',
 
   // 经济系统

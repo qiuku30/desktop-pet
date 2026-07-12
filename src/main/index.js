@@ -26,27 +26,8 @@ const DASHBOARD_MODE = {
 
 let mainWindow = null;
 let currentMode = 'pet'; // 'pet' | 'dashboard'
+let isAutoMoving = false; // 区分自动走动 vs 用户拖拽
 
-let cursorTimer = null; // 全局光标轮询句柄
-
-// 使用递归 setTimeout（非 setInterval）：上一次 send 完成后才排下一次，
-// 防止事件循环短暂阻塞后积压的定时器一口气轰炸渲染进程。
-// 50ms（20fps）对光标检测和拖拽跟随足够流畅。
-function startCursorPolling() {
-  if (cursorTimer) return;
-  function poll() {
-    if (!mainWindow || mainWindow.isDestroyed()) return;
-    const { x, y } = screen.getCursorScreenPoint();
-    mainWindow.webContents.send('cursor:pos', { x, y });
-    cursorTimer = setTimeout(poll, 50);
-  }
-  poll();
-}
-
-function stopCursorPolling() {
-  clearTimeout(cursorTimer);
-  cursorTimer = null;
-}
 
 // ── 创建窗口 ──
 function createWindow() {
@@ -62,12 +43,14 @@ function createWindow() {
 
   mainWindow.loadFile(path.join(__dirname, '../renderer/pet/pet.html'));
 
-  mainWindow.webContents.on('did-finish-load', () => {
-    startCursorPolling();
+  // 用户拖拽检测：OS 原生拖拽不经过 IPC，move 事件里 !isAutoMoving = 用户拖拽
+  mainWindow.on('move', () => {
+    if (!isAutoMoving) {
+      mainWindow.webContents.send('user:drag');
+    }
   });
 
   mainWindow.on('closed', () => {
-    stopCursorPolling();
     mainWindow = null;
   });
 
@@ -94,7 +77,6 @@ function createWindow() {
 
 // ── 窗口模式切换 ──
 function switchToDashboard() {
-  stopCursorPolling();
   currentMode = 'dashboard';
 
   // 保存宠物态时的位置和大小
@@ -121,7 +103,6 @@ function switchToPet() {
   // 缩回宠物大小
   mainWindow.setSize(PET_MODE.width, PET_MODE.height);
   mainWindow.center();
-  startCursorPolling();
 }
 
 // ── IPC 处理 ──
@@ -139,6 +120,12 @@ function setupIPC() {
   // 宠物状态读写 — 委托给 pet-ipc 模块（整体覆盖 + 空快照保护）
   registerPetIPC(ipcMain);
 
+  // 光标拉取：渲染进程在自己的 rAF 循环里主动调，渲染忙时自然降频，永不积压
+  ipcMain.handle('cursor:pos:get', () => {
+    const { x, y } = screen.getCursorScreenPoint();
+    return { x, y };
+  });
+
   // 获取当前窗口模式
   ipcMain.handle('window:mode', () => currentMode);
 
@@ -148,15 +135,12 @@ function setupIPC() {
     return { x, y };
   });
 
-  // 移窗到屏幕绝对坐标，clamp 到当前显示器工作区，返回真实落点
+  // 自动走动：标记 isAutoMoving，防止被 move 事件误判为用户拖拽
   ipcMain.handle('window:move', (_, { x, y }) => {
-    const [w, h] = mainWindow.getSize();
-    const { workArea } = screen.getDisplayNearestPoint({ x, y });
-    const clampedX = Math.max(workArea.x, Math.min(x, workArea.x + workArea.width - w));
-    const clampedY = Math.max(workArea.y, Math.min(y, workArea.y + workArea.height - h));
-    mainWindow.setPosition(Math.round(clampedX), Math.round(clampedY));
-    const [ax, ay] = mainWindow.getPosition();
-    return { x: ax, y: ay };
+    isAutoMoving = true;
+    mainWindow.setPosition(Math.round(x), Math.round(y));
+    isAutoMoving = false;
+    return { x, y };
   });
 }
 

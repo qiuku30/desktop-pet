@@ -50,7 +50,8 @@ desktop-pet/
 │   ├── architecture.md          # 全局架构决策 (ADR)
 │   ├── progress.md              # 开发进度追踪
 │   ├── conventions.md           # 编码规范
-│   └── events.md                # EventBus 事件清单
+│   ├── events.md                # EventBus 事件清单
+│   └── pet-movement-design.md   # 宠物移动系统设计
 ├── specs/                       # 需求文档（用户视角："要做什么"）
 │   ├── pet-system.md
 │   ├── word-game.md
@@ -65,6 +66,11 @@ desktop-pet/
 │   │   └── DESIGN.md
 │   ├── renderer/
 │   │   ├── pet/                 # 宠物模块
+│   │   │   ├── pet.html
+│   │   │   ├── pet.js
+│   │   │   ├── pet.css
+│   │   │   ├── pet-motion.mjs   # 纯几何工具
+│   │   │   └── DESIGN.md
 │   │   ├── dashboard/           # 面板模块
 │   │   ├── games/               # 游戏模块
 │   │   ├── shared/              # 公共基础设施
@@ -75,7 +81,6 @@ desktop-pet/
 │   │   │   ├── constants.js
 │   │   │   └── utils.js
 │   │   └── assets/              # 静态资源
-│   └── package.json
 └── .gitignore
 ```
 
@@ -118,10 +123,12 @@ desktop-pet/
 
 ## 窗口角色与文件权限
 
-### 🏛️ 架构决策窗口（本窗口）
+### 🏛️ 架构决策窗口
 
 - 讨论需求、做架构决策
-- 唯一有权修改：`CLAUDE.md`、`docs/architecture.md`、`docs/conventions.md`、`specs/*`
+- 启动必读：`CLAUDE.md` → `PROJECT_BRIEF.md`（总览全局状态）
+- 唯一有权修改：`CLAUDE.md`、`PROJECT_BRIEF.md`、`docs/architecture.md`、`docs/conventions.md`、`specs/*`
+- 每次会话结束必须更新 `PROJECT_BRIEF.md` 和 `docs/progress.md`
 
 ### 🔨 实现窗口
 

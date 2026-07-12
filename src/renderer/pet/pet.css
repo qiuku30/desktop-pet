@@ -24,23 +24,17 @@ html, body {
   justify-content: center;
   background: transparent;
   overflow: visible;
+  /* OS 原生拖拽（整窗可拖） */
+  -webkit-app-region: drag;
 }
 
 #pet-body {
   font-size: 72px;
   line-height: 1;
-  cursor: grab;
-  /* 闲置：呼吸 + 偶尔轻晃。transform-origin 底部中心，晃动更自然 */
+  /* 闲置：呼吸 + 偶尔轻晃 */
   transform-origin: 50% 90%;
   animation: breathe 2.5s ease-in-out infinite, sway 6s ease-in-out infinite;
   will-change: transform;
-}
-
-/* 被拖拽：放大表示「被抓住」，暂停闲置动画 */
-#pet-body.grabbed {
-  cursor: grabbing;
-  animation: none;
-  transform: scale(1.15);
 }
 
 /* 走动：轻微 squash & stretch，让滑行有生气 */

@@ -95,3 +95,20 @@ function loadModule(moduleId) {
 ```
 
 **Phase 3 触发条件**：模块数量 ≥ 3 时强制执行。
+
+---
+
+## ADR-007: 桌面悬浮窗拖拽使用 CSS 原生，不通过 IPC
+
+**决策**：宠物窗口拖拽使用 CSS `-webkit-app-region: drag`（OS 原生），
+自动移动（走动、躲避）通过 `window:move` IPC。两者通过主进程 `isAutoMoving`
+标记互斥。
+
+**理由**：
+- JS 驱动拖拽 = `pointermove` → `ipcRenderer.invoke('window:move')` → `setPosition`。
+  这条 IPC 链路有不可消除的延迟，5 个版本的坐标计算（含 DPI 对齐）均无法消除偏移。
+- OS 原生拖拽零延迟，完美跟随光标。
+- 自动移动不需要实时精度，IPC 延迟可接受。
+
+**教训**：桌面级应用的实时交互优先使用 OS 原生机制。IPC 适合自动化，不适合
+帧级实时操作。

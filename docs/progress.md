@@ -27,7 +27,7 @@
 | 目录结构搭建 | ✅ | 37 个文件骨架 |
 | .gitignore | ✅ | 含 node_modules/ dist/ .claude/ |
 | CLAUDE.md | ✅ | 含架构、规则、协作模板 |
-| docs/architecture.md | ✅ | 6 条 ADR |
+| docs/architecture.md | ✅ | 7 条 ADR |
 | docs/conventions.md | ✅ | 含禁止跨模块 import |
 | docs/events.md | ✅ | 14 个事件，含参数和触发时机 |
 | docs/progress.md | ✅ | 本文件 |
@@ -37,8 +37,8 @@
 
 | 任务 | 状态 | 备注 |
 |------|------|------|
-| index.js — 窗口创建 + 模式切换 | ✅ | 单窗口双状态 + 右键菜单 + IPC；宠物状态通道已委托给 pet-ipc；新增移窗 IPC + 全局光标推流（宠物态） |
-| preload.js — 安全 IPC 桥接 | ✅ | contextBridge；新增 moveWindow / getWindowPosition / onCursorPos |
+| index.js — 窗口创建 + 模式切换 | ✅ | 单窗口双状态 + 右键菜单 + IPC；isAutoMoving 标记区分自动/用户拖拽；move 事件推送 user:drag |
+| preload.js — 安全 IPC 桥接 | ✅ | contextBridge；moveWindow / getWindowPosition / getCursorPos / onUserDrag |
 | store.js — 统一数据存取层 | ✅ | JSON 文件，initStore/getState/setState |
 | ipc/pet-ipc.js — 宠物 IPC | ✅ | 导出 registerPetIPC(ipcMain)；整体覆盖写盘 + 空快照保护；已接线 |
 | ipc/storage-ipc.js — 存储 IPC | ⏳ | 占位，待实现 |
@@ -59,7 +59,7 @@
 | 任务 | 状态 | 备注 |
 |------|------|------|
 | pet.html — 宠物窗口结构 | ✅ | emoji + 气泡容器 |
-| pet.js — 宠物逻辑 | ✅ | 状态机：拖拽 / 随机走动 / 靠近才躲鼠标 / 闲置；桌面级移窗（气泡待后续子任务） |
+| pet.js — 宠物逻辑 | ✅ | 状态机：原生拖拽（CSS -webkit-app-region: drag）/ 随机走动（moveWindow IPC）；躲避光标已搁置；气泡待后续 |
 | pet-motion.mjs — 纯几何计算 | ✅ | distance/isCursorNear/fleeCenter/wanderTarget/中心↔左上角换算；node --test 6/6 |
 | pet.css — 宠物样式 | ✅ | 透明背景 + 居中 emoji + 呼吸/轻晃闲置动画 + .grabbed/.moving 钩子 |
 | DESIGN.md | ✅ | 已细化：状态机、pet-motion 清单、坐标契约、class 钩子 |
@@ -87,19 +87,29 @@
 
 ## 暂缓
 
-- 单词模块 (Phase 2)
 - 2048 模块 (Phase 2)
+- 单词模块 (Phase 2)
 - 农场模块 (Phase 2)
 - 超市模块 (待规划)
 - 窗口边框攀爬 (Phase 2)
 - 模块错误隔离 (Phase 3)
+- 躲避光标（搁置，IPC 延迟高，后续可考虑在主进程侧做）
 
 ---
 
 ## 已知问题
 
+- [x] 🔴 **关键（已修复）**: JS 拖拽持续偏移。根因：IPC（renderer → setPosition）每帧有延迟，无法追上用户拖拽速度。
+      解决方案：CSS `-webkit-app-region: drag`（OS 原生拖拽，零延迟零偏移）+ 主进程 `isAutoMoving` 标记区分自动/用户移动。
+
 - [x] 🔴 **关键**: pet.html 的 `<script>` 标签缺少 `type="module"`。~~已修复~~
       三个 `<script>`（event-bus.js、pet-state.js、pet.js）均已加 `type="module"`。
+
+- [x] 🔴 **关键（已修复）**: dashboard.html 的 `<script>` 标签缺少 `type="module"`。
+      和 pet.html 同样的 bug，加 `type="module"` 解决。
+- [ ] 🟡 **后续窗口注意**: `#pet-container` 使用 `-webkit-app-region: drag` 实现原生拖拽，
+      但会拦截子元素的 `click`/`mousedown`/`mouseup`。后续做气泡（单击）和面板（双击）时，
+      需在交互元素上加 `-webkit-app-region: no-drag`。详见 `docs/pet-movement-design.md` 第 6 节。
 
 ---
 
@@ -155,26 +165,27 @@
 
 ---
 
-## 设计决策记录 — 宠物移动系统（pet.js / pet.css / pet-motion.mjs）
+## 设计决策记录 — 宠物移动系统 v2（pet.js / pet.css / pet-motion.mjs）
 
 详见 `docs/pet-movement-design.md`。要点：
 
-- **桌面级移动**：整个 200×200 窗口在屏幕上移动，非窗口内挪 emoji。渲染进程 `pet.js` 是大脑，
-  维护窗口左上角坐标；主进程只当手脚（新增 `window:move` / `window:position:get` / `cursor:pos` 推流）。
-- **坐标契约**：屏幕绝对像素，锚点为窗口左上角；clamp 到显示器 workArea 的逻辑在主进程 move handler，
-  返回真实落点回填渲染端 `winPos`。
+- **桌面级移动**：整个 200×200 窗口在屏幕上移动；渲染进程 `pet.js` 是大脑，主进程当手脚。
+- **拖拽方案（已修复偏移 bug）**：
+  - ❌ v1：JS 驱动拖拽（`pointermove` → `ipcRenderer.invoke('window:move')` → `mainWindow.setPosition`）。
+    根因：IPC 链路每帧有延迟，累积即偏移，无论推/拉模型、coalesce、DPI 换算均无法根治。
+  - ✅ v2：CSS `-webkit-app-region: drag`（OS 原生拖拽）。窗口管理器直接移动，零延迟零偏移。
+    配合主进程 `isAutoMoving` 标记 + `mainWindow.on('move')` 事件 + `user:drag` IPC 推送，
+    渲染端感知用户拖拽后暂停自动化（走动等），松手 300ms 后恢复。
+- **坐标契约**：所有坐标为屏幕绝对像素（设备像素），窗口左上角为锚点。
 - **状态机优先级**：`DRAGGING > FLEEING > WANDERING > IDLE`。
-  - 拖拽：复用全局光标流，`moveWindow(cursor - offset)`，无缓动；位移 <5px 视为 tap（留空钩子给气泡子任务）。
-  - 躲避：光标 <120px 时一次性弹开 ~150px（缓动），拖拽时不躲；`fleeing` 标志防连触。
-  - 走动：每 5~12s 随机挑附近目标点，~1.2s 缓动滑过去，`.moving` 做 squash&stretch。
-  - 面板态：`getWindowMode()==='dashboard'` 全暂停，主进程也停光标推流。
+  - 拖拽：OS 原生，渲染端收到 `user:drag` 时暂停走动、取消当前滑行；恢复时重新 `getWindowPosition()` 同步真实位置。
+  - 躲避：⚠️ 已搁置。IPC 拉光标延迟高，后续可考虑在主进程侧做检测。
+  - 走动：每 5~12s 随机挑附近目标点（`wanderTarget`），~1.2s 缓动（easeOutCubic），`glideTo` 用自增 token 取消旧帧。
+    `doWander` 检查面板态（dashboard 不走）和 `autoPaused`（用户拖拽中不走）。
+  - 面板态：`getWindowMode()==='dashboard'` 时走动暂停。
 - **纯几何** `pet-motion.mjs`：`distance` / `isCursorNear` / `fleeCenter` / `wanderTarget` /
-  `centerToTopLeft` / `topLeftToCenter`，无 DOM/IPC，`node --test` 覆盖。
-- **滑行取消**：`glideTo` 用自增 token 让被更高优先级动作接管的旧帧自我作废；非走动滑行开始时归一化清 `.moving`。
-- **协作教训**：本轮曾因两个窗口并发改同一 `feature/pet-movement` 分支导致改动互相还原（详见 git 历史 e8b58e4/3adcd92）。
-  已按 CLAUDE.md：同一时间只在一个窗口/设备改，切换前先 pull。
-
-### 遗留 Minor（下一轮可清理）
-- pet.css：`.moving` 动画列表里的 `breathe` 被 `waddle` 覆盖，是死代码，可删。
-- pet.js：`commitMove` 在 await 前先写 `winPos=pos`（未 clamp），屏幕边缘按下抓取可能有小跳；
-  在途 glide 帧未做面板态守卫（主进程已 gate 光标流，风险低）。
+  `centerToTopLeft` / `topLeftToCenter`，无 DOM/IPC，`node --test` 6/6 覆盖。
+- **主进程改动**：
+  - `isAutoMoving` 标记：`window:move` handler 设为 true → setPosition → false，防止自动移动被误判为用户拖拽。
+  - `mainWindow.on('move')`：`!isAutoMoving` 时推送 `user:drag` 到渲染端。
+  - `preload.js`：暴露 `onUserDrag(callback)` — 注册/取消 `user:drag` 事件监听。
