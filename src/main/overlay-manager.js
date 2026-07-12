@@ -2,7 +2,7 @@
 const { BrowserWindow } = require('electron');
 const path = require('path');
 
-// window.id → { resolve, reject, opts }
+// window.id → { resolve, opts }
 const pendingOverlays = new Map();
 
 /**
@@ -55,6 +55,7 @@ function showOverlayWindow(parentWindow, opts) {
       frame: false,
       alwaysOnTop: true,
       skipTaskbar: true,
+      resizable: false,
       show: false,
       webPreferences: {
         nodeIntegration: false,
@@ -68,7 +69,13 @@ function showOverlayWindow(parentWindow, opts) {
       win.show();
     });
 
-    pendingOverlays.set(win.id, { resolve, reject: _reject, opts });
+    pendingOverlays.set(win.id, { resolve, opts });
+
+    // 加载失败时 reject Promise，防止挂起
+    win.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
+      pendingOverlays.delete(win.id);
+      _reject(new Error(`Overlay failed to load: ${errorDescription} (${errorCode})`));
+    });
 
     win.loadFile(path.join(__dirname, '../renderer/overlay/overlay.html'));
 
