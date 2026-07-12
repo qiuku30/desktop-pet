@@ -42,6 +42,7 @@
 | store.js — 统一数据存取层 | ✅ | JSON 文件，initStore/getState/setState |
 | ipc/pet-ipc.js — 宠物 IPC | ✅ | 导出 registerPetIPC(ipcMain)；整体覆盖写盘 + 空快照保护；已接线 |
 | ipc/storage-ipc.js — 存储 IPC | ⏳ | 占位，待实现 |
+| overlay-manager.js — 通用悬浮面板 | ✅ | showOverlayWindow + initOverlayIPC + Promise Map；同一时间单例 |
 
 ### 渲染进程 — 共享层 (src/renderer/shared/)
 
@@ -54,14 +55,22 @@
 | constants.js | ⏳ | 占位 |
 | utils.js | ⏳ | 占位 |
 
+### 渲染进程 — Overlay (src/renderer/overlay/)
+
+| 任务 | 状态 | 备注 |
+|------|------|------|
+| overlay.html — 骨架 | ✅ | handle（drag）+ content（no-drag） |
+| overlay.js — 逻辑 | ✅ | 配置注入 + 事件委托 data-overlay-result |
+| overlay.css — 样式 | ✅ | 透明背景 + 毛玻璃 + 暗色主题 |
+
 ### 渲染进程 — 宠物 (src/renderer/pet/)
 
 | 任务 | 状态 | 备注 |
 |------|------|------|
 | pet.html — 宠物窗口结构 | ✅ | emoji + 气泡容器 |
-| pet.js — 宠物逻辑 | ✅ | 状态机：原生拖拽 / 随机走动 / 对话气泡（mood×level 台词库，300ms 延迟 + 拖拽检测）/ 双击切换面板 / PetState.init() / 动态窗口尺寸 |
+| pet.js — 宠物逻辑 | ✅ | 状态机：原生拖拽 / 随机走动 / 对话气泡 / 双击面板 / PetState.init() / 喂食 flyout（原则5：FOODS 配置 + foodInventory 数据分离） |
 | pet-motion.mjs — 纯几何计算 | ✅ | distance/isCursorNear/fleeCenter/wanderTarget/中心↔左上角换算；node --test 6/6 |
-| pet.css — 宠物样式 | ✅ | 透明背景 + padding 拖拽手柄 + no-drag 点击穿透 + 呼吸/轻晃闲置动画 + .moving 钩子 + 气泡样式 + bubble-pop 动画 |
+| pet.css — 宠物样式 | ✅ | 透明背景 + padding 拖拽手柄 + no-drag 点击穿透 + 闲置/走动动画 + 气泡 + feed-flyout 样式 |
 | DESIGN.md | ✅ | 已细化：状态机、pet-motion 清单、坐标契约、class 钩子 |
 
 ### 渲染进程 — 面板 (src/renderer/dashboard/)
@@ -115,10 +124,10 @@
 
 ## 待授权（下一轮）
 
-- [ ] `events.js`: 新增 `PET_STATE_CHANGED` 通用事件，payload `{ key, value, oldValue }`
+- [x] `events.js`: 新增 `PET_STATE_CHANGED` 通用事件，payload `{ key, value }`
       用途：面板/新模块不 care 具体哪个 key，只想知道「宠物状态变了」，监听一个即可。
       配合 `pet-state.js` 的 `set()`：每个 key 都额外发此事件（监听方自行按 key 过滤）。
-      当前先不加，不阻塞进度。
+      ✅ infra-02 已实现。
 
 ---
 
@@ -226,3 +235,17 @@
 
 **wanderEnabled 开关**
 - 右键菜单新增 "自动走动" checkbox，主进程 `wanderEnabled` 变量 + `wander:toggle` IPC 推送到渲染端
+
+---
+
+## 设计决策记录 — Overlay 通用悬浮面板（infra-03, 2026-07-12）
+
+- **架构**：独立 BrowserWindow（parent=宠物窗口），frameless transparent alwaysOnTop skipTaskbar resizable:false
+- **API**：`showOverlay({ html, width, height, x, y })` → Promise\<result\>
+- **定位**：x/y 为相对父窗口左上角偏移量
+- **拖拽**：CSS `-webkit-app-region: drag`（对齐 ADR-007）
+- **关闭**：仅手动关闭（点 `[data-overlay-result]` 按钮）
+- **单例**：同一时间只允许一个 overlay
+- **IPC 通道**：`overlay:show` / `overlay:config:get` / `overlay:close`
+- **容错**：`did-fail-load` 处理加载失败不挂 Promise；`closed` 事件 resolve null 清理
+- **详见**：`docs/overlay-design.md`
