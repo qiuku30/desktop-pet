@@ -288,4 +288,4 @@ async function initStatus() {
   renderAll()
 }
 
-initStatus()
+initStatus().catch(err => console.error('[Dashboard] 状态初始化失败:', err))
