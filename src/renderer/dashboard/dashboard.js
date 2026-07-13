@@ -145,12 +145,10 @@ function renderLevel() {
   const label = required === Infinity ? 'MAX' : `${exp} / ${required}`
   card.innerHTML = `
     <span class="level-value">Lv.${level}</span>
-    <div class="level-exp">
-      <div class="progress-bar">
-        <div class="progress-fill progress-fill--high" style="width:${pct}%"></div>
-      </div>
-      <span class="exp-label">经验 ${label}</span>
+    <div class="progress-bar">
+      <div class="progress-fill progress-fill--blue" style="width:${pct}%"></div>
     </div>
+    <span class="exp-value">${label}</span>
   `
 }
 
