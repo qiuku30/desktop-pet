@@ -143,14 +143,11 @@ function renderLevel() {
   const required = calcRequiredExp(level)
   const pct = required === Infinity ? 100 : Math.min(100, Math.round((exp / required) * 100))
   const label = required === Infinity ? 'MAX' : `${exp} / ${required}`
-  let cls = 'progress-fill--high'
-  if (pct <= 30) cls = 'progress-fill--low'
-  else if (pct <= 60) cls = 'progress-fill--mid'
   card.innerHTML = `
     <span class="level-value">Lv.${level}</span>
     <div class="level-exp">
       <div class="progress-bar">
-        <div class="progress-fill ${cls}" style="width:${pct}%"></div>
+        <div class="progress-fill progress-fill--high" style="width:${pct}%"></div>
       </div>
       <span class="exp-label">经验 ${label}</span>
     </div>
