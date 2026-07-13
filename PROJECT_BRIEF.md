@@ -277,7 +277,67 @@ GitHub：https://github.com/qiuku30/desktop-pet
 - 三处硬编码 100 → calcMaxSatiety(level)
 - renderSatiety() 进度条改为百分比计算
 
-**当前全局状态**：
-- 52 commits 待 push
-- 饱腹消耗系统完成 ✅
-- 待决策：下一步做什么模块？
+## 2026-07-13 — ARCH-03 最终交接
+
+### ARCH-03 完整成果
+
+| 类别 | 窗口 | 内容 |
+|------|------|------|
+| 审计 | ARCH-03 | 全面审计（10原则+8ADR），发现修6项，撤1项误判 |
+| 共享层 | infra-06 | feed-service.js（统一食物配置+喂食逻辑） |
+| 共享层 | infra-07 | exp-service.js（经验系统，31测试） |
+| 共享层 | infra-08 | satiety-service.js（饱腹衰减系统） |
+| 共享层 | infra-09 | tooltip-manager.js（独立BrowserWindow Tooltip） |
+| 宠物 | pet-07 | 互动经验+喂食经验+升级气泡 |
+| 面板 | dash-02 | RPG角色卡两层布局重构 |
+| 面板 | dash-01 | exp蓝色进度条、饱腹上限动态化、食物Tooltip、多次修复 |
+| 架构 | ARCH-03 | CLAUDE.md模板+收尾检查清单、session-log按分类重组、FEED_CONFIG重构 |
+| 审计 | ARCH-03 | 三轮审计（main/renderer/docs），修6项 |
+
+### 当前全局状态
+
+```
+main 分支，67 commits 领先 origin/main（未推送）
+工作区干净，37 测试全部通过
+22 个窗口全部登记在 session-log.md
+```
+
+### 共享层服务总览
+
+| 服务 | 文件 | 职责 |
+|------|------|------|
+| EventBus | event-bus.js | 模块通信总线 |
+| PetState | pet-state.js | 宠物状态管理（init/get/set/subscribe/flush） |
+| 事件常量 | events.js | 15 个事件定义 |
+| 模块注册 | module-registry.js | 面板导航驱动（当前空，等子模块） |
+| 喂食服务 | feed-service.js | FOODS配置 + consumeFood/applyFeed/emitFed |
+| 经验服务 | exp-service.js | 升级公式 + 溢出继承 + 每日互动上限 |
+| 饱腹服务 | satiety-service.js | 衰减结算 + 最大饱腹值 + 心情建议 |
+
+### 待 ARCH-04 处理
+
+- [ ] **推送 GitHub**：网络恢复后 `git push origin main`（67 commits）
+- [ ] **删除远程残留分支**：`origin/feature/shared-event-bus-pet-state`、`origin/feature/pet-movement`
+- [ ] **删除本地残留分支**：`feature/pet-movement`（比 main 少 1 commit，已无价值）
+- [ ] **决定下一步**：宠物核心系统（喂食/经验/饱腹）已完成，下一个模块？
+- [ ] 🟡 **已知问题 #5**：event-bus.js DEBUG=true 生产环境开关
+- [ ] 🟡 **已知问题 #7**：整体覆盖写盘风险（Phase 2 升级 SQLite 时解决）
+- [ ] 🟡 **已知问题 #9**：loadFile 切换 = 渲染进程重建（Phase 2 考虑双 webview）
+- [ ] 🟢 **低优先级**：constants.js/utils.js 空占位、storage-ipc.js 空占位、coins 字段有 UI 无逻辑
+- [ ] 🟢 **docs/superpowers/** 目录为自动生成，是否纳入 .gitignore
+
+### ARCH-03 重要设计决策
+
+1. **原则 5 深化**：FEED_CONFIG / EXP_CONFIG / SATIETY_CONFIG 全部配置化，和 EXP_CONFIG 同级
+2. **Tooltip vs Overlay**：tooltip 不复用 overlay-manager，走独立轻量 IPC 通道（fire-and-forget + data:URL）
+3. **饱腹衰减用时间戳差值**：避免高频定时器，离线也生效，比 setInterval 方案更优
+4. **最大饱腹值随等级增长**：`calcMaxSatiety = 100 + floor(level/5)×20`，applyFeed 向后兼容
+5. **新窗口启动模板**：末尾加"先讨论，商量出结果后再行动"；架构窗口加"每改动同步文档"
+6. **收尾检查清单**：每个实现窗口结束需逐项完成代码合规自查 + 改动总结 + 文档同步 + 上报架构窗口
+
+### 协作提醒
+
+- 所有新功能从 main 切 feature 分支，不要直接在 main 改
+- 实现窗口超过模块边界改文件 → 必须在 session-log 登记越界授权
+- 每开新窗口/做完改动 → 同步 PROJECT_BRIEF、progress、session-log
+- 具体设计细节在实现窗口内讨论，架构窗口只锁死方向
