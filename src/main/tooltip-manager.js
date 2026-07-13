@@ -15,12 +15,15 @@ function showTooltipWindow(mainWindow, { html, x, y }) {
   const screenX = px + x;
   const screenY = py + y;
 
-  // 窗口已存在 → 移动 + 更新内容 + 显示
+  // 窗口已存在 → 先隐藏，更新内容，加载完成后显示（避免旧内容闪烁）
   if (tooltipWin && !tooltipWin.isDestroyed()) {
+    tooltipWin.hide();
     tooltipWin.setPosition(screenX, screenY);
     const htmlBase64 = Buffer.from(html, 'utf-8').toString('base64');
+    tooltipWin.once('ready-to-show', () => {
+      if (tooltipWin && !tooltipWin.isDestroyed()) tooltipWin.showInactive();
+    });
     tooltipWin.loadURL('data:text/html;charset=utf-8;base64,' + htmlBase64);
-    tooltipWin.showInactive();
     return;
   }
 

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Menu, dialog, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, screen } = require('electron');
 const path = require('path');
 const { initStore, getState, setState } = require('./storage/store');
 const { registerPetIPC, isValidSnapshot } = require('./ipc/pet-ipc');
