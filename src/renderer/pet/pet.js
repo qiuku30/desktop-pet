@@ -10,6 +10,7 @@ import {
 import { PetState } from '../shared/pet-state.js'
 import { FOODS, consumeFood, applyFeed, emitFed } from '../shared/feed-service.js'
 import { checkDailyInteraction, addExp, getFoodExp, EXP_CONFIG } from '../shared/exp-service.js'
+import { SATIETY_CONFIG, calcMaxSatiety, calcDecay, reduceSatiety, suggestMood } from '../shared/satiety-service.js'
 
 // 动态窗口尺寸（配合 scaleFactor 自适应 + 用户缩放）
 function getWinSize() {
@@ -27,6 +28,7 @@ let resumeTimer = null
 let glideToken = 0
 let wanderTimer = null
 let wanderEnabled = true
+let satietyTickTimer = null
 
 // ── overlay 状态 ──
 let overlayActive = false
@@ -241,9 +243,47 @@ body.addEventListener('click', async (e) => {
   }, 300)
 })
 
+// ── 饱腹值衰减结算 ──
+
+// 执行一次衰减结算：计算时间差 → 扣饱腹 → 更新心情
+// 用于离线恢复和在线定时结算
+function settleSatietyDecay() {
+  const now = new Date().toISOString()
+  const lastUpdate = PetState.get('lastSatietyUpdate')
+  const satiety = PetState.get('satiety') ?? 0
+  const decay = calcDecay(lastUpdate, now)
+
+  if (decay > 0) {
+    const newSatiety = reduceSatiety(satiety, decay)
+    PetState.set('satiety', newSatiety)
+    PetState.set('lastSatietyUpdate', now)
+
+    const currentMood = PetState.get('mood') || 'neutral'
+    const suggestedMood = suggestMood(newSatiety, currentMood)
+    if (suggestedMood !== currentMood) {
+      PetState.set('mood', suggestedMood)
+    }
+  } else if (!lastUpdate) {
+    // 首次启动，初始化时间戳
+    PetState.set('lastSatietyUpdate', now)
+  }
+}
+
+// 启动在线定时结算（每 60s 一次）
+function startSatietyTick() {
+  if (satietyTickTimer) clearInterval(satietyTickTimer)
+  satietyTickTimer = setInterval(() => {
+    settleSatietyDecay()
+  }, SATIETY_CONFIG.onlineTickMs)
+}
+
 // ── 初始化 ──
 async function init() {
   await PetState.init()
+
+  // 结算离线衰减 + 启动在线定时器
+  settleSatietyDecay()
+  startSatietyTick()
 
   const pos = await window.electronAPI.getWindowPosition()
   winPos = pos
@@ -345,8 +385,10 @@ async function init() {
     const food = FOODS[result]
     if (!food) return
 
+    const level = PetState.get('level') || 1
     const satiety = PetState.get('satiety') || 0
-    if (satiety >= 100) {
+    const maxSatiety = calcMaxSatiety(level)
+    if (satiety >= maxSatiety) {
       showBubble('已经吃饱了 🍽')
       return
     }
@@ -355,20 +397,26 @@ async function init() {
     const { newInventory } = consumeFood(result, foodInventory)
     PetState.set('foodInventory', newInventory)
 
-    // 更新饱腹 + 亲密度
+    // 更新饱腹 + 亲密度（上限由等级决定）
     const intimacy = PetState.get('intimacy') || 0
-    const { newSatiety, newIntimacy } = applyFeed(satiety, intimacy, food)
+    const { newSatiety, newIntimacy } = applyFeed(satiety, intimacy, food, level)
     PetState.set('satiety', newSatiety)
     PetState.set('intimacy', newIntimacy)
+
+    // 饱腹恢复后心情自动恢复
+    const currentMood = PetState.get('mood') || 'neutral'
+    const suggestedMood = suggestMood(newSatiety, currentMood)
+    if (suggestedMood !== currentMood) {
+      PetState.set('mood', suggestedMood)
+    }
 
     // 发投喂事件
     emitFed(result)
 
-    // 喂食经验结算
+    // 喂食经验结算（复用外层 level，避免重复取值）
     const foodExp = getFoodExp(food)
     if (foodExp > 0) {
       const exp = PetState.get('exp') || 0
-      const level = PetState.get('level') || 1
       const addResult = addExp(exp, level, foodExp)
       PetState.set('exp', addResult.newExp)
       if (addResult.leveledUp) {

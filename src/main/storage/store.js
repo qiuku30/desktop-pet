@@ -20,6 +20,7 @@ const DEFAULT_STATE = {
   zoomLevel: 1.0,      // 窗口缩放倍率（0.75 / 1.0 / 1.25 / 1.5）
   dailyInteractionCount: 0,    // 今日互动次数
   lastInteractionDate: null,   // 上次互动日期（YYYY-MM-DD）
+  lastSatietyUpdate: null,     // 上次饱腹值结算时间戳（ISO 字符串）
   lastSaved: null,
 };
 

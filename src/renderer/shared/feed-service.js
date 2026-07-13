@@ -5,6 +5,7 @@
 
 import { EventBus } from './event-bus.js'
 import { EVENTS } from './events.js'
+import { calcMaxSatiety } from './satiety-service.js'
 
 // ── 食物配置表 ──
 // 新增食物品类只需加一行，无需改业务逻辑代码。
@@ -34,11 +35,12 @@ export function consumeFood(foodId, foodInventory) {
 }
 
 // ── 纯函数：计算投喂后的新值 ──
-// 返回 { newSatiety, newIntimacy }，satiety 上限 100。
+// 返回 { newSatiety, newIntimacy }，satiety 上限由等级决定。
+// level 参数可选（默认 1），向后兼容旧调用方。
 // 调用方负责 PetState.set(...) 持久化。
-export function applyFeed(satiety, intimacy, food) {
+export function applyFeed(satiety, intimacy, food, level = 1) {
   return {
-    newSatiety: Math.min(100, satiety + food.satiety),
+    newSatiety: Math.min(calcMaxSatiety(level), satiety + food.satiety),
     newIntimacy: intimacy + 5,
   }
 }

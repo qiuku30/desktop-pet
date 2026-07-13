@@ -56,6 +56,7 @@
 | utils.js | ⏳ | 占位 |
 | feed-service.js | ✅ | FOODS 配置表 + consumeFood / applyFeed / emitFed；消除 pet.js 和 dashboard.js 重复配置；FOODS 加 exp 字段 |
 | exp-service.js | ✅ | 经验计算服务：分段升级公式（新手1-5/成长6-20/成熟21+）、溢出继承、每日互动上限 20 次、maxLevel 30 |
+| satiety-service.js | ✅ | 饱腹值消耗服务：时间戳差值衰减（0.2/min，8h一轮）、离线生效、动态最大饱腹值（每5级+20）、心情建议（<30→hungry）、主动消耗接口 |
 
 ### 渲染进程 — Overlay (src/renderer/overlay/)
 
@@ -298,3 +299,45 @@
 | 🍰 蛋糕 | 25 |
 
 **store.js 新默认字段**：`dailyInteractionCount: 0`、`lastInteractionDate: null`
+
+---
+
+## 设计决策记录 — satiety-service.js（infra-08, 2026-07-13）
+
+**新增文件**：`src/renderer/shared/satiety-service.js` — 饱腹值消耗纯服务，配置驱动，不碰 PetState。
+
+**核心参数**（`SATIETY_CONFIG`）：
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| `decayPerMinute` | 0.2 | 100→0 ≈ 8.3h，约一个工作日一轮 |
+| `hungerThreshold` | 30 | 低于此值建议 mood='hungry'（约 2.5h 缓冲） |
+| `onlineTickMs` | 60000 | 在线结算间隔 60s |
+| `baseMaxSatiety` | 100 | Lv1 基础最大饱腹值 |
+| `maxSatietyPer5Levels` | 20 | 每 5 级 +20 上限 |
+
+**最大饱腹值增长表**（`calcMaxSatiety(level)`）：
+| 等级 | 上限 |
+|------|------|
+| 1-4 | 100 |
+| 5-9 | 120 |
+| 10-14 | 140 |
+| 15-19 | 160 |
+| 20-24 | 180 |
+| 25-29 | 200 |
+| 30 | 220 |
+
+**核心函数**：
+- `calcMaxSatiety(level)` — 100 + floor(level/5) × 20
+- `calcDecay(lastUpdate, now)` — 时间戳差值 → 应扣饱腹值
+- `reduceSatiety(satiety, amount)` — 主动消耗，最低 0
+- `suggestMood(satiety, currentMood)` — <30→hungry / 恢复→neutral / 否则不变
+
+**工作原理**：
+1. **离线衰减**：`pet.js init()` 中 `PetState.init()` 后立即 `settleSatietyDecay()`，用 `lastSatietyUpdate` 和当前时间差值一次性结算。首次启动（lastSatietyUpdate=null）初始化时间戳，不扣。
+2. **在线定时**：`startSatietyTick()` 每 60s 调用 `settleSatietyDecay()`，时间戳差值保证精度不受定时器漂移影响。
+3. **喂食恢复**：喂食后检查 `suggestMood`，若饱腹回到 30+ 且当前 mood='hungry'，自动恢复到 'neutral'。
+
+**关联改动**：
+- `store.js` DEFAULT_STATE 加 `lastSatietyUpdate: null`
+- `feed-service.js` `applyFeed` 新增可选 `level` 参数（默认 1），上限由硬编码 100 → `calcMaxSatiety(level)`，向后兼容 `dashboard.js`
+- `pet.js` 新增 `settleSatietyDecay()` / `startSatietyTick()`，喂食逻辑改用动态上限 + 心情恢复
