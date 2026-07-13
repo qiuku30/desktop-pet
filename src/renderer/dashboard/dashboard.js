@@ -326,8 +326,15 @@ function showTooltip(food, rect) {
     document.body.appendChild(tooltipEl)
   }
   tooltipEl.innerHTML = buildTooltipHTML(food)
-  tooltipEl.style.left = `${rect.right + 8}px`
-  tooltipEl.style.top = `${rect.top}px`
+  tooltipEl.style.left = `${rect.left}px`
+  // 默认显示在物品上方，顶部空间不足时改为下方
+  if (rect.top < 80) {
+    tooltipEl.style.top = `${rect.bottom + 8}px`
+    tooltipEl.style.bottom = 'auto'
+  } else {
+    tooltipEl.style.top = 'auto'
+    tooltipEl.style.bottom = `${window.innerHeight - rect.top + 8}px`
+  }
   tooltipEl.classList.add('inventory-tooltip--visible')
 }
 
