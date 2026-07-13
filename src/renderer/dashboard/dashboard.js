@@ -180,7 +180,7 @@ function renderSatiety() {
     <div class="progress-bar">
       <div class="progress-fill ${cls}" style="width:${pct}%"></div>
     </div>
-    <span class="satiety-value">${val}</span>
+    <span class="satiety-value">${Math.round(val)}</span>
   `
 }
 
