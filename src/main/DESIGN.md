@@ -16,20 +16,28 @@
 - `window:mode` — 获取当前模式（pet/dashboard）
 - `window:move` — 移窗到屏幕绝对坐标（fire-and-forget，不 clamp）
 - `window:position:get` — 获取窗口左上角坐标
+- `window:setBounds` — 面板缩放时设窗口 bounds
+- `window:bounds:get` — 获取当前窗口 bounds
 
 ### 光标
 - `cursor:pos:get` — 拉取当前全局光标位置（设备像素）
 
 ### 宠物状态（委托给 pet-ipc.js）
 - `pet:state:get` — 获取完整宠物状态
-- `pet:state:set` — 完整快照整体覆盖写盘 + 空快照保护
+- `pet:state:set` — 完整快照整体覆盖写盘 + 空快照保护 + zoomLevel 保护
 
 ### 菜单推送（主→渲染）
 - `menu:feed` — 右键"喂食"通知
 - `menu:status` — 右键"状态"通知
 
-### 拖拽推送（主→渲染）
+### 拖拽/走动推送（主→渲染）
 - `user:drag` — 用户正通过 OS 原生拖拽移动窗口，渲染端暂停自动化
+- `wander:toggle` — 右键菜单切换自动走动开关
+
+### 悬浮面板
+- `overlay:show` — 创建 overlay 子窗口并返回 Promise<结果>
+- `overlay:config:get` — overlay 窗口获取自身配置
+- `overlay:close` — overlay 窗口关闭并返回结果
 
 ## 数据存储
 

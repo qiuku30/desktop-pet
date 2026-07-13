@@ -89,14 +89,7 @@ document.addEventListener('pointerup', () => {
 // ── 宠物状态展示 ──
 
 import { PetState } from '../shared/pet-state.js'
-
-const FOOD_META = {
-  apple:  { id: 'apple',  name: '苹果', emoji: '🍎', satiety: 20 },
-  cake:   { id: 'cake',   name: '蛋糕', emoji: '🍰', satiety: 30 },
-  fish:   { id: 'fish',   name: '小鱼干', emoji: '🐟', satiety: 25 },
-  milk:   { id: 'milk',   name: '牛奶', emoji: '🥛', satiety: 15 },
-  cookie: { id: 'cookie', name: '饼干', emoji: '🍪', satiety: 10 },
-}
+import { FOODS, consumeFood, applyFeed, emitFed } from '../shared/feed-service.js'
 
 function buildStatusDOM() {
   const area = document.getElementById('content-area')
@@ -195,7 +188,7 @@ function renderInventory() {
   const invMap = {}
   foodInventory.forEach(item => { invMap[item.id] = item.count })
 
-  const items = Object.values(FOOD_META)
+  const items = Object.values(FOODS)
   const cells = items.map(food => {
     const count = invMap[food.id] || 0
     const emptyCls = count === 0 ? ' inventory-item--empty' : ''
@@ -256,7 +249,7 @@ function showToast(msg) {
 
 // ── 快速投喂 ──
 function handleFeed(foodId) {
-  const food = FOOD_META[foodId]
+  const food = FOODS[foodId]
   if (!food) return
 
   // 饱腹值上限检查（先检查，避免浪费食物）
@@ -267,21 +260,19 @@ function handleFeed(foodId) {
   }
 
   const foodInventory = PetState.get('foodInventory') || []
-  const entry = foodInventory.find(item => item.id === foodId)
-  if (!entry || entry.count <= 0) return
+  const { newInventory, consumed } = consumeFood(foodId, foodInventory)
+  if (!consumed) return
 
-  // 消耗 1 个食物
-  const newInventory = foodInventory
-    .map(item => item.id === foodId ? { ...item, count: item.count - 1 } : item)
-    .filter(item => item.count > 0)
   PetState.set('foodInventory', newInventory)
 
-  // 更新饱腹值，上限 100
-  PetState.set('satiety', Math.min(100, satiety + food.satiety))
-
-  // 亲密度 +5
+  // 更新饱腹 + 亲密度
   const intimacy = PetState.get('intimacy') || 0
-  PetState.set('intimacy', intimacy + 5)
+  const { newSatiety, newIntimacy } = applyFeed(satiety, intimacy, food)
+  PetState.set('satiety', newSatiety)
+  PetState.set('intimacy', newIntimacy)
+
+  // 发投喂事件
+  emitFed(foodId)
 }
 
 // ── 初始化 ──

@@ -1,7 +1,7 @@
 # 开发进度
 
 > 每次会话结束时更新此文件。
-> 当前分支：feature/pet-movement
+> 当前分支：main
 
 ---
 
@@ -54,6 +54,7 @@
 | pet-state.js — 宠物状态管理器 | ✅ | 薄：init/get(副本)/set(映射发事件+防抖存盘)/subscribe/flush(立即写盘) |
 | constants.js | ⏳ | 占位 |
 | utils.js | ⏳ | 占位 |
+| feed-service.js | ✅ | FOODS 配置表 + consumeFood / applyFeed / emitFed；消除 pet.js 和 dashboard.js 重复配置 |
 
 ### 渲染进程 — Overlay (src/renderer/overlay/)
 

@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, Menu, dialog, screen } = require('electron');
 const path = require('path');
 const { initStore, getState, setState } = require('./storage/store');
-const { registerPetIPC } = require('./ipc/pet-ipc');
+const { registerPetIPC, isValidSnapshot } = require('./ipc/pet-ipc');
 const { initOverlayIPC, showOverlayWindow } = require('./overlay-manager');
 
 // ── 窗口状态常量 ──
@@ -197,7 +197,7 @@ function setupIPC() {
   // 保护 zoomLevel 不被渲染端存盘整体覆盖冲掉
   ipcMain.removeHandler('pet:state:set')
   ipcMain.handle('pet:state:set', async (_, snapshot) => {
-    if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot) || Object.keys(snapshot).length === 0) {
+    if (!isValidSnapshot(snapshot)) {
       console.warn('[main] pet:state:set 拒绝空快照')
       return await getState()
     }

@@ -98,7 +98,7 @@ GitHub：https://github.com/qiuku30/desktop-pet
 5. 🟡 **event-bus.js DEBUG=true**：开发模式日志，生产环境需要开关
 6. 🟢 **pet-state.js 直接依赖 window.electronAPI**：全局依赖，限制了单测。暂不改
 7. 🟡 **整体覆盖写盘风险**：PetState._save() 是完整快照覆盖，新增持久化字段（如 zoomLevel）需在主进程 pet:state:set handler 中保护，防止被渲染端覆盖冲掉。当前 index.js L159-169 有保护逻辑
-8. 🟡 **喂食逻辑重复**：pet.js（overlay 喂食）和 dashboard.js（快速投喂）各自维护了一份消耗食物的逻辑。后续抽 `shared/feed-service.js` 统一（原则 2 高内聚）
+8. ✅ ~~喂食逻辑重复~~ infra-06 已解决：抽 `shared/feed-service.js`，导出 FOODS 配置表 + consumeFood/applyFeed/emitFed，pet.js 和 dashboard.js 统一引用
 9. 🟡 **loadFile 切换 = 渲染进程重建**：EventBus/PetState 不跨页面，需 flush() 保证落盘。Phase 1 够用；Phase 2 如需面板实时同步宠物状态，考虑主进程持有数据或双 webview
 10. 🟢 **旧存档 hunger 字段残留**（infra-05 重命名后）：存量 pet-data.json 的 `hunger` key 不再读取，残留无害。Phase 1 开发阶段清档即可，生产环境需做数据迁移
 11. 🟢 **exp 进度条假设 0-100 刻度**：dash-01 `renderLevel()` 把 exp 直接当百分比。后续定下成长曲线后统一调整
@@ -185,3 +185,33 @@ GitHub：https://github.com/qiuku30/desktop-pet
 **改动**：`pet/pet.js` 注册 `onMenuFeed` / `onMenuStatus` 监听。喂食：消耗首个食物→hunger-20/intimacy+5→气泡反馈；状态：toggleWindow() 切面板。
 
 无越界，无新架构决策。
+
+## 2026-07-13 — ARCH-03 代码审计 + 文档同步
+
+**处理事项**：全面审计所有代码，对照十大原则 + 8 条 ADR + 编码规范。
+
+**审计结果**：
+- 🔴 2 项真问题：module-registry 死链接 + IPC 监听器泄漏（commit `12a3792` 已修复）
+- 🟡 4 项代码问题 + 4 项文档问题
+- 撤销 1 项误判（clickDownPos 无需清理，pointerdown 始终先于 click）
+
+**已执行（ARCH-03 直接修）**：
+1. `pet/pet.html` — 删两行冗余 `<script>` 标签
+2. `dashboard/dashboard.html` — 删三行冗余 `<script>` 标签
+3. `pet/DESIGN.md` — 台词数 16→28
+4. `dashboard/DESIGN.md` — 修正"导航栏由 registry 驱动"描述
+5. `main/DESIGN.md` — 补 5 个缺失的 IPC 通道
+6. `docs/progress.md` — 修正分支引用 `feature/pet-movement` → `main`
+
+**委派 infra-06**：
+1. 新建 `shared/feed-service.js`（FOODS + consumeFood/applyFeed/emitFed）
+2. 清理 `main/ipc/pet-ipc.js` 死代码（pet:state:set 被 index.js 覆盖）
+3. `main/index.js` 复用 `isValidSnapshot`
+4. `pet/pet.js` + `dashboard/dashboard.js` 切换引用（越界授权）
+5. 已确认完成，pet-05 和 dash-01 无需再开
+
+**当前全局状态**：
+- 工作区有未提交改动（11 个文件），需 commit
+- 36→37 commits 待 push
+- Phase 1 已知问题：3 🟡 + 3 🟢（全部已确认，无新增）
+- 待决策：下一步做什么模块？

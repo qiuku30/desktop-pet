@@ -13,7 +13,7 @@
 //
 // 接线：由 index.js 的 setupIPC() 调用一次 registerPetIPC(ipcMain)。
 
-const { getState, setState } = require('../storage/store');
+const { getState } = require('../storage/store');
 
 // ── 快照校验 ──
 // 合法快照：非 null 的普通对象，且至少有一个 key。
@@ -30,27 +30,14 @@ function isValidSnapshot(snapshot) {
 // ── 注册宠物 IPC 通道 ──
 // 由主进程 index.js 在 setupIPC() 中调用一次。
 // 先 removeHandler 再 handle，使注册幂等、可安全重入。
+//
+// 注意：pet:state:set 不在本模块注册，由 index.js 直接处理（需要 zoomLevel 保护）。
 function registerPetIPC(ipcMain) {
   // 读取完整宠物状态。渲染端 PetState.init() 依赖此返回值灌入内存。
   ipcMain.removeHandler('pet:state:get');
   ipcMain.handle('pet:state:get', async () => {
     return await getState();
   });
-
-  // 接收完整快照 → 整体覆盖写盘。
-  ipcMain.removeHandler('pet:state:set');
-  ipcMain.handle('pet:state:set', async (_event, snapshot) => {
-    // 空快照保护：拒绝写盘，返回当前存档，避免清空数据。
-    if (!isValidSnapshot(snapshot)) {
-      console.warn('[pet-ipc] 收到空/非法快照，已跳过写盘，返回当前存档:', snapshot);
-      return await getState();
-    }
-
-    // 整体覆盖（对齐完整快照契约，不做 merge）。
-    // 注意 store.setState() 会给 snapshot 挂上 lastSaved 字段。
-    await setState(snapshot);
-    return snapshot;
-  });
 }
 
-module.exports = { registerPetIPC };
+module.exports = { registerPetIPC, isValidSnapshot };

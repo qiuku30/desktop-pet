@@ -130,6 +130,7 @@ desktop-pet/
 - 启动必读：`CLAUDE.md` → `PROJECT_BRIEF.md`（总览全局状态）→ `docs/architecture.md`（十大原则 + ADR）
 - 唯一有权修改：`CLAUDE.md`、`PROJECT_BRIEF.md`、`docs/architecture.md`、`docs/conventions.md`、`docs/session-log.md`、`specs/*`
 - 每次会话结束必须更新 `PROJECT_BRIEF.md` 和 `docs/progress.md`
+- 每开一个新窗口或做完一次改动，提醒用户并同步更新 `PROJECT_BRIEF.md`、`docs/progress.md`、`docs/session-log.md`
 
 ### 🔨 实现窗口
 
@@ -220,6 +221,7 @@ desktop-pet/
 
 只能改 [在此填写允许的目录]，改完更新 docs/progress.md 和 docs/session-log.md。
 不确定的地方必须问我，不要猜。
+先讨论，商量出结果后再行动，总体设计可能会与局部详细设计有偏差。
 ```
 
 **示例 — 实现窗口写宠物气泡**：
@@ -231,6 +233,7 @@ desktop-pet/
 
 只能改 src/renderer/pet/* 和 docs/progress.md。
 不确定就问我。
+先讨论，商量出结果后再行动，总体设计可能会与局部详细设计有偏差。
 ```
 
 ### 进度追踪

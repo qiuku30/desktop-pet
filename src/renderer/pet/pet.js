@@ -8,15 +8,7 @@ import {
   wanderTarget,
 } from './pet-motion.mjs'
 import { PetState } from '../shared/pet-state.js'
-
-// ── 食物配置表（原则5：配置驱动，静态数据与业务逻辑分离）──
-const FOODS = {
-  apple:  { id: 'apple',  name: '苹果', emoji: '🍎', satiety: 20 },
-  cake:   { id: 'cake',   name: '蛋糕', emoji: '🍰', satiety: 30 },
-  fish:   { id: 'fish',   name: '小鱼干', emoji: '🐟', satiety: 25 },
-  milk:   { id: 'milk',   name: '牛奶', emoji: '🥛', satiety: 15 },
-  cookie: { id: 'cookie', name: '饼干', emoji: '🍪', satiety: 10 },
-}
+import { FOODS, consumeFood, applyFeed, emitFed } from '../shared/feed-service.js'
 
 // 动态窗口尺寸（配合 scaleFactor 自适应 + 用户缩放）
 function getWinSize() {
@@ -324,16 +316,18 @@ async function init() {
       return
     }
 
-    // 消耗 1 个
-    const newInventory = foodInventory
-      .map(inv => inv.id === result ? { ...inv, count: inv.count - 1 } : inv)
-      .filter(inv => inv.count > 0)
+    // 消耗食物
+    const { newInventory } = consumeFood(result, foodInventory)
     PetState.set('foodInventory', newInventory)
 
-    PetState.set('satiety', Math.min(100, satiety + food.satiety))
-
+    // 更新饱腹 + 亲密度
     const intimacy = PetState.get('intimacy') || 0
-    PetState.set('intimacy', intimacy + 5)
+    const { newSatiety, newIntimacy } = applyFeed(satiety, intimacy, food)
+    PetState.set('satiety', newSatiety)
+    PetState.set('intimacy', newIntimacy)
+
+    // 发投喂事件
+    emitFed(result)
 
     showBubble(`投喂了${food.name}！`)
   })
