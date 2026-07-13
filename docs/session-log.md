@@ -51,5 +51,5 @@
 
 | 编号 | 日期 | 功能 | 改动文件 | 越界授权 | 备注 |
 |------|------|------|----------|----------|------|
-| **dash-01** | 2026-07-13 | 面板宠物状态展示 + 多次修复与打磨 | `dashboard/dashboard.html` `dashboard/dashboard.js` `dashboard/dashboard.css` `docs/progress.md` `docs/session-log.md` | 无 | 初始实现：混合布局卡片 + PET_STATE_CHANGED 增量刷新 + 食物网格+快速投喂；多次续修：FOOD_META 缺 id 字段、satiety 上限→toast、exp 改用 calcRequiredExp + 蓝色进度条、硬编码100→calcMaxSatiety(level)；其他窗口改动：flush()、hunger→satiety、feed-service 切换、RPG 两层布局 |
+| **dash-01** | 2026-07-13 | 面板宠物状态展示 + 多次修复与打磨 | `dashboard/dashboard.html` `dashboard/dashboard.js` `dashboard/dashboard.css` `docs/progress.md` `docs/session-log.md` | 无 | 初始实现：混合格局卡片 + PET_STATE_CHANGED 增量刷新 + 食物网格+快速投喂；续修：FOOD_META缺id→库存×0、satiety上限+toast、exp→calcRequiredExp+蓝色进度条、硬编码100→calcMaxSatiety(level)、饱腹值取整、tooltip字段驱动+独立BrowserWindow(infra-09配合)；其他窗口改动：flush()、hunger→satiety、feed-service切换、RPG两层布局 |
 | **dash-02** | 2026-07-13 | 面板 RPG 角色卡布局重构 | `dashboard/dashboard.js` `dashboard/dashboard.css` `dashboard/DESIGN.md` `docs/progress.md` `docs/session-log.md` | 无 | 卡片平铺→角色展示式两层布局：上半区形象展示（emoji居中+左右各3槽位虚线占位），下半区信息数据（等级/心情/饱腹/亲密度/金币/食物库存）；overflow-y:auto 从#content-area移到.info-layer；padding分给两层；保留所有id、render*()、handleFeed()、事件绑定不动；新增info-row--2col/--full/--3col语义化行容器方便扩展 |
