@@ -90,6 +90,7 @@ document.addEventListener('pointerup', () => {
 
 import { PetState } from '../shared/pet-state.js'
 import { FOODS, consumeFood, applyFeed, emitFed } from '../shared/feed-service.js'
+import { calcRequiredExp } from '../shared/exp-service.js'
 
 function buildStatusDOM() {
   const area = document.getElementById('content-area')
@@ -139,13 +140,16 @@ function renderLevel() {
   if (!card) return
   const level = PetState.get('level') || 1
   const exp = PetState.get('exp') || 0
+  const required = calcRequiredExp(level)
+  const pct = required === Infinity ? 100 : Math.min(100, Math.round((exp / required) * 100))
+  const label = required === Infinity ? 'MAX' : `${exp} / ${required}`
   card.innerHTML = `
     <span class="level-value">Lv.${level}</span>
     <div class="level-exp">
       <div class="progress-bar">
-        <div class="progress-fill progress-fill--high" style="width:${exp}%"></div>
+        <div class="progress-fill progress-fill--high" style="width:${pct}%"></div>
       </div>
-      <span class="exp-label">经验 ${exp}</span>
+      <span class="exp-label">经验 ${label}</span>
     </div>
   `
 }
