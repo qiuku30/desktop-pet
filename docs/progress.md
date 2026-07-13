@@ -54,7 +54,8 @@
 | pet-state.js — 宠物状态管理器 | ✅ | 薄：init/get(副本)/set(映射发事件+防抖存盘)/subscribe/flush(立即写盘) |
 | constants.js | ⏳ | 占位 |
 | utils.js | ⏳ | 占位 |
-| feed-service.js | ✅ | FOODS 配置表 + consumeFood / applyFeed / emitFed；消除 pet.js 和 dashboard.js 重复配置 |
+| feed-service.js | ✅ | FOODS 配置表 + consumeFood / applyFeed / emitFed；消除 pet.js 和 dashboard.js 重复配置；FOODS 加 exp 字段 |
+| exp-service.js | ✅ | 经验计算服务：分段升级公式（新手1-5/成长6-20/成熟21+）、溢出继承、每日互动上限 20 次、maxLevel 30 |
 
 ### 渲染进程 — Overlay (src/renderer/overlay/)
 
@@ -262,3 +263,38 @@
   - `pet.js` `onMenuStatus`：右键"状态"→`await PetState.flush()`→`toggleWindow()`
   - `dashboard.js` `btn-close`：✕按钮→`await PetState.flush()`→`toggleWindow()`
   - 喂食 overlay `__warehouse__` 路径也需要 flush() — pet-06 修复：在 toggleWindow() 前加 `await PetState.flush()`，确保喂食后的库存/饥饿/亲密度变更落盘后再切面板。
+
+---
+
+## 设计决策记录 — exp-service.js（infra-07, 2026-07-13）
+
+**新增文件**：`src/renderer/shared/exp-service.js` — 经验计算纯服务，配置驱动，不碰 PetState。
+
+**升级公式（分段控速曲线）**：
+- 新手期（1-5级）：`60 × level^1.25`，弱幂次，快速正反馈
+- 成长期（6-20级）：`110 × level - 190`，线性增长，节奏稳定
+- 成熟期（21-30级）：`150 × level - 990`，低幅增量，长期无压力
+- 最大等级 30（当前版本），`calcRequiredExp(30)` 返回 `Infinity`
+
+**核心函数**：
+- `calcRequiredExp(level)` — 升到下一级所需经验
+- `addExp(exp, level, amount)` — 加经验，溢出自动继承，可连升多级
+- `checkDailyInteraction(count, lastDate)` — 每日互动上限检查（20 次），过日归零
+- `getFoodExp(food)` — 从食物配置取经验值
+
+**经验获取渠道**：
+| 渠道 | 经验 | 每日上限 |
+|------|------|----------|
+| 互动（点击气泡等） | +5/次 | 20 次 |
+| 喂食 | 按食物 exp 字段 | 无上限 |
+
+**食物经验值**（`feed-service.js` FOODS 表新增 `exp` 字段）：
+| 食物 | exp |
+|------|-----|
+| 🍪 饼干 | 5 |
+| 🥛 牛奶 | 10 |
+| 🍎 苹果 | 10 |
+| 🐟 小鱼干 | 20 |
+| 🍰 蛋糕 | 25 |
+
+**store.js 新默认字段**：`dailyInteractionCount: 0`、`lastInteractionDate: null`

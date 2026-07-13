@@ -18,6 +18,8 @@ const DEFAULT_STATE = {
   coins: 0,
   foodInventory: [],   // 食物库存
   zoomLevel: 1.0,      // 窗口缩放倍率（0.75 / 1.0 / 1.25 / 1.5）
+  dailyInteractionCount: 0,    // 今日互动次数
+  lastInteractionDate: null,   // 上次互动日期（YYYY-MM-DD）
   lastSaved: null,
 };
 

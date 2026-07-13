@@ -9,11 +9,11 @@ import { EVENTS } from './events.js'
 // ── 食物配置表 ──
 // 新增食物品类只需加一行，无需改业务逻辑代码。
 export const FOODS = {
-  apple:  { id: 'apple',  name: '苹果',   emoji: '🍎', satiety: 20 },
-  cake:   { id: 'cake',   name: '蛋糕',   emoji: '🍰', satiety: 30 },
-  fish:   { id: 'fish',   name: '小鱼干', emoji: '🐟', satiety: 25 },
-  milk:   { id: 'milk',   name: '牛奶',   emoji: '🥛', satiety: 15 },
-  cookie: { id: 'cookie', name: '饼干',   emoji: '🍪', satiety: 10 },
+  apple:  { id: 'apple',  name: '苹果',   emoji: '🍎', satiety: 20, exp: 10 },
+  cake:   { id: 'cake',   name: '蛋糕',   emoji: '🍰', satiety: 30, exp: 25 },
+  fish:   { id: 'fish',   name: '小鱼干', emoji: '🐟', satiety: 25, exp: 20 },
+  milk:   { id: 'milk',   name: '牛奶',   emoji: '🥛', satiety: 15, exp: 10 },
+  cookie: { id: 'cookie', name: '饼干',   emoji: '🍪', satiety: 10, exp: 5 },
 }
 
 // ── 纯函数：消耗食物 ──
