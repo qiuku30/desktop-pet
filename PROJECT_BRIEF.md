@@ -1,7 +1,7 @@
 # 架构窗口交接文档
 
-> 最后更新：2026-07-12
-> 架构窗口每次会话结束必须更新此文件。下一任架构窗口启动时读此文件恢复全局上下文。
+> 最后更新：2026-07-13
+> Phase 1 已合并 main。网络未推送，恢复后 `git push origin main`。下一任架构窗口启动时读此文件恢复全局上下文。
 
 ---
 
@@ -116,8 +116,8 @@ GitHub：https://github.com/qiuku30/desktop-pet
 
 | 分支 | 状态 | 说明 |
 |------|------|------|
-| `main` | ✅ 稳定 | 含所有基础设施 |
-| `feature/pet-movement` | 🔨 进行中 | pet 移动系统，待合并回 main |
+| `main` | ✅ 稳定 | Phase 1 完成（本地已合并，待 push） |
+| `feature/pet-movement` | ✅ 已合并 | 2026-07-13 合并回 main |
 
 ---
 
