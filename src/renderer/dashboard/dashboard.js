@@ -322,8 +322,8 @@ function buildTooltipHTML(food) {
 function showTooltip(food, rect) {
   window.electronAPI.showTooltip({
     html: buildTooltipHTML(food),
-    x: rect.right + 8,
-    y: rect.top,
+    x: Math.round(rect.right + 8),
+    y: Math.round(rect.top),
   })
 }
 
