@@ -308,39 +308,27 @@ function handleFeed(foodId) {
 }
 
 // ── tooltip ──
-let tooltipEl = null
 
 function buildTooltipHTML(food) {
-  let html = `<div class="tooltip-name">${food.name}</div>`
+  let html = `<style>body{margin:0;padding:10px 14px;background:#2c2c2c;font-family:'Microsoft YaHei','PingFang SC',sans-serif;color:#ccc;border-radius:8px;}</style>`
+  html += `<div style="font-size:14px;color:#fff;margin-bottom:6px">${food.name}</div>`
   for (const [key, label] of Object.entries(TOOLTIP_FIELDS)) {
-    html += `<div class="tooltip-row"><span class="tooltip-label">${label}</span><span class="tooltip-value">+${food[key]}</span></div>`
+    html += `<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.6"><span style="color:#999">${label}</span><span style="color:#7eb">+${food[key]}</span></div>`
   }
-  html += `<div class="tooltip-row"><span class="tooltip-label">亲密度</span><span class="tooltip-value">+${FEED_CONFIG.intimacyPerFeed}</span></div>`
+  html += `<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.6"><span style="color:#999">亲密度</span><span style="color:#7eb">+${FEED_CONFIG.intimacyPerFeed}</span></div>`
   return html
 }
 
 function showTooltip(food, rect) {
-  if (!tooltipEl) {
-    tooltipEl = document.createElement('div')
-    tooltipEl.className = 'inventory-tooltip'
-    document.body.appendChild(tooltipEl)
-  }
-  tooltipEl.innerHTML = buildTooltipHTML(food)
-  // 默认显示在物品右侧，空间不够时翻转到左侧
-  const gap = 8
-  if (rect.right + 140 + gap < window.innerWidth) {
-    tooltipEl.style.left = `${rect.right + gap}px`
-    tooltipEl.style.right = 'auto'
-  } else {
-    tooltipEl.style.left = 'auto'
-    tooltipEl.style.right = `${window.innerWidth - rect.left + gap}px`
-  }
-  tooltipEl.style.top = `${rect.top}px`
-  tooltipEl.classList.add('inventory-tooltip--visible')
+  window.electronAPI.showTooltip({
+    html: buildTooltipHTML(food),
+    x: rect.right + 8,
+    y: rect.top,
+  })
 }
 
 function hideTooltip() {
-  if (tooltipEl) tooltipEl.classList.remove('inventory-tooltip--visible')
+  window.electronAPI.hideTooltip()
 }
 
 // ── 初始化 ──
@@ -369,11 +357,6 @@ async function initStatus() {
   document.getElementById('card-inventory').addEventListener('mouseleave', () => {
     hideTooltip()
   }, true)
-
-  // 滚动时隐藏 tooltip，防止漂移
-  document.querySelector('.info-layer').addEventListener('scroll', () => {
-    hideTooltip()
-  })
 
   // 监听状态变化
   PetState.subscribe('pet:state:changed', onStateChanged)
