@@ -9,6 +9,7 @@ import {
 } from './pet-motion.mjs'
 import { PetState } from '../shared/pet-state.js'
 import { FOODS, consumeFood, applyFeed, emitFed } from '../shared/feed-service.js'
+import { checkDailyInteraction, addExp, getFoodExp, EXP_CONFIG } from '../shared/exp-service.js'
 
 // 动态窗口尺寸（配合 scaleFactor 自适应 + 用户缩放）
 function getWinSize() {
@@ -176,6 +177,39 @@ function showBubble(customText) {
   setTimeout(remove, 2500) // 兜底：防止 animationend 不触发导致气泡残留
 }
 
+// ── 互动经验 ──
+
+let _dailyCapHintShown = false
+
+function grantInteractionExp() {
+  const oldCount = PetState.get('dailyInteractionCount') || 0
+  const lastDate = PetState.get('lastInteractionDate') || null
+
+  const { canGain, newCount, newDate } = checkDailyInteraction(oldCount, lastDate)
+
+  // 跨天重置提示标记
+  if (lastDate !== newDate) {
+    _dailyCapHintShown = false
+  }
+
+  PetState.set('dailyInteractionCount', newCount)
+  PetState.set('lastInteractionDate', newDate)
+
+  if (canGain) {
+    const exp = PetState.get('exp') || 0
+    const level = PetState.get('level') || 1
+    const result = addExp(exp, level, EXP_CONFIG.interactionExp)
+    PetState.set('exp', result.newExp)
+    if (result.leveledUp) {
+      PetState.set('level', result.newLevel)
+      showBubble(`🎉 升级了！Lv.${result.newLevel}！`)
+    }
+  } else if (!_dailyCapHintShown) {
+    _dailyCapHintShown = true
+    showBubble('今天的互动经验已经领完啦～（每日20次）')
+  }
+}
+
 // 点击 / 拖拽 区分
 let clickTimer = null
 let clickDownPos = null
@@ -203,6 +237,7 @@ body.addEventListener('click', async (e) => {
   clickTimer = setTimeout(() => {
     clickTimer = null
     showBubble()
+    grantInteractionExp()
   }, 300)
 })
 
@@ -328,6 +363,19 @@ async function init() {
 
     // 发投喂事件
     emitFed(result)
+
+    // 喂食经验结算
+    const foodExp = getFoodExp(food)
+    if (foodExp > 0) {
+      const exp = PetState.get('exp') || 0
+      const level = PetState.get('level') || 1
+      const addResult = addExp(exp, level, foodExp)
+      PetState.set('exp', addResult.newExp)
+      if (addResult.leveledUp) {
+        PetState.set('level', addResult.newLevel)
+        showBubble(`🎉 升级了！Lv.${addResult.newLevel}！`)
+      }
+    }
 
     showBubble(`投喂了${food.name}！`)
   })
