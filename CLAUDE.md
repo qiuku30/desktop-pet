@@ -118,6 +118,7 @@ desktop-pet/
 |------|------|------|
 | 需求文档 | `specs/xxx.md` | 用户视角（功能、交互、验收标准） |
 | 设计文档 | `src/xxx/DESIGN.md` | 技术视角（组件树、数据结构、状态管理） |
+| 会话日志 | `docs/session-log.md` | 运维视角（每个窗口改了啥、越界授权、追溯 bug） |
 
 ---
 
@@ -126,8 +127,8 @@ desktop-pet/
 ### 🏛️ 架构决策窗口
 
 - 讨论需求、做架构决策
-- 启动必读：`CLAUDE.md` → `PROJECT_BRIEF.md`（总览全局状态）
-- 唯一有权修改：`CLAUDE.md`、`PROJECT_BRIEF.md`、`docs/architecture.md`、`docs/conventions.md`、`specs/*`
+- 启动必读：`CLAUDE.md` → `PROJECT_BRIEF.md`（总览全局状态）→ `docs/architecture.md`（十大原则 + ADR）
+- 唯一有权修改：`CLAUDE.md`、`PROJECT_BRIEF.md`、`docs/architecture.md`、`docs/conventions.md`、`docs/session-log.md`、`specs/*`
 - 每次会话结束必须更新 `PROJECT_BRIEF.md` 和 `docs/progress.md`
 
 ### 🔨 实现窗口
@@ -137,9 +138,10 @@ desktop-pet/
 | 顺序 | 文件 | 目的 |
 |------|------|------|
 | 1 | `CLAUDE.md` | 了解项目全貌、规则、架构 |
-| 2 | `specs/<模块名>.md` | 理解这个模块"要做什么" |
-| 3 | `src/<模块路径>/DESIGN.md` | 理解"怎么实现的" |
-| 4 | `docs/progress.md` | 了解当前进度 |
+| 2 | `docs/architecture.md` | 了解十大架构原则 + 8 条 ADR |
+| 3 | `specs/<模块名>.md` | 理解这个模块"要做什么" |
+| 4 | `src/<模块路径>/DESIGN.md` | 理解"怎么实现的" |
+| 5 | `docs/progress.md` | 了解当前进度 |
 
 #### 可以改的文件 ✅
 
@@ -148,6 +150,7 @@ desktop-pet/
 - `src/renderer/shared/module-registry.js` — 注册新模块
 - `docs/progress.md` — 会话结束时更新进度
 - `docs/events.md` — 登记新事件
+- `docs/session-log.md` — 会话结束时登记窗口记录
 
 #### 绝对不能改的文件 🚫
 
@@ -158,12 +161,35 @@ desktop-pet/
 - `src/main/` — 除非明确指派
 - `package.json` — 除非明确指派
 
+#### 动工前先对齐 ⚠️
+
+以下情况**先问架构窗口**，不要自己猜：
+- 涉及新的数据结构（如食物库存长什么样）
+- 涉及新的交互流程（如选食物再喂、还是直接喂第一个）
+- spec 没有明确覆盖的实现细节
+
+架构窗口给一个简短的设计锁死（几行就行），再动手。
+
 #### 遇到不确定时 ⚠️
 
 - spec 里没覆盖到的重要问题 → **停手，问用户**，先标记 TODO
 - 需要改共享文件（events.js 等）→ 可以改，但要在 progress.md 里记录
 - 想新加一个事件 → 先查 `docs/events.md` 是否有现成的，避免重复
 - **不同窗口绝不改同一个文件**
+
+---
+
+## 窗口命名规则
+
+每个会话窗口有唯一编号，记录在 `docs/session-log.md`。
+
+| 前缀 | 类型 | 谁分配 |
+|------|------|--------|
+| `ARCH-NN` | 架构窗口 | 自取（递增） |
+| `infra-NN` | 共享基础设施 | 架构窗口在任务提示词中分配 |
+| `pet-NN` / `dash-NN` 等 | 实现窗口 | 架构窗口在任务提示词中分配 |
+
+**如果没被分配**：用 `模块前缀-YYYYMMDD`（如 `pet-20260712`），不会冲突。
 
 ---
 
@@ -192,7 +218,7 @@ desktop-pet/
 
 你的任务是：[在此填写具体任务]
 
-只能改 [在此填写允许的目录]，改完更新 docs/progress.md。
+只能改 [在此填写允许的目录]，改完更新 docs/progress.md 和 docs/session-log.md。
 不确定的地方必须问我，不要猜。
 ```
 
@@ -208,4 +234,31 @@ desktop-pet/
 ```
 
 ### 进度追踪
-每次会话结束时必须更新 `docs/progress.md`。
+每次会话结束时必须更新 `docs/progress.md` 和 `docs/session-log.md`。
+
+### 收集历史窗口信息（架构窗口用）
+
+向已关闭的窗口收集信息，用于补登 `docs/session-log.md`：
+
+**实现窗口用：**
+```
+你是本项目的一个实现窗口。架构窗口在建立 session-log.md 做窗口索引。
+
+请回答（精简）：
+
+1. 你做了什么功能？
+2. 实际改了哪些文件？（完整相对路径）
+3. 架构窗口给了你哪些越界授权？（没给就写"无"）
+4. 踩了什么坑或重要备注？
+```
+
+**架构窗口用：**
+```
+你是本项目的架构窗口。现在 ARCH-XX 在建立 session-log.md 做窗口索引。
+
+请如实回答（精简）：
+
+1. 你做了什么？
+2. 实际改了哪些文件？（完整相对路径）
+3. 踩了什么坑或重要备注？
+```

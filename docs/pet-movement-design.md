@@ -2,7 +2,7 @@
 
 > 日期：2026-07-11 最后更新：2026-07-12
 > 范围：Phase 1 宠物外观、闲置动画、拖拽移动、随机走动、躲避鼠标。
-> 不含：气泡、右键菜单对接、双击切面板、赶跑、成长系统（均为独立子任务）。
+> ~~气泡~~ ✅ ~~双击切面板~~ ✅ 已完成；右键菜单对接、赶跑、成长系统（均为独立子任务）。
 
 ## 决策摘要
 
@@ -69,44 +69,28 @@ JS 拖拽 = `pointermove` → `ipcRenderer.invoke('window:move')` → `setPositi
 
 ## 5. 明确不在本轮范围
 
-气泡系统、右键菜单 IPC 对接、双击切面板、赶跑、成长系统。
+~~气泡系统~~ ✅ 已完成（2026-07-12）、右键菜单 IPC 对接、双击切面板、赶跑、成长系统。
 
-## 6. ⚠️ 已知遗留问题：`-webkit-app-region: drag` 与点击事件冲突
+## 6. ✅ 已解决：`-webkit-app-region: drag` 与点击事件冲突
 
-`#pet-container` 使用 `-webkit-app-region: drag` 让 Electron 把整个窗口变成原生拖拽手柄。
-**副作用**：该元素及其子元素上的 `click`、`mousedown`、`mouseup` 事件被 Electron 拦截，不触发。
+> 原问题：`#pet-container` 使用 `-webkit-app-region: drag` 会拦截子元素 click 事件。
+> **已于 2026-07-12 通过对话气泡实现落地。**
 
-这意味着后续做对话气泡（单击说话）和双击面板时，**点击事件收不到**。
+### 实施方案
 
-### 解决方案（后续窗口实施）
-
-在需要点击交互的子元素上加 `-webkit-app-region: no-drag`：
+在 `#pet-body` 上加 `-webkit-app-region: no-drag`，同时 `#pet-container` 保留 7.5vw padding 作为拖拽手柄区域。OS 会把 no-drag 区域的拖拽冒泡给父级 drag 区域，所以拖拽和点击可以共存。
 
 ```css
-/* 宠物本体：需要双击 → 加 no-drag 让事件穿透 */
+#pet-container {
+  padding: 7.5vw;                    /* 边框保留 drag，用户拖这里 */
+  -webkit-app-region: drag;
+}
 #pet-body {
-  -webkit-app-region: no-drag;
-}
-
-/* 对话气泡：需要单击关闭 → 加 no-drag */
-.speech-bubble {
-  -webkit-app-region: no-drag;
+  -webkit-app-region: no-drag;       /* 让 click 事件生效 */
+  cursor: pointer;
 }
 ```
 
-**但注意**：`no-drag` 区域内不能拖拽窗口。所以宠物本体加 `no-drag` 后，
-需要通过其他区域（如 `#pet-container` 的 padding/边缘）保持拖拽能力。
+### 点击/拖拽区分
 
-**推荐布局**：
-```
-┌──────────────────────────┐ ← #pet-container (drag)
-│  padding: 10px           │ ← 边框保留 drag，用户拖这里
-│  ┌──────────────────┐   │
-│  │  #pet-body       │   │ ← no-drag，可接收点击/双击
-│  │  (no-drag)       │   │
-│  └──────────────────┘   │
-│  padding: 10px           │
-└──────────────────────────┘
-```
-
-用户拖拽窗口时抓边框，点击时点中间宠物。这是明确给气泡/面板窗口的交接事项。
+pet.js 中 `pointerdown` 记录起始坐标，`click` 中比较移动距离：> 3px 视为拖拽，不出气泡。

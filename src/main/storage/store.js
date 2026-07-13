@@ -13,10 +13,11 @@ const DEFAULT_STATE = {
   level: 1,
   exp: 0,
   mood: 'neutral',    // happy | neutral | hungry | sad
-  hunger: 100,         // 0-100，越低越饿
+  satiety: 100,        // 0+，越高越饱，随时间下降
   intimacy: 0,         // 亲密度
   coins: 0,
   foodInventory: [],   // 食物库存
+  zoomLevel: 1.0,      // 窗口缩放倍率（0.75 / 1.0 / 1.25 / 1.5）
   lastSaved: null,
 };
 

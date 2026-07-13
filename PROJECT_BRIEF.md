@@ -36,10 +36,11 @@ GitHub：https://github.com/qiuku30/desktop-pet
 
 | 文档 | 内容 |
 |------|------|
-| `docs/architecture.md` | 7 条 ADR（全项目架构决策） |
+| `docs/architecture.md` | 十大原则 + 8 条 ADR（全项目架构决策） |
 | `docs/conventions.md` | 编码规范 + 🚫 跨模块 import 禁止 |
 | `docs/events.md` | EventBus 事件清单 + 主进程推送事件 |
 | `docs/pet-movement-design.md` | 宠物移动系统详细设计 |
+| `docs/session-log.md` | 窗口会话日志（编号、改动文件、越界授权、追溯 bug） |
 | `specs/pet-system.md` | 宠物 Phase 1 需求 + 验收标准 |
 
 ---
@@ -67,16 +68,19 @@ GitHub：https://github.com/qiuku30/desktop-pet
 | 宠物样式 | `pet/pet.css` | 呼吸/轻晃/waddle 动画 |
 | 纯几何 | `pet/pet-motion.mjs` | distance/isCursorNear/wanderTarget 等，6/6 测试过 |
 | 状态 IPC | `main/ipc/pet-ipc.js` | 整体覆盖 + 空快照保护，已接线到 index.js |
+| 对话气泡 | `pet/pet.js` `pet/pet.css` | 28 条台词 mood×level 分层、300ms 延迟 + 拖拽检测(3px)、2s 气泡弹出动画、no-drag 点击穿透 |
+| 双击面板 | `pet/pet.js` `main/index.js` `dashboard/*` | 双击→toggleWindow→loadFile、面板顶部栏+✕关闭、面板边缘拖拽缩放 |
+| 右键菜单 | `pet/pet.js` | 喂食（消耗食物→hunger-20/intimacy+5→气泡）、状态（→切面板） |
+| 喂食 flyout | `pet/pet.js` | 食物库存 C→A、FOODS 配置表（原则 5）、overlay 选食投喂 |
+| 窗口动态缩放 | `main/index.js` | getPetSize() = 200 × scaleFactor × zoom；四档右键菜单(75/100/125/150%)；zoomLevel 持久化保护；lockPetSize() min=max 锁定 |
+| 响应式布局 | `pet/pet.css` | 所有尺寸从固定 px → vw，窗口变大内容等比放大 |
+| Overlay 悬浮面板 | `main/overlay-manager.js` `renderer/overlay/*` | showOverlay(opts)→Promise；独立子 BrowserWindow；data-overlay-result 事件委托；CSS 原生拖拽；单实例 |
 
 ### ⏳ 待实现
 
 | 任务 | 依赖 |
 |------|------|
-| 对话气泡系统 | pet 移动完成 |
-| 双击面板切换 | pet 移动完成 |
-| 右键菜单 IPC 对接 | — |
-| 面板状态页（宠物属性展示）| dashboard.js |
-| dashboard.js + dashboard.css | — |
+| 面板状态页（dash-01）| — |
 | 躲避光标（搁置）| 需主进程侧方案 |
 
 ### ⏳ 未来模块
@@ -87,12 +91,17 @@ GitHub：https://github.com/qiuku30/desktop-pet
 
 ## 已知问题和交接注意事项
 
-1. 🔴 **dashboard.html 脚本标签**：已加 type="module" ✅
-2. 🟡 **-webkit-app-region: drag 与点击冲突**：拖拽用了 CSS 原生拖拽，会拦截 click/mousedown。后续做气泡（单击）和面板（双击）时，需在交互元素上加 `-webkit-app-region: no-drag`。详见 `docs/pet-movement-design.md` 第 6 节。
+1. ✅ ~~dashboard.html 脚本标签~~ 已加 type="module"
+2. ✅ ~~-webkit-app-region: drag 与点击冲突~~ 已解决：`#pet-body` 加 `no-drag`，容器 padding 保留拖拽区域。详见 `docs/pet-movement-design.md` 第 6 节。
 3. 🟡 **躲避光标已搁置**：IPC 拉光标延迟高，后续考虑主进程侧实现
-4. 🟡 **PET_STATE_CHANGED 通用事件**：待授权事件常量新增
+4. ✅ ~~PET_STATE_CHANGED 通用事件~~ infra-02 已实现
 5. 🟡 **event-bus.js DEBUG=true**：开发模式日志，生产环境需要开关
 6. 🟢 **pet-state.js 直接依赖 window.electronAPI**：全局依赖，限制了单测。暂不改
+7. 🟡 **整体覆盖写盘风险**：PetState._save() 是完整快照覆盖，新增持久化字段（如 zoomLevel）需在主进程 pet:state:set handler 中保护，防止被渲染端覆盖冲掉。当前 index.js L159-169 有保护逻辑
+8. 🟡 **喂食逻辑重复**：pet.js（overlay 喂食）和 dashboard.js（快速投喂）各自维护了一份消耗食物的逻辑。后续抽 `shared/feed-service.js` 统一（原则 2 高内聚）
+9. 🟡 **loadFile 切换 = 渲染进程重建**：EventBus/PetState 不跨页面，需 flush() 保证落盘。Phase 1 够用；Phase 2 如需面板实时同步宠物状态，考虑主进程持有数据或双 webview
+10. 🟢 **旧存档 hunger 字段残留**（infra-05 重命名后）：存量 pet-data.json 的 `hunger` key 不再读取，残留无害。Phase 1 开发阶段清档即可，生产环境需做数据迁移
+11. 🟢 **exp 进度条假设 0-100 刻度**：dash-01 `renderLevel()` 把 exp 直接当百分比。后续定下成长曲线后统一调整
 
 ---
 
@@ -117,3 +126,62 @@ GitHub：https://github.com/qiuku30/desktop-pet
 - 每一任架构窗口在此文件末尾追加 "202X-XX-XX — 架构窗口会话记录"
 - 实现窗口只读不写此文件
 - 架构决策变更时更新对应的 docs/* 文件，不要只改此文件
+
+---
+
+## 2026-07-12 — 架构窗口会话记录 (1) 对话气泡
+
+**处理事项**：接收实现窗口（对话气泡）上报的 4 项架构级改动。
+
+**已执行**：
+1. `store.js` DEFAULT_STATE 补 `zoomLevel: 1.0`（实现窗口新增了持久化 key 但 store 无默认值）
+2. `docs/pet-movement-design.md` 第 6 节：从"⚠️ 已知遗留问题"改为"✅ 已解决"，记录 no-drag 实施方案
+3. `docs/architecture.md`：
+   - ADR-001：窗口尺寸从固定 200×200 → 动态 `200 × scaleFactor × zoomLevel`
+   - ADR-005：新增 PetState.init() 幂等初始化约定
+   - ADR-007：补充动态窗口尺寸说明
+4. `PROJECT_BRIEF.md`：更新进度、已知问题、本记录
+
+## 2026-07-12 — 架构窗口会话记录 (2) 双击面板 + 高 DPI 修复
+
+**处理事项**：接收实现窗口（双击面板切换 + 高 DPI bug 修复）上报。
+
+**已执行**：
+1. `docs/architecture.md` 新增 **ADR-008**：高 DPI 下自动移动使用 `setBounds` 而非 `setPosition`。
+   记录 `currentPetSize` 变量模式和三处同步点（createWindow/applyZoom/switchToPet）。
+2. `PROJECT_BRIEF.md`：更新进度、已知问题、本记录
+
+**本次实现窗口新增**：
+- 双击宠物 → `window:toggle` → `loadFile` 切换 HTML → 面板态（含顶部栏 + 关闭按钮）
+- `savedPetBounds`：切面板前保存位置，切回时恢复（不再 center() 瞬移）
+- `wanderEnabled`：右键菜单 checkbox 控制自动走动开关
+- 三个高 DPI bug 修复：setPosition→setBounds 防尺寸漂移、中心锚点缩放、位置恢复
+
+**当前全局状态**：
+- `feature/pet-movement` 分支已完成：移动系统、对话气泡、窗口缩放、双击面板切换、右键菜单喂食/状态、响应式布局
+- 宠物 Phase 1 仅剩：面板状态页（宠物属性展示）
+- 下一优先级：面板状态页
+
+---
+
+## 2026-07-12 — ARCH-02 十大架构原则
+
+`docs/architecture.md` 新增十大架构原则章节（低耦合、高内聚、单一职责、状态中心化、配置驱动、接口统一、可插拔性、性能隔离、容错降级、持久化统一）。所有 ADR 以此为依据。CLAUDE.md 实现窗口启动流程新增必读 architecture.md。
+
+## 2026-07-12 — infra-02 PET_STATE_CHANGED 通用事件
+
+`pet-state.js` set() 新增通用事件 `PET_STATE_CHANGED {key, value}`，所有 key 触发。映射事件不动，兼容已有监听方。
+面板和新模块只需监听一个事件即可感知全部状态变化。
+
+## 2026-07-12 — infra-03 Overlay 通用悬浮面板
+
+`showOverlay({ html, width, height, x, y })` → Promise 模式。独立子 BrowserWindow，CSS 原生拖拽，
+`data-overlay-result` 事件委托。单实例保护。覆用场景：喂食 flyout、气泡历史、快捷设置等。
+
+不冲突 ADR-001（临时弹出窗口非独立常驻），不升级为 ADR。
+
+## 2026-07-12 — pet-04 右键菜单 IPC 对接
+
+**改动**：`pet/pet.js` 注册 `onMenuFeed` / `onMenuStatus` 监听。喂食：消耗首个食物→hunger-20/intimacy+5→气泡反馈；状态：toggleWindow() 切面板。
+
+无越界，无新架构决策。

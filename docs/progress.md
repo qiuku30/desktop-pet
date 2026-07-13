@@ -51,7 +51,7 @@
 | events.js — 事件常量 | ✅ | 14 个事件常量 |
 | module-registry.js — 模块注册表 | ✅ | pet-status 已注册 |
 | event-bus.js — 事件总线核心 | ✅ | on(返回取消函数)/off/once/emit，逐个 try-catch 隔离，DEBUG 日志 |
-| pet-state.js — 宠物状态管理器 | ✅ | 薄：init/get(副本)/set(映射发事件+防抖存盘)/subscribe |
+| pet-state.js — 宠物状态管理器 | ✅ | 薄：init/get(副本)/set(映射发事件+防抖存盘)/subscribe/flush(立即写盘) |
 | constants.js | ⏳ | 占位 |
 | utils.js | ⏳ | 占位 |
 
@@ -80,7 +80,7 @@
 | dashboard.html — 面板框架 | ✅ | 顶部栏（标题 + 关闭按钮）+ 导航 + 内容区 |
 | dashboard.js — 面板逻辑 | ✅ | 窗口切换 + 边缘拖拽缩放 + 光标控制（RAF 循环） |
 | dashboard.css — 面板样式 | ✅ | 顶部栏（标题 drag + 关闭按钮）+ 布局 + 暗色主题 |
-| 宠物状态展示卡片 | ✅ | 等级/经验/心情/饥饿/亲密度/金币/食物库存 + 快速投喂 |
+| 宠物状态展示卡片 | ✅ | 等级/经验/心情/饱腹/亲密度/金币/食物库存 + 快速投喂 |
 | DESIGN.md | 🟡 | 有基本结构，待细化 |
 
 ---
@@ -147,7 +147,7 @@
 - `init()`：启动时 await 一次，走 `getPetState()` 把存档灌进内存
 - `get()`：对象/数组返回**副本**，防止外部绕过 `set()` 篡改内部状态（ADR-005）
 - `set()`：改内存 → 按映射发事件 → 防抖存盘
-  - key→事件映射：`hunger`→`PET_HUNGER_CHANGED{value}`、`mood`→`PET_MOOD_CHANGED{mood}`、`level`→`PET_LEVEL_UP{level}`（payload 字段名对齐 docs/events.md）
+  - key→事件映射：`satiety`→`PET_SATIETY_CHANGED{value}`、`mood`→`PET_MOOD_CHANGED{mood}`、`level`→`PET_LEVEL_UP{level}`（payload 字段名对齐 docs/events.md）
   - 其余 key（exp/intimacy/coins/foodInventory）只存不发；金币赚/花等语义由调用方自己 emit
 - 持久化：**防抖写盘** 500ms；`_save()` 发整份内存快照给 `setPetState()`（store.js 整体覆盖写）
 - 单例导出 `PetState`
@@ -250,3 +250,14 @@
 - **IPC 通道**：`overlay:show` / `overlay:config:get` / `overlay:close`
 - **容错**：`did-fail-load` 处理加载失败不挂 Promise；`closed` 事件 resolve null 清理
 - **详见**：`docs/overlay-design.md`
+
+---
+
+## 设计决策记录 — PetState.flush() 跨页面状态同步（infra-04, 2026-07-13）
+
+- **问题**：PetState._save() 有 500ms 防抖，喂食后立即切面板时存档未落盘。EventBus 不跨页面（新页面 loadFile 重建 PetState 实例），新实例的 init() 读到旧数据。
+- **方案**：新增 `flush()` 方法 — 清除防抖计时器（如果有）→ `await this._save()` 立即写盘。幂等、可选、不替代防抖机制。
+- **调用点**：
+  - `pet.js` `onMenuStatus`：右键"状态"→`await PetState.flush()`→`toggleWindow()`
+  - `dashboard.js` `btn-close`：✕按钮→`await PetState.flush()`→`toggleWindow()`
+  - 喂食 overlay `__warehouse__` 路径也需要 flush() — pet-06 修复：在 toggleWindow() 前加 `await PetState.flush()`，确保喂食后的库存/饥饿/亲密度变更落盘后再切面板。

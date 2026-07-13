@@ -9,6 +9,15 @@ import {
 } from './pet-motion.mjs'
 import { PetState } from '../shared/pet-state.js'
 
+// ── 食物配置表（原则5：配置驱动，静态数据与业务逻辑分离）──
+const FOODS = {
+  apple:  { id: 'apple',  name: '苹果', emoji: '🍎', satiety: 20 },
+  cake:   { id: 'cake',   name: '蛋糕', emoji: '🍰', satiety: 30 },
+  fish:   { id: 'fish',   name: '小鱼干', emoji: '🐟', satiety: 25 },
+  milk:   { id: 'milk',   name: '牛奶', emoji: '🥛', satiety: 15 },
+  cookie: { id: 'cookie', name: '饼干', emoji: '🍪', satiety: 10 },
+}
+
 // 动态窗口尺寸（配合 scaleFactor 自适应 + 用户缩放）
 function getWinSize() {
   return { w: document.documentElement.clientWidth, h: document.documentElement.clientHeight }
@@ -25,6 +34,9 @@ let resumeTimer = null
 let glideToken = 0
 let wanderTimer = null
 let wanderEnabled = true
+
+// ── overlay 状态 ──
+let overlayActive = false
 
 // ── 工具 ──
 function rand(min, max) { return min + Math.random() * (max - min) }
@@ -70,6 +82,7 @@ async function doWander() {
   wanderTimer = null
   if (!wanderEnabled) return
   if (autoPaused) { scheduleWander(); return }
+  if (overlayActive) { scheduleWander(); return }
 
   try {
     const mode = await window.electronAPI.getWindowMode()
@@ -175,7 +188,7 @@ body.addEventListener('pointerdown', (e) => {
   clickDownPos = { x: e.clientX, y: e.clientY }
 })
 
-body.addEventListener('click', (e) => {
+body.addEventListener('click', async (e) => {
   // 拖拽检测：移动超过 3px 视为拖拽，不出气泡
   if (clickDownPos) {
     const dx = e.clientX - clickDownPos.x
@@ -187,6 +200,7 @@ body.addEventListener('click', (e) => {
   if (clickTimer) {
     clearTimeout(clickTimer)
     clickTimer = null
+    await PetState.flush()
     window.electronAPI.toggleWindow()  // 双击 → 切换面板
     return
   }
@@ -207,26 +221,116 @@ async function init() {
   window.electronAPI.onWanderToggle(onWanderToggle)
 
   // 右键菜单 — 喂食
-  window.electronAPI.onMenuFeed(() => {
+  window.electronAPI.onMenuFeed(async () => {
     const foodInventory = PetState.get('foodInventory') || []
-    if (foodInventory.length === 0) {
+    const invMap = {}
+    foodInventory.forEach(item => { invMap[item.id] = item.count })
+
+    const items = Object.values(FOODS)
+      .map(food => ({ ...food, count: invMap[food.id] || 0 }))
+      .sort((a, b) => b.count - a.count)
+
+    const hasFood = items.some(item => item.count > 0)
+    if (!hasFood) {
       showBubble('没有食物了... 🥺')
+      // 仍然弹 overlay，食物全灰色 ×0，用户可进仓库
+    }
+
+    // 防止 overlay 重复打开（showOverlay 单实例，二次调用返回 null）
+    if (overlayActive) return
+
+    // 构建 overlay HTML（暗色主题，对齐 infra-03 overlay 风格）
+    let html = `<style>
+.food-row { display:flex; align-items:center; padding:8px 12px; cursor:pointer; border-radius:6px; margin:2px 0; transition:background 0.15s; }
+.food-row:hover { background:rgba(255,255,255,0.08); }
+.food-row--empty { opacity:0.30; }
+.food-emoji { font-size:18px; margin-right:10px; }
+.food-name { flex:1; font-size:14px; }
+.food-count { font-size:13px; color:#aaa; }
+.food-satiety { font-size:12px; color:#7eb; margin-left:4px; }
+.food-divider { margin:8px 0; border-top:1px solid rgba(255,255,255,0.12); }
+.food-bottom { display:flex; align-items:center; justify-content:space-between; padding:4px 0; }
+.food-warehouse { color:#aaa; font-size:13px; cursor:pointer; padding:6px 4px; }
+.food-warehouse:hover { color:#ddd; }
+</style>`
+
+    items.forEach(item => {
+      const satietyLabel = `+${item.satiety}`
+      if (item.count > 0) {
+        html += `<div class="food-row" data-overlay-result="${item.id}">
+          <span class="food-emoji">${item.emoji}</span>
+          <span class="food-name">${item.name}</span>
+          <span class="food-count">×${item.count}</span>
+          <span class="food-satiety">${satietyLabel}</span>
+        </div>`
+      } else {
+        html += `<div class="food-row food-row--empty">
+          <span class="food-emoji">${item.emoji}</span>
+          <span class="food-name">${item.name}</span>
+          <span class="food-count">×0</span>
+          <span class="food-satiety">${satietyLabel}</span>
+        </div>`
+      }
+    })
+
+    html += `<div class="food-divider"></div>
+<div class="food-bottom">
+  <button data-overlay-result="null">取消</button>
+  <span class="food-warehouse" data-overlay-result="__warehouse__">📦 打开仓库 →</span>
+</div>`
+
+    // 暂停走动
+    overlayActive = true
+    if (wanderTimer) { clearTimeout(wanderTimer); wanderTimer = null }
+    glideToken++
+    body.classList.remove('moving')
+
+    const result = await window.electronAPI.showOverlay({
+      html,
+      width: 180,
+      height: 200,
+      x: 160,
+      y: 0,
+    })
+
+    // 恢复走动
+    overlayActive = false
+    scheduleWander()
+
+    if (result === null || result === undefined) return
+
+    if (result === '__warehouse__') {
+      await PetState.flush()
+      window.electronAPI.toggleWindow()
       return
     }
-    const [, ...remaining] = foodInventory
-    PetState.set('foodInventory', remaining)
 
-    const hunger = PetState.get('hunger') || 0
-    PetState.set('hunger', Math.max(0, hunger - 20))
+    const food = FOODS[result]
+    if (!food) return
+
+    const satiety = PetState.get('satiety') || 0
+    if (satiety >= 100) {
+      showBubble('已经吃饱了 🍽')
+      return
+    }
+
+    // 消耗 1 个
+    const newInventory = foodInventory
+      .map(inv => inv.id === result ? { ...inv, count: inv.count - 1 } : inv)
+      .filter(inv => inv.count > 0)
+    PetState.set('foodInventory', newInventory)
+
+    PetState.set('satiety', Math.min(100, satiety + food.satiety))
 
     const intimacy = PetState.get('intimacy') || 0
     PetState.set('intimacy', intimacy + 5)
 
-    showBubble('好吃！')
+    showBubble(`投喂了${food.name}！`)
   })
 
   // 右键菜单 — 状态
-  window.electronAPI.onMenuStatus(() => {
+  window.electronAPI.onMenuStatus(async () => {
+    await PetState.flush()
     window.electronAPI.toggleWindow()
   })
 

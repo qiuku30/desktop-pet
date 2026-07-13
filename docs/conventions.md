@@ -4,7 +4,7 @@
 
 - ES6 模块语法（import/export）
 - 变量命名：camelCase
-- 常量命名：UPPER_SNAKE_CASE（如 `EVENTS.PET_HUNGER_CHANGED`）
+- 常量命名：UPPER_SNAKE_CASE（如 `EVENTS.PET_SATIETY_CHANGED`）
 - 文件名：kebab-case（如 `event-bus.js`, `pet-state.js`）
 
 ## 文件组织

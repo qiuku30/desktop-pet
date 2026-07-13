@@ -12,8 +12,9 @@
 
 | 事件名 | 参数 | 触发时机 |
 |--------|------|----------|
-| `pet:hunger:changed` | `{ value: number }` | 饥饿值变化 |
+| `pet:satiety:changed` | `{ value: number }` | 饱腹值变化 |
 | `pet:mood:changed` | `{ mood: string }` | 心情变化 |
+| `pet:state:changed` | `{ key: string, value: any }` | 任意宠物状态变更（set() 调用时） |
 | `pet:level:up` | `{ level: number }` | 宠物升级 |
 | `pet:fed` | `{ food: string }` | 喂食成功 |
 | `pet:shooed` | - | 被赶跑 |
@@ -24,6 +25,7 @@
 | 事件名 | 参数 | 触发时机 |
 |--------|------|----------|
 | `user:drag` | - | 用户拖拽宠物窗口（OS 原生拖拽，通知渲染端暂停自动走动） |
+| `wander:toggle` | `{ enabled: boolean }` | 右键菜单切换自动走动开关 |
 
 ## 经济系统
 

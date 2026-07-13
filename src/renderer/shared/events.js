@@ -3,7 +3,8 @@
 
 export const EVENTS = {
   // 宠物状态
-  PET_HUNGER_CHANGED:  'pet:hunger:changed',
+  PET_STATE_CHANGED:   'pet:state:changed',
+  PET_SATIETY_CHANGED:  'pet:satiety:changed',
   PET_MOOD_CHANGED:    'pet:mood:changed',
   PET_LEVEL_UP:        'pet:level:up',
   PET_FED:             'pet:fed',

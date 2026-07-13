@@ -107,3 +107,5 @@ html, body {
   75%  { opacity: 1; transform: translateY(0) scale(1); }
   100% { opacity: 0; transform: translateY(-2vw) scale(0.95); }
 }
+
+/* 喂食 flyout 已迁移至独立 BrowserWindow overlay（infra-03 showOverlay） */

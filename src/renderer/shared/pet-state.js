@@ -5,12 +5,12 @@
 import { EventBus } from './event-bus.js'
 import { EVENTS } from './events.js'
 
-// key → 事件映射。只有能对上现成事件的 key 才在 set 时自动发事件。
-// payloadKey 对齐 docs/events.md 各事件的参数字段名（hunger→value / mood→mood / level→level）。
-// 其余 key（exp / intimacy / coins / foodInventory 等）只改内存 + 存盘，不发事件；
-// 需要通知的语义（如金币赚/花）由调用方自己 EventBus.emit。
+// key → 事件映射。这些 key 在 set 时会额外发一个语义明确的专用事件。
+// payloadKey 对齐 docs/events.md 各事件的参数字段名（satiety→value / mood→mood / level→level）。
+// 所有 key（含未映射的 exp / intimacy / coins / foodInventory 等）都会发 PET_STATE_CHANGED 通用事件；
+// 需要更细粒度语义的（如金币赚/花）仍由调用方自己 EventBus.emit。
 const KEY_EVENT_MAP = {
-  hunger: { event: EVENTS.PET_HUNGER_CHANGED, payloadKey: 'value' },
+  satiety: { event: EVENTS.PET_SATIETY_CHANGED, payloadKey: 'value' },
   mood:   { event: EVENTS.PET_MOOD_CHANGED,   payloadKey: 'mood' },
   level:  { event: EVENTS.PET_LEVEL_UP,        payloadKey: 'level' },
 }
@@ -49,12 +49,24 @@ class PetStateCore {
     if (mapping) {
       EventBus.emit(mapping.event, { [mapping.payloadKey]: value })
     }
+    // 通用状态变更事件：所有 key 都发，监听方自行按 key 过滤
+    EventBus.emit(EVENTS.PET_STATE_CHANGED, { key, value })
     this._scheduleSave()
   }
 
   // 订阅状态事件。转发到 EventBus.on，返回「取消订阅」函数。
   subscribe(event, callback) {
     return EventBus.on(event, callback)
+  }
+
+  // 立即写盘：清除防抖计时器，直接 await _save() 落盘。
+  // 幂等：多次调用安全；如果 _saveTimer 为空（最近没有 set），直接 resolve。
+  async flush() {
+    if (this._saveTimer) {
+      clearTimeout(this._saveTimer)
+      this._saveTimer = null
+    }
+    await this._save()
   }
 
   // ── 内部 ──

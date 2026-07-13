@@ -65,7 +65,7 @@
 > ✅ 已实现（2026-07-12）
 
 - **台词库**：~16 条，按 `心情(happy/neutral/hungry/sad)` × `等级(low 1-3 / mid 4-6 / high 7+)` 分层
-- **交互**：单击 `#pet-body` → 300ms 延迟（为双击预留）→ 弹出气泡；拖拽移动 > 3px 不出气泡
+- **交互**：单击 `#pet-body` → 300ms 延迟（为双击预留）→ 弹出气泡；双击 → `toggleWindow()` 切换面板；拖拽移动 > 3px 不出气泡
 - **气泡**：`#speech-bubbles` 内绝对定位，`flex-direction: column-reverse` 垂直堆叠，最新气泡离宠物最近
 - **动画**：`@keyframes bubble-pop`，2s ease-out（弹入 10% → 保持 → 淡出上飘），`animationend` 移除 DOM
 - **`no-drag`**：`#pet-body` 加 `-webkit-app-region: no-drag` 让点击事件穿透 drag 拦截；父级 `#pet-container` 的 15px padding 保留拖拽区域

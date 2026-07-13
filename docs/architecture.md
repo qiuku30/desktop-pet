@@ -1,6 +1,76 @@
-# Architecture Decision Record
+# 架构设计原则与决策记录
 
-## ADR-001: Electron 单窗口双状态
+> 以下十大原则是所有架构决策（ADR）的底层依据。新功能设计、代码审查、重构时须对照检查。
+
+---
+
+## 十大架构原则
+
+### 1. 低耦合
+
+模块间仅通过统一接口通信，不侵入对方内部逻辑，依赖关系清晰。
+
+- 落地：各业务模块通过 EventBus 通信（ADR-002）；Electron 多窗口所有数据交互走主进程中转，禁止跨渲染进程直接通信。
+
+### 2. 高内聚
+
+强关联逻辑收拢在同一模块内，单个模块只负责一类完整的独立能力。
+
+- 落地：宠物渲染、属性计算、食物库存、玩法逻辑各自闭环，避免交互代码与业务逻辑混杂散落。
+
+### 3. 单一职责
+
+单个文件/类/函数仅承担一个职责，修改它的动因唯一。
+
+- 落地：静态配置、库存服务、状态计算拆分独立文件；新增食物品类仅需修改配置表，无需改动业务逻辑代码。
+
+### 4. 状态中心化（单一数据源）
+
+全局共享数据统一存储，所有窗口、模块均从同一可信数据源读写。
+
+- 落地：金币、宠物属性、背包库存等全局状态统一存放于主进程；渲染进程通过 PetState + IPC 读写，订阅事件感知变更（ADR-005）。
+
+### 5. 配置驱动（数据与逻辑分离）
+
+将易变的内容抽离为配置数据，与核心业务逻辑代码剥离。
+
+- 落地：食物属性、合成配方、升级阈值、对话文案全部配置化；调整数值、新增内容仅修改配置文件，无需重构核心逻辑。
+
+### 6. 接口统一（门面模式）
+
+每个模块对外仅暴露有限、稳定的接口，内部实现细节完全对外透明。
+
+- 落地：PetState 只暴露 init/get/set/subscribe（ADR-005）；store.js 只暴露 initStore/getState/setState；内部重构时只要接口不变，所有调用方无需同步修改。
+
+### 7. 可插拔性
+
+非核心功能模块可独立启用、禁用或移除，不会导致核心系统崩溃。
+
+- 落地：宠物系统为核心底座，单词、2048、农场等玩法均为可插拔插件；核心系统不反向依赖任何玩法模块；module-registry.js 驱动面板导航（ADR-004）。
+
+### 8. 性能隔离
+
+重计算、重渲染逻辑与宠物主窗口运行隔离，避免卡顿影响常驻体验。
+
+- 落地：复杂数值运算、存档读写放在主进程执行；宠物动画采用 CSS 实现（无 JS 动画开销）；闲置游戏窗口自动挂起释放资源。
+
+### 9. 容错降级
+
+单个模块出现异常仅影响自身功能，不会拖垮整个桌面应用。
+
+- 落地：event-bus.js emit 逐个 try-catch 隔离（ADR-006）；IPC 调用统一错误捕获；存档读取失败自动回退默认值。
+
+### 10. 持久化统一
+
+所有本地存档数据走统一存储层，禁止各模块私自读写本地文件。
+
+- 落地：store.js 封装统一存储服务（ADR-003），统一处理存档版本兼容、自动备份、数据校验，避免数据分散混乱。
+
+---
+
+## ADR 决策记录
+
+### ADR-001: Electron 单窗口双状态
 
 **决策**：使用一个 BrowserWindow，在"宠物态"和"面板态"之间切换。
 
@@ -10,6 +80,9 @@
 - 用户体验连贯（不是弹新窗口的突兀感）
 
 **替代方案**：双窗口（宠物窗 + 面板窗），被否决因为窗口管理更复杂。
+
+**窗口尺寸**（2026-07-12 更新）：宠物态窗口不再是固定 200×200，改为动态计算：
+`200 × screen.scaleFactor × zoomLevel`。其中 zoomLevel 支持用户四档调节（75%/100%/125%/150%），持久化到 store。`lockPetSize()` 用 `min=max` 硬锁定正方形，防止 OS 干扰。
 
 ---
 
@@ -66,11 +139,17 @@
 ```js
 // pet-state.js 对外只暴露这三个
 PetState.get('level')           // 读取
-PetState.set('hunger', 80)      // 写入（内部自动 emit 事件）
-PetState.subscribe(EVENTS.PET_HUNGER_CHANGED, callback)  // 订阅
+PetState.set('satiety', 80)      // 写入（内部自动 emit 事件）
+PetState.subscribe(EVENTS.PET_SATIETY_CHANGED, callback)  // 订阅
 ```
 
 **禁止**：任何模块直接修改 `PetState._data` 或绕过 `set()` 方法。
+
+**初始化约定**（2026-07-12）：
+- `PetState.init()` 是**幂等的**（第二次调用直接 return，不重复加载）
+- 首个调用点：`pet.js` 的 `init()` 中 `await PetState.init()`（宠物窗口启动即加载）
+- 后续模块（dashboard 等）也应在使用前 `await PetState.init()`，确保数据就绪
+- 不依赖模块加载顺序 — 谁先跑谁触发初始化，后来者安全跳过
 
 ---
 
@@ -112,3 +191,26 @@ function loadModule(moduleId) {
 
 **教训**：桌面级应用的实时交互优先使用 OS 原生机制。IPC 适合自动化，不适合
 帧级实时操作。
+
+**窗口尺寸**（2026-07-12）：`getPetSize()` = `200 × scaleFactor × zoomLevel`，动态计算非固定值。`lockPetSize()` 用 `min=max` 锁定，确保 resize 和缩放时窗口保持正方形。
+
+---
+
+## ADR-008: 高 DPI 下自动移动使用 setBounds 而非 setPosition
+
+**决策**：`window:move` IPC handler 中自动移动窗口使用
+`mainWindow.setBounds({ x, y, width, height })` 而非 `mainWindow.setPosition(x, y)`。
+同时用 `currentPetSize` 变量存储当前基准尺寸，不用 `getSize()` 取值。
+
+**理由**：
+- 在 Windows 高 DPI 下，frameless + transparent + `min=max` 锁定的窗口，
+  `setPosition` 单独调用时会触发每帧 +1px 的尺寸漂移（Electron/Chromium 内部
+  DPI 取整 bug），走动几秒后窗口明显变大。
+- `setBounds` 一次性设定位置和尺寸，原子操作杜绝了中间的取整丢失。
+- `getSize()` 返回的是已被漂移污染的尺寸，所以必须用独立变量 `currentPetSize` 记录基准值。
+
+**适用场景**：`window:move`（自动走动）、`applyZoom`（缩放）、`switchToPet`（面板切回）。
+这三处都需同步更新 `currentPetSize`。
+
+**教训**：Electron 的 frameless + transparent + min=max 组合在 Windows 高 DPI 下
+是已知雷区。永远用 `setBounds` 替代 `setPosition`，且尺寸走内存变量不走 `getSize()`。
