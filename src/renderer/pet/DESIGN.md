@@ -11,8 +11,13 @@
 ## 状态
 
 - 心情（happy / neutral / hungry / sad）
-- 等级（Lv.1 → Lv.???）
-- 亲密度数值
+- 等级（Lv.1 → Lv.30），含经验值（exp）与升级曲线
+- 饱腹值（satiety，0-动态上限，随时间衰减）
+- 亲密度（intimacy，喂食 +5）
+- 金币（coins，待接入）
+- 食物库存（foodInventory）
+- 每日互动计数（dailyInteractionCount / lastInteractionDate）
+- 饱腹衰减时间戳（lastSatietyUpdate）
 
 ## 动画
 

@@ -22,9 +22,9 @@
 ### 光标
 - `cursor:pos:get` — 拉取当前全局光标位置（设备像素）
 
-### 宠物状态（委托给 pet-ipc.js）
-- `pet:state:get` — 获取完整宠物状态
-- `pet:state:set` — 完整快照整体覆盖写盘 + 空快照保护 + zoomLevel 保护
+### 宠物状态
+- `pet:state:get` — 获取完整宠物状态（委托给 pet-ipc.js）
+- `pet:state:set` — 完整快照整体覆盖写盘 + 空快照保护 + zoomLevel 保护（在 index.js 直接注册，覆盖 pet-ipc.js 的泛用 handler）
 
 ### 菜单推送（主→渲染）
 - `menu:feed` — 右键"喂食"通知
@@ -38,6 +38,11 @@
 - `overlay:show` — 创建 overlay 子窗口并返回 Promise<结果>
 - `overlay:config:get` — overlay 窗口获取自身配置
 - `overlay:close` — overlay 窗口关闭并返回结果
+
+### Tooltip 悬浮提示
+- `tooltip:show` — 创建/更新 tooltip 子窗口（fire-and-forget，data:URL 注入）
+- `tooltip:hide` — 隐藏 tooltip 窗口（不销毁）
+- `tooltip:close` — 销毁 tooltip 窗口
 
 ## 数据存储
 

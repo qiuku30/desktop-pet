@@ -92,6 +92,7 @@ import { PetState } from '../shared/pet-state.js'
 import { FOODS, FEED_CONFIG, consumeFood, applyFeed, emitFed } from '../shared/feed-service.js'
 import { calcRequiredExp } from '../shared/exp-service.js'
 import { calcMaxSatiety } from '../shared/satiety-service.js'
+import { EVENTS } from '../shared/events.js'
 
 // tooltip 字段 → 中文标签映射（字段驱动，加新字段只加一行）
 const TOOLTIP_FIELDS = {
@@ -359,7 +360,7 @@ async function initStatus() {
   }, true)
 
   // 监听状态变化
-  PetState.subscribe('pet:state:changed', onStateChanged)
+  PetState.subscribe(EVENTS.PET_STATE_CHANGED, onStateChanged)
 
   renderAll()
 }
