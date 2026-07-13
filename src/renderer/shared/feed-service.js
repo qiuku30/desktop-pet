@@ -7,6 +7,12 @@ import { EventBus } from './event-bus.js'
 import { EVENTS } from './events.js'
 import { calcMaxSatiety } from './satiety-service.js'
 
+// ── 喂食通用配置 ──
+// 与食物无关的固定参数放这里；单个食物有可能覆盖时优先读 FOODS 字段。
+export const FEED_CONFIG = {
+  intimacyPerFeed: 5,   // 每次喂食亲密度加成
+}
+
 // ── 食物配置表 ──
 // 新增食物品类只需加一行，无需改业务逻辑代码。
 export const FOODS = {
@@ -41,7 +47,7 @@ export function consumeFood(foodId, foodInventory) {
 export function applyFeed(satiety, intimacy, food, level = 1) {
   return {
     newSatiety: Math.min(calcMaxSatiety(level), satiety + food.satiety),
-    newIntimacy: intimacy + 5,
+    newIntimacy: intimacy + FEED_CONFIG.intimacyPerFeed,
   }
 }
 
