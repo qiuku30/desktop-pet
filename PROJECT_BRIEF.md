@@ -262,5 +262,22 @@ GitHub：https://github.com/qiuku30/desktop-pet
 
 **当前全局状态**：
 - 49 commits 待 push
-- 经验系统全部接入完成 ✅
+
+## 2026-07-13 — infra-08 + dash-01 续 饱腹消耗系统
+
+**infra-08**（新开）：`shared/satiety-service.js`（新建）、`shared/feed-service.js`、`main/storage/store.js`、`pet/pet.js`
+- 时间戳差值结算：避免高频定时器，离线也生效
+- calcMaxSatiety = 100 + floor(level/5)×20（每5级+20上限）
+- reduceSatiety(satiety, amount) 统一消耗接口，最低 0
+- suggestMood() 纯函数，不直接改 PetState
+- 在线 60s 定时结算；饱腹 < 30 自动切 hungry；喂食恢复后心情恢复
+- feed-service applyFeed 加可选 level 参数（默认 1 向后兼容）
+
+**dash-01 续**：`dashboard/dashboard.js`
+- 三处硬编码 100 → calcMaxSatiety(level)
+- renderSatiety() 进度条改为百分比计算
+
+**当前全局状态**：
+- 52 commits 待 push
+- 饱腹消耗系统完成 ✅
 - 待决策：下一步做什么模块？
