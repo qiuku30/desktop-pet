@@ -230,7 +230,20 @@ GitHub：https://github.com/qiuku30/desktop-pet
 
 **审查**：dash-02 遵守了约束，只改 buildStatusDOM() 模板 + CSS，蓝图/逻辑未碰。session-log.md 被覆盖一行已修复。
 
+## 2026-07-13 — infra-07 经验系统共享层
+
+**改动文件**：`shared/exp-service.js`（新建）、`shared/exp-service.test.mjs`（新建）、`shared/feed-service.js`（FOODS +exp 字段）、`main/storage/store.js`（DEFAULT_STATE +2 字段）、`docs/progress.md`、`docs/session-log.md`
+
+**越界授权**：`main/storage/store.js` ✅ 已在提示词中授权
+
+**内容**：
+- 分段升级公式：新手期(1-5)弱幂次、成长期(6-20)线性、成熟期(21+)低幅固定
+- 溢出经验自动继承，maxLevel 30
+- 每日互动上限 20 次 × 5exp，本地日期 YYYY-MM-DD 过日归零
+- FOODS 各加 exp 字段（cookie:5 / apple:10 / milk:10 / fish:20 / cake:25）
+- 31 个测试用例全部通过
+- ⚠️ UTC 日期坑：`toISOString().slice(0,10)` 在中国凌晨会错一天，改用 getFullYear/getMonth/getDate
+
 **当前全局状态**：
-- 5 个文件未提交（dash-02 改动）
-- 38 commits 待 push
-- 面板布局已就绪，RPG 卡结构可扩展
+- 41 commits 待 push
+- exp 共享层就绪，等待 pet-07 + dash-01 续接入
