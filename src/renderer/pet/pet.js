@@ -37,6 +37,10 @@ let wanderEnabled = true
 
 // ── overlay 状态 ──
 let overlayActive = false
+let _unsubMenuFeed = null
+let _unsubMenuStatus = null
+let _unsubWanderToggle = null
+let _unsubUserDrag = null
 
 // ── 工具 ──
 function rand(min, max) { return min + Math.random() * (max - min) }
@@ -217,11 +221,17 @@ async function init() {
   const pos = await window.electronAPI.getWindowPosition()
   winPos = pos
 
-  window.electronAPI.onUserDrag(onUserDrag)
-  window.electronAPI.onWanderToggle(onWanderToggle)
+  // 清理旧监听器（防止 loadFile 切换页面后累积）
+  if (_unsubUserDrag) _unsubUserDrag()
+  if (_unsubWanderToggle) _unsubWanderToggle()
+  if (_unsubMenuFeed) _unsubMenuFeed()
+  if (_unsubMenuStatus) _unsubMenuStatus()
+
+  _unsubUserDrag = window.electronAPI.onUserDrag(onUserDrag)
+  _unsubWanderToggle = window.electronAPI.onWanderToggle(onWanderToggle)
 
   // 右键菜单 — 喂食
-  window.electronAPI.onMenuFeed(async () => {
+  _unsubMenuFeed = window.electronAPI.onMenuFeed(async () => {
     const foodInventory = PetState.get('foodInventory') || []
     const invMap = {}
     foodInventory.forEach(item => { invMap[item.id] = item.count })
@@ -329,7 +339,7 @@ async function init() {
   })
 
   // 右键菜单 — 状态
-  window.electronAPI.onMenuStatus(async () => {
+  _unsubMenuStatus = window.electronAPI.onMenuStatus(async () => {
     await PetState.flush()
     window.electronAPI.toggleWindow()
   })
