@@ -94,15 +94,35 @@ import { FOODS, consumeFood, applyFeed, emitFed } from '../shared/feed-service.j
 function buildStatusDOM() {
   const area = document.getElementById('content-area')
   area.innerHTML = `
-    <section class="status-hero">
-      <div class="card card--level" id="card-level"></div>
-      <div class="card card--mood" id="card-mood"></div>
+    <!-- 上半区：形象展示 -->
+    <section class="portrait-layer">
+      <div class="slot-list" id="slots-left">
+        <div class="slot-item"></div>
+        <div class="slot-item"></div>
+        <div class="slot-item"></div>
+      </div>
+      <div class="portrait-area" id="portrait-area">🐱</div>
+      <div class="slot-list" id="slots-right">
+        <div class="slot-item"></div>
+        <div class="slot-item"></div>
+        <div class="slot-item"></div>
+      </div>
     </section>
-    <section class="card card--satiety" id="card-satiety"></section>
-    <section class="status-compact">
-      <div class="card card--intimacy" id="card-intimacy"></div>
-      <div class="card card--coins" id="card-coins"></div>
-      <div class="card card--inventory" id="card-inventory"></div>
+
+    <!-- 下半区：信息数据 -->
+    <section class="info-layer">
+      <div class="info-row--2col">
+        <div class="card card--level" id="card-level"></div>
+        <div class="card card--mood" id="card-mood"></div>
+      </div>
+      <div class="info-row--full">
+        <div class="card card--satiety" id="card-satiety"></div>
+      </div>
+      <div class="info-row--3col">
+        <div class="card card--intimacy" id="card-intimacy"></div>
+        <div class="card card--coins" id="card-coins"></div>
+        <div class="card card--inventory" id="card-inventory"></div>
+      </div>
     </section>
   `
 }

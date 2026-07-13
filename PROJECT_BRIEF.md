@@ -211,7 +211,26 @@ GitHub：https://github.com/qiuku30/desktop-pet
 5. 已确认完成，pet-05 和 dash-01 无需再开
 
 **当前全局状态**：
-- 工作区有未提交改动（11 个文件），需 commit
-- 36→37 commits 待 push
+- ~工作区有未提交改动（11 个文件），需 commit~ 已提交
+- ~36→37 commits 待 push~ 38 commits 待 push
 - Phase 1 已知问题：3 🟡 + 3 🟢（全部已确认，无新增）
 - 待决策：下一步做什么模块？
+
+## 2026-07-13 — dash-02 RPG 角色卡布局重构
+
+**处理事项**：dash-02 完成面板布局重构，上报确认。
+
+**改动文件**：`dashboard/dashboard.js` `dashboard/dashboard.css` `dashboard/DESIGN.md` `docs/progress.md` `docs/session-log.md`
+
+**内容**：
+- 卡片平铺 → 两层 RPG 角色展示式布局
+- 上半区：emoji 居中 + 左右各 3 槽位虚线占位（立绘区用独立容器，未来可替换为图片/动画）
+- 下半区：info-row--2col / --full / --3col 语义化行容器，`.info-layer` 独立 overflow-y: auto
+- 保留所有 card id、render*()、handleFeed()、事件绑定不变
+
+**审查**：dash-02 遵守了约束，只改 buildStatusDOM() 模板 + CSS，蓝图/逻辑未碰。session-log.md 被覆盖一行已修复。
+
+**当前全局状态**：
+- 5 个文件未提交（dash-02 改动）
+- 38 commits 待 push
+- 面板布局已就绪，RPG 卡结构可扩展
