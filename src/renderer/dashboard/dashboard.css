@@ -68,6 +68,9 @@ html, body {
   flex-shrink: 0;
   background: #252525;
   border-right: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 #content-area {
@@ -75,6 +78,100 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: opacity 0.15s ease;
+}
+
+/* ── 导航栏 ── */
+
+.nav-section {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 2px;
+}
+
+.nav-section--top {
+  flex: 0 0 auto;
+}
+
+.nav-section--bottom {
+  margin-top: auto;
+  border-top: 1px solid #333;
+  padding-top: 8px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #999;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  text-align: left;
+  width: 100%;
+  border-left: 3px solid transparent;
+}
+
+.nav-item:hover:not(.nav-item--disabled) {
+  background: #333;
+  color: #ddd;
+}
+
+.nav-item--active {
+  background: #3a3a3a;
+  color: #fff;
+  border-left-color: #2196f3;
+}
+
+.nav-item--disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+.nav-item-icon {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.nav-item-label {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* ── 占位页面 ── */
+
+.placeholder-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #666;
+  user-select: none;
+}
+
+.placeholder-icon {
+  font-size: 48px;
+  line-height: 1;
+}
+
+.placeholder-label {
+  font-size: 20px;
+  color: #888;
+}
+
+.placeholder-hint {
+  font-size: 13px;
+  color: #555;
 }
 
 /* ── 上半区：形象展示层 ── */

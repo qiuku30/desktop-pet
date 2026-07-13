@@ -4,9 +4,10 @@
 
 ## 组件结构
 
+- `nav-config.js` — 导航配置（原则 5 配置驱动）
 - `#dashboard` — 面板根容器
 - `#top-bar` — 顶部栏（标题拖拽区 + 关闭按钮）
-- `#nav-bar` — 导航栏（占位，待 module-registry.js 驱动渲染）
+- `#nav-bar` — 导航栏（nav-config.js 配置驱动，上下分区 + 事件委托切换页面）
 - `#content-area` — 内容区，flex column 分为上下两层：
   - `.portrait-layer` — 上半区：形象展示层（左槽位 + 中央立绘 + 右槽位）
   - `.info-layer` — 下半区：信息数据层（等级/经验、心情、饱腹度、亲密度、金币、食物库存），`overflow-y: auto` 独立滚动
@@ -29,10 +30,12 @@
 ## 状态切换
 
 - 宠物态 ↔ 面板态：loadFile 切换 HTML + 窗口 resize
-- 面板内导航切换（待实现）：替换 `#content-area` 内容
+- 面板内导航切换：`switchPage(pageId)` → fade 动画 → 替换 `#content-area` 内容，PetState 订阅不销毁
 
-## 模块加载（待实现）
+## 导航配置
 
-- 读取 `module-registry.js` 的 MODULES 数组
-- 渲染导航按钮
-- 点击导航按钮时动态加载对应模块
+- `nav-config.js` — 导航配置数组 `NAV_ITEMS`（原则 5 配置驱动）
+  - 每项：`{ id, icon, label, section, enabled, render }`
+  - `section: 'top'` — 上部区域；`section: 'bottom'` — `margin-top: auto` 推到底部
+  - `enabled: false` → `.nav-item--disabled`（`pointer-events: none` + 半透明）
+  - 占位页面统一使用 `buildPlaceholderPage(container, icon, label)` 渲染

@@ -93,6 +93,7 @@ import { FOODS, FEED_CONFIG, consumeFood, applyFeed, emitFed } from '../shared/f
 import { calcRequiredExp } from '../shared/exp-service.js'
 import { calcMaxSatiety } from '../shared/satiety-service.js'
 import { EVENTS } from '../shared/events.js'
+import { NAV_ITEMS } from './nav-config.js'
 
 // tooltip 字段 → 中文标签映射（字段驱动，加新字段只加一行）
 const TOOLTIP_FIELDS = {
@@ -100,8 +101,12 @@ const TOOLTIP_FIELDS = {
   exp:      '经验',
 }
 
-function buildStatusDOM() {
+// ── 导航状态 ──
+let currentPageId = 'home'
+
+function buildHomePage() {
   const area = document.getElementById('content-area')
+  area.className = 'page page--home'
   area.innerHTML = `
     <!-- 上半区：形象展示 -->
     <section class="portrait-layer">
@@ -134,6 +139,114 @@ function buildStatusDOM() {
       </div>
     </section>
   `
+}
+
+// ── 页面切换 ──
+function switchPage(pageId) {
+  if (currentPageId === pageId) return
+
+  const item = NAV_ITEMS.find(n => n.id === pageId)
+  if (!item || !item.enabled) return
+
+  const area = document.getElementById('content-area')
+
+  // fade out
+  area.style.opacity = '0'
+
+  setTimeout(() => {
+    // 渲染目标页面
+    if (pageId === 'home') {
+      buildHomePage()
+      bindHomePageEvents()
+      renderAll()
+    } else {
+      item.render(area)
+    }
+
+    currentPageId = pageId
+
+    // fade in
+    requestAnimationFrame(() => {
+      area.style.opacity = '1'
+    })
+
+    // 更新导航高亮
+    updateNavActive()
+  }, 150)
+}
+
+// ── 导航栏渲染 ──
+function buildNavBar() {
+  const nav = document.getElementById('nav-bar')
+  if (!nav) return
+
+  const topItems = NAV_ITEMS.filter(n => n.section === 'top')
+  const bottomItems = NAV_ITEMS.filter(n => n.section === 'bottom')
+
+  nav.innerHTML = `
+    <div class="nav-section nav-section--top">
+      ${topItems.map(item => `
+        <button class="nav-item${!item.enabled ? ' nav-item--disabled' : ''}${item.id === currentPageId ? ' nav-item--active' : ''}"
+                data-nav-id="${item.id}"
+                ${!item.enabled ? 'disabled' : ''}>
+          <span class="nav-item-icon">${item.icon}</span>
+          <span class="nav-item-label">${item.label}</span>
+        </button>
+      `).join('')}
+    </div>
+    <div class="nav-section nav-section--bottom">
+      ${bottomItems.map(item => `
+        <button class="nav-item${!item.enabled ? ' nav-item--disabled' : ''}${item.id === currentPageId ? ' nav-item--active' : ''}"
+                data-nav-id="${item.id}"
+                ${!item.enabled ? 'disabled' : ''}>
+          <span class="nav-item-icon">${item.icon}</span>
+          <span class="nav-item-label">${item.label}</span>
+        </button>
+      `).join('')}
+    </div>
+  `
+
+  // 事件委托：导航点击
+  nav.addEventListener('click', (e) => {
+    const btn = e.target.closest('.nav-item')
+    if (!btn) return
+    const pageId = btn.dataset.navId
+    if (!pageId) return
+    switchPage(pageId)
+  })
+}
+
+function updateNavActive() {
+  const nav = document.getElementById('nav-bar')
+  if (!nav) return
+  nav.querySelectorAll('.nav-item').forEach(btn => {
+    btn.classList.toggle('nav-item--active', btn.dataset.navId === currentPageId)
+  })
+}
+
+// ── 主页事件绑定（库存点击/悬停，切回主页时需重新绑定） ──
+function bindHomePageEvents() {
+  // 库存点击：事件委托
+  document.getElementById('card-inventory').addEventListener('click', (e) => {
+    const item = e.target.closest('.inventory-item')
+    if (!item) return
+    const foodId = item.dataset.foodId
+    if (item.classList.contains('inventory-item--empty')) return
+    handleFeed(foodId)
+  })
+
+  // 库存悬停：tooltip（捕获阶段，处理子元素事件）
+  document.getElementById('card-inventory').addEventListener('mouseenter', (e) => {
+    const item = e.target.closest('.inventory-item')
+    if (!item) { hideTooltip(); return }
+    const food = FOODS[item.dataset.foodId]
+    if (!food) { hideTooltip(); return }
+    showTooltip(food, item.getBoundingClientRect())
+  }, true)
+
+  document.getElementById('card-inventory').addEventListener('mouseleave', () => {
+    hideTooltip()
+  }, true)
 }
 
 const MOOD_MAP = {
@@ -335,29 +448,21 @@ function hideTooltip() {
 // ── 初始化 ──
 async function initStatus() {
   await PetState.init()
-  buildStatusDOM()
 
-  // 库存点击：事件委托
-  document.getElementById('card-inventory').addEventListener('click', (e) => {
-    const item = e.target.closest('.inventory-item')
-    if (!item) return
-    const foodId = item.dataset.foodId
-    if (item.classList.contains('inventory-item--empty')) return
-    handleFeed(foodId)
-  })
+  // 注入主页渲染函数到 nav-config
+  const homeItem = NAV_ITEMS.find(n => n.id === 'home')
+  if (homeItem) homeItem.render = (container) => {
+    buildHomePage()
+    bindHomePageEvents()
+    renderAll()
+  }
 
-  // 库存悬停：tooltip（捕获阶段，处理子元素事件）
-  document.getElementById('card-inventory').addEventListener('mouseenter', (e) => {
-    const item = e.target.closest('.inventory-item')
-    if (!item) { hideTooltip(); return }
-    const food = FOODS[item.dataset.foodId]
-    if (!food) { hideTooltip(); return }
-    showTooltip(food, item.getBoundingClientRect())
-  }, true)
+  // 渲染导航栏
+  buildNavBar()
 
-  document.getElementById('card-inventory').addEventListener('mouseleave', () => {
-    hideTooltip()
-  }, true)
+  // 加载默认页面（主页）
+  buildHomePage()
+  bindHomePageEvents()
 
   // 监听状态变化
   PetState.subscribe(EVENTS.PET_STATE_CHANGED, onStateChanged)
