@@ -362,6 +362,11 @@ async function initStatus() {
     hideTooltip()
   }, true)
 
+  // 滚动时隐藏 tooltip，防止漂移
+  document.querySelector('.info-layer').addEventListener('scroll', () => {
+    hideTooltip()
+  })
+
   // 监听状态变化
   PetState.subscribe('pet:state:changed', onStateChanged)
 
