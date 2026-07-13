@@ -89,9 +89,15 @@ document.addEventListener('pointerup', () => {
 // ── 宠物状态展示 ──
 
 import { PetState } from '../shared/pet-state.js'
-import { FOODS, consumeFood, applyFeed, emitFed } from '../shared/feed-service.js'
+import { FOODS, FEED_CONFIG, consumeFood, applyFeed, emitFed } from '../shared/feed-service.js'
 import { calcRequiredExp } from '../shared/exp-service.js'
 import { calcMaxSatiety } from '../shared/satiety-service.js'
+
+// tooltip 字段 → 中文标签映射（字段驱动，加新字段只加一行）
+const TOOLTIP_FIELDS = {
+  satiety:  '饱腹',
+  exp:      '经验',
+}
 
 function buildStatusDOM() {
   const area = document.getElementById('content-area')
@@ -301,6 +307,34 @@ function handleFeed(foodId) {
   emitFed(foodId)
 }
 
+// ── tooltip ──
+let tooltipEl = null
+
+function buildTooltipHTML(food) {
+  let html = `<div class="tooltip-name">${food.name}</div>`
+  for (const [key, label] of Object.entries(TOOLTIP_FIELDS)) {
+    html += `<div class="tooltip-row"><span class="tooltip-label">${label}</span><span class="tooltip-value">+${food[key]}</span></div>`
+  }
+  html += `<div class="tooltip-row"><span class="tooltip-label">亲密度</span><span class="tooltip-value">+${FEED_CONFIG.intimacyPerFeed}</span></div>`
+  return html
+}
+
+function showTooltip(food, rect) {
+  if (!tooltipEl) {
+    tooltipEl = document.createElement('div')
+    tooltipEl.className = 'inventory-tooltip'
+    document.body.appendChild(tooltipEl)
+  }
+  tooltipEl.innerHTML = buildTooltipHTML(food)
+  tooltipEl.style.left = `${rect.right + 8}px`
+  tooltipEl.style.top = `${rect.top}px`
+  tooltipEl.classList.add('inventory-tooltip--visible')
+}
+
+function hideTooltip() {
+  if (tooltipEl) tooltipEl.classList.remove('inventory-tooltip--visible')
+}
+
 // ── 初始化 ──
 async function initStatus() {
   await PetState.init()
@@ -314,6 +348,19 @@ async function initStatus() {
     if (item.classList.contains('inventory-item--empty')) return
     handleFeed(foodId)
   })
+
+  // 库存悬停：tooltip（捕获阶段，处理子元素事件）
+  document.getElementById('card-inventory').addEventListener('mouseenter', (e) => {
+    const item = e.target.closest('.inventory-item')
+    if (!item) { hideTooltip(); return }
+    const food = FOODS[item.dataset.foodId]
+    if (!food) { hideTooltip(); return }
+    showTooltip(food, item.getBoundingClientRect())
+  }, true)
+
+  document.getElementById('card-inventory').addEventListener('mouseleave', () => {
+    hideTooltip()
+  }, true)
 
   // 监听状态变化
   PetState.subscribe('pet:state:changed', onStateChanged)
