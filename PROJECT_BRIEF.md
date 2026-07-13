@@ -246,4 +246,21 @@ GitHub：https://github.com/qiuku30/desktop-pet
 
 **当前全局状态**：
 - 41 commits 待 push
-- exp 共享层就绪，等待 pet-07 + dash-01 续接入
+- exp 共享层就绪，pet-07 + dash-01 续已接入完成
+
+## 2026-07-13 — pet-07 + dash-01 续 经验系统接入
+
+**pet-07**（新开）：`pet/pet.js`
+- 点击气泡 → grantInteractionExp()，每日 20 次上限，首次超限提示
+- 喂食成功 → getFoodExp() → addExp() 结算
+- 升级 → showBubble("🎉 升级了！Lv.X！")，连升多级只弹最终等级
+
+**dash-01 续**：`dashboard/dashboard.js` `dashboard/dashboard.css`
+- renderLevel() 经验区域改为蓝色进度条，和饱腹条同款样式
+- 进度条末尾显示 "当前 / 所需" 数值
+- 踩坑：升级所需经验改用 calcRequiredExp(level) 而非原来的 exp 当百分比
+
+**当前全局状态**：
+- 49 commits 待 push
+- 经验系统全部接入完成 ✅
+- 待决策：下一步做什么模块？
