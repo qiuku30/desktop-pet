@@ -91,11 +91,11 @@ document.addEventListener('pointerup', () => {
 import { PetState } from '../shared/pet-state.js'
 
 const FOOD_META = {
-  apple:  { id: 'apple',  name: '苹果', emoji: '🍎', hunger: -20 },
-  cake:   { id: 'cake',   name: '蛋糕', emoji: '🍰', hunger: -30 },
-  fish:   { id: 'fish',   name: '小鱼干', emoji: '🐟', hunger: -25 },
-  milk:   { id: 'milk',   name: '牛奶', emoji: '🥛', hunger: -15 },
-  cookie: { id: 'cookie', name: '饼干', emoji: '🍪', hunger: -10 },
+  apple:  { id: 'apple',  name: '苹果', emoji: '🍎', satiety: 20 },
+  cake:   { id: 'cake',   name: '蛋糕', emoji: '🍰', satiety: 30 },
+  fish:   { id: 'fish',   name: '小鱼干', emoji: '🐟', satiety: 25 },
+  milk:   { id: 'milk',   name: '牛奶', emoji: '🥛', satiety: 15 },
+  cookie: { id: 'cookie', name: '饼干', emoji: '🍪', satiety: 10 },
 }
 
 function buildStatusDOM() {
@@ -105,7 +105,7 @@ function buildStatusDOM() {
       <div class="card card--level" id="card-level"></div>
       <div class="card card--mood" id="card-mood"></div>
     </section>
-    <section class="card card--hunger" id="card-hunger"></section>
+    <section class="card card--satiety" id="card-satiety"></section>
     <section class="status-compact">
       <div class="card card--intimacy" id="card-intimacy"></div>
       <div class="card card--coins" id="card-coins"></div>
@@ -148,21 +148,21 @@ function renderMood() {
   `
 }
 
-function renderHunger() {
-  const card = document.getElementById('card-hunger')
+function renderSatiety() {
+  const card = document.getElementById('card-satiety')
   if (!card) return
-  const hunger = PetState.get('hunger')
-  const val = (hunger != null) ? hunger : 100
+  const satiety = PetState.get('satiety')
+  const val = (satiety != null) ? satiety : 100
   const pct = Math.max(0, Math.min(100, val))
   let cls = 'progress-fill--high'
   if (val <= 30) cls = 'progress-fill--low'
   else if (val <= 60) cls = 'progress-fill--mid'
   card.innerHTML = `
-    <span class="hunger-label">🍽 饥饿</span>
+    <span class="satiety-label">🍽 饱腹</span>
     <div class="progress-bar">
       <div class="progress-fill ${cls}" style="width:${pct}%"></div>
     </div>
-    <span class="hunger-value">${val}</span>
+    <span class="satiety-value">${val}</span>
   `
 }
 
@@ -214,7 +214,7 @@ function renderInventory() {
 function renderAll() {
   renderLevel()
   renderMood()
-  renderHunger()
+  renderSatiety()
   renderIntimacy()
   renderCoins()
   renderInventory()
@@ -230,8 +230,8 @@ function onStateChanged({ key }) {
     case 'mood':
       renderMood()
       break
-    case 'hunger':
-      renderHunger()
+    case 'satiety':
+      renderSatiety()
       break
     case 'intimacy':
       renderIntimacy()
@@ -245,10 +245,26 @@ function onStateChanged({ key }) {
   }
 }
 
+// ── 简易 toast ──
+function showToast(msg) {
+  const toast = document.createElement('div')
+  toast.className = 'toast'
+  toast.textContent = msg
+  document.body.appendChild(toast)
+  setTimeout(() => toast.remove(), 2000)
+}
+
 // ── 快速投喂 ──
 function handleFeed(foodId) {
   const food = FOOD_META[foodId]
   if (!food) return
+
+  // 饱腹值上限检查（先检查，避免浪费食物）
+  const satiety = PetState.get('satiety') || 0
+  if (satiety >= 100) {
+    showToast('已经吃饱了 🍽')
+    return
+  }
 
   const foodInventory = PetState.get('foodInventory') || []
   const entry = foodInventory.find(item => item.id === foodId)
@@ -260,9 +276,8 @@ function handleFeed(foodId) {
     .filter(item => item.count > 0)
   PetState.set('foodInventory', newInventory)
 
-  // 更新饥饿值（饥饿值减小 = 吃饱，clamp 到 0）
-  const hunger = PetState.get('hunger') || 0
-  PetState.set('hunger', Math.max(0, hunger + food.hunger))
+  // 更新饱腹值，上限 100
+  PetState.set('satiety', Math.min(100, satiety + food.satiety))
 
   // 亲密度 +5
   const intimacy = PetState.get('intimacy') || 0
