@@ -154,14 +154,8 @@ function switchPage(pageId) {
   area.style.opacity = '0'
 
   setTimeout(() => {
-    // 渲染目标页面
-    if (pageId === 'home') {
-      buildHomePage()
-      bindHomePageEvents()
-      renderAll()
-    } else {
-      item.render(area)
-    }
+    // 渲染目标页面（配置驱动：所有页面统一走 item.render）
+    item.render(area)
 
     currentPageId = pageId
 
