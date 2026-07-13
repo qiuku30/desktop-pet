@@ -3,6 +3,7 @@ const path = require('path');
 const { initStore, getState, setState } = require('./storage/store');
 const { registerPetIPC, isValidSnapshot } = require('./ipc/pet-ipc');
 const { initOverlayIPC, showOverlayWindow } = require('./overlay-manager');
+const { showTooltipWindow, hideTooltipWindow, closeTooltipWindow } = require('./tooltip-manager');
 
 // ── 窗口状态常量 ──
 const DASHBOARD_MODE = {
@@ -192,6 +193,17 @@ function setupIPC() {
   initOverlayIPC(ipcMain);
   ipcMain.handle('overlay:show', async (_, opts) => {
     return await showOverlayWindow(mainWindow, opts);
+  });
+
+  // Tooltip 悬浮提示
+  ipcMain.on('tooltip:show', (_event, opts) => {
+    showTooltipWindow(mainWindow, opts);
+  });
+  ipcMain.on('tooltip:hide', () => {
+    hideTooltipWindow();
+  });
+  ipcMain.on('tooltip:close', () => {
+    closeTooltipWindow();
   });
 
   // 保护 zoomLevel 不被渲染端存盘整体覆盖冲掉

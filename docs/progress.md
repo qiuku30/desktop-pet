@@ -43,6 +43,7 @@
 | ipc/pet-ipc.js — 宠物 IPC | ✅ | 导出 registerPetIPC(ipcMain)；整体覆盖写盘 + 空快照保护；已接线 |
 | ipc/storage-ipc.js — 存储 IPC | ⏳ | 占位，待实现 |
 | overlay-manager.js — 通用悬浮面板 | ✅ | showOverlayWindow + initOverlayIPC + Promise Map；同一时间单例 |
+| tooltip-manager.js — tooltip 独立窗口 | ✅ | showTooltipWindow + hideTooltipWindow + closeTooltipWindow；data:URL 直出无 preload；focusable:false 不抢焦点 |
 
 ### 渲染进程 — 共享层 (src/renderer/shared/)
 
