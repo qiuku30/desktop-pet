@@ -91,6 +91,7 @@ document.addEventListener('pointerup', () => {
 import { PetState } from '../shared/pet-state.js'
 import { FOODS, consumeFood, applyFeed, emitFed } from '../shared/feed-service.js'
 import { calcRequiredExp } from '../shared/exp-service.js'
+import { calcMaxSatiety } from '../shared/satiety-service.js'
 
 function buildStatusDOM() {
   const area = document.getElementById('content-area')
@@ -168,7 +169,9 @@ function renderSatiety() {
   if (!card) return
   const satiety = PetState.get('satiety')
   const val = (satiety != null) ? satiety : 100
-  const pct = Math.max(0, Math.min(100, val))
+  const level = PetState.get('level') || 1
+  const maxSatiety = calcMaxSatiety(level)
+  const pct = Math.min(100, Math.round((val / maxSatiety) * 100))
   let cls = 'progress-fill--high'
   if (val <= 30) cls = 'progress-fill--low'
   else if (val <= 60) cls = 'progress-fill--mid'
@@ -276,7 +279,8 @@ function handleFeed(foodId) {
 
   // 饱腹值上限检查（先检查，避免浪费食物）
   const satiety = PetState.get('satiety') || 0
-  if (satiety >= 100) {
+  const level = PetState.get('level') || 1
+  if (satiety >= calcMaxSatiety(level)) {
     showToast('已经吃饱了 🍽')
     return
   }
@@ -289,7 +293,7 @@ function handleFeed(foodId) {
 
   // 更新饱腹 + 亲密度
   const intimacy = PetState.get('intimacy') || 0
-  const { newSatiety, newIntimacy } = applyFeed(satiety, intimacy, food)
+  const { newSatiety, newIntimacy } = applyFeed(satiety, intimacy, food, level)
   PetState.set('satiety', newSatiety)
   PetState.set('intimacy', newIntimacy)
 
