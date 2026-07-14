@@ -97,6 +97,7 @@ import { calcMaxSatiety } from '../shared/satiety-service.js'
 import { getMoodTier, migrateMood, boostMood, getExpMultiplier, MOOD_CONFIG } from '../shared/mood-service.js'
 import { EVENTS } from '../shared/events.js'
 import { NAV_ITEMS, WAREHOUSE_CATEGORIES } from './nav-config.js'
+import { SETTINGS_TABS } from './settings-config.js'
 
 // tooltip 字段 → 中文标签映射（字段驱动，加新字段只加一行）
 const TOOLTIP_FIELDS = {
@@ -631,6 +632,161 @@ function buildShopPage(container) {
   return () => { unsub() }
 }
 
+// ── 设置页面 ──
+
+function buildSettingsPage(container) {
+  container.className = 'page page--settings'
+
+  // 从 PetState 读取当前设置，首次访问时 fallback 到配置 default
+  const currentSettings = PetState.get('settings') || {}
+  const resolve = (item) => {
+    if (currentSettings && currentSettings[item.id] != null) return currentSettings[item.id]
+    return item.default
+  }
+
+  let activeTabId = SETTINGS_TABS[0].id
+
+  // ── 副作用分发 ──
+  function applySideEffect(item, value) {
+    switch (item.id) {
+      case 'alwaysOnTop':
+        window.electronAPI.setAlwaysOnTop(value)
+        break
+      case 'panelOpacity':
+        document.body.style.setProperty('--panel-opacity', value)
+        break
+      // showTooltip: 无副作用，下次 showTooltip() 调用时读值
+    }
+  }
+
+  // ── 更新设置（统一入口）──
+  function updateSetting(itemId, value) {
+    const settings = PetState.get('settings') || {}
+    const newSettings = { ...settings, [itemId]: value }
+    PetState.set('settings', newSettings)
+  }
+
+  // ── 渲染当前 Tab 的设置项 ──
+  function renderSettingsList(tabId) {
+    const list = container.querySelector('.settings-list')
+    if (!list) return
+
+    const tab = SETTINGS_TABS.find(t => t.id === tabId)
+    if (!tab) return
+
+    list.innerHTML = tab.items.map(item => {
+      const val = resolve(item)
+
+      let controlHTML = ''
+      switch (item.type) {
+        case 'toggle':
+          controlHTML = `
+            <label class="settings-toggle">
+              <input type="checkbox" data-setting-id="${item.id}" ${val ? 'checked' : ''}>
+              <span class="settings-toggle-track"></span>
+            </label>`
+          break
+        case 'slider':
+          controlHTML = `
+            <div class="settings-slider-row">
+              <span class="settings-slider-value" data-slider-value="${item.id}">${val}</span>
+              <input type="range" class="settings-slider"
+                     data-setting-id="${item.id}"
+                     min="${item.min}" max="${item.max}" step="${item.step}"
+                     value="${val}">
+            </div>`
+          break
+      }
+
+      return `<div class="settings-row">
+        <span class="settings-row-label">${item.label}</span>
+        ${controlHTML}
+      </div>`
+    }).join('')
+  }
+
+  function setActiveTab(tabId) {
+    container.querySelectorAll('.wh-tab').forEach(tab => {
+      tab.classList.toggle('wh-tab--active', tab.dataset.catId === tabId)
+    })
+  }
+
+  // ── 初始渲染 ──
+  container.innerHTML = `
+    <div class="wh-tabs">
+      ${SETTINGS_TABS.map(tab => `
+        <button class="wh-tab${tab.id === activeTabId ? ' wh-tab--active' : ''}"
+                data-cat-id="${tab.id}">${tab.label}</button>
+      `).join('')}
+    </div>
+    <div class="settings-list"></div>
+    <div class="settings-footer">
+      <button class="settings-reset-btn" disabled>重置所有设置</button>
+    </div>
+  `
+
+  renderSettingsList(activeTabId)
+
+  // ── Tab 切换 ──
+  container.querySelector('.wh-tabs').addEventListener('click', (e) => {
+    const tab = e.target.closest('.wh-tab')
+    if (!tab) return
+    const tabId = tab.dataset.catId
+    if (tabId === activeTabId) return
+
+    activeTabId = tabId
+    setActiveTab(tabId)
+
+    const list = container.querySelector('.settings-list')
+    list.style.opacity = '0'
+    setTimeout(() => {
+      renderSettingsList(tabId)
+      requestAnimationFrame(() => { list.style.opacity = '1' })
+    }, 150)
+  })
+
+  // ── 设置列表事件委托 ──
+  container.querySelector('.settings-list').addEventListener('change', (e) => {
+    // Toggle 切换
+    const checkbox = e.target.closest('.settings-toggle input[type="checkbox"]')
+    if (checkbox) {
+      const itemId = checkbox.dataset.settingId
+      const checked = checkbox.checked
+      updateSetting(itemId, checked)
+      const tab = SETTINGS_TABS.find(t => t.items.some(i => i.id === itemId))
+      const item = tab ? tab.items.find(i => i.id === itemId) : null
+      if (item) applySideEffect(item, checked)
+      return
+    }
+  })
+
+  container.querySelector('.settings-list').addEventListener('input', (e) => {
+    // 滑块拖动
+    const slider = e.target.closest('.settings-slider')
+    if (!slider) return
+    const itemId = slider.dataset.settingId
+    const val = parseFloat(slider.value)
+    // 更新数值显示
+    const valEl = container.querySelector(`[data-slider-value="${itemId}"]`)
+    if (valEl) valEl.textContent = val
+    updateSetting(itemId, val)
+    const tab = SETTINGS_TABS.find(t => t.items.some(i => i.id === itemId))
+    const item = tab ? tab.items.find(i => i.id === itemId) : null
+    if (item) applySideEffect(item, val)
+  })
+
+  // ── 首次进入设置页时恢复面板置顶 ──
+  const alwaysOnTopItem = SETTINGS_TABS
+    .flatMap(t => t.items)
+    .find(i => i.id === 'alwaysOnTop')
+  if (alwaysOnTopItem) {
+    applySideEffect(alwaysOnTopItem, resolve(alwaysOnTopItem))
+  }
+
+  // 返回清理函数（首期无订阅，预留）
+  return () => {}
+}
+
 // ── 页面切换 ──
 function switchPage(pageId) {
   if (currentPageId === pageId) return
@@ -986,6 +1142,8 @@ function buildTooltipHTML(food) {
 }
 
 function showTooltip(food, rect) {
+  const settings = PetState.get('settings')
+  if (!settings || !settings.showTooltip) return
   // 根据内容行数动态计算高度，避免溢出滚动条
   const fields = food.tooltipFields
   const fieldCount = (fields && fields.length > 0) ? fields.length : (food.sellPrice ? 1 : 0)
@@ -1008,6 +1166,12 @@ function hideTooltip() {
 async function initStatus() {
   await PetState.init()
 
+  // 恢复面板透明度（必须在 init 之后、渲染之前，避免闪默认值）
+  const settings = PetState.get('settings')
+  if (settings && settings.panelOpacity != null) {
+    document.body.style.setProperty('--panel-opacity', settings.panelOpacity)
+  }
+
   // 注入页面渲染函数到 nav-config（配置驱动，render 在 init 时绑定）
   const homeItem = NAV_ITEMS.find(n => n.id === 'home')
   if (homeItem) homeItem.render = (container) => {
@@ -1021,6 +1185,9 @@ async function initStatus() {
 
   const shopItem = NAV_ITEMS.find(n => n.id === 'shop')
   if (shopItem) shopItem.render = buildShopPage
+
+  const settingsItem = NAV_ITEMS.find(n => n.id === 'settings')
+  if (settingsItem) settingsItem.render = buildSettingsPage
 
   // 渲染导航栏
   buildNavBar()
