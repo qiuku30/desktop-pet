@@ -92,8 +92,9 @@ import { PetState } from '../shared/pet-state.js'
 import { FOODS, FEED_CONFIG, consumeFood, applyFeed, emitFed } from '../shared/feed-service.js'
 import { calcRequiredExp } from '../shared/exp-service.js'
 import { calcMaxSatiety } from '../shared/satiety-service.js'
+import { getMoodTier, migrateMood } from '../shared/mood-service.js'
 import { EVENTS } from '../shared/events.js'
-import { NAV_ITEMS } from './nav-config.js'
+import { NAV_ITEMS, WAREHOUSE_CATEGORIES } from './nav-config.js'
 
 // tooltip 字段 → 中文标签映射（字段驱动，加新字段只加一行）
 const TOOLTIP_FIELDS = {
@@ -103,6 +104,7 @@ const TOOLTIP_FIELDS = {
 
 // ── 导航状态 ──
 let currentPageId = 'home'
+let _pageCleanup = null   // 当前页面的清理函数（切页时调用，防订阅泄漏）
 
 function buildHomePage() {
   const area = document.getElementById('content-area')
@@ -141,6 +143,109 @@ function buildHomePage() {
   `
 }
 
+// ── 仓库页面 ──
+
+function buildWarehousePage(container) {
+  container.className = 'page page--warehouse'
+
+  // 数据源：FOODS 配置 + foodInventory 库存
+  const foodInventory = PetState.get('foodInventory') || []
+  const invMap = {}
+  foodInventory.forEach(item => { invMap[item.id] = item.count })
+
+  const allItems = Object.values(FOODS).map(food => ({
+    ...food,
+    count: invMap[food.id] || 0,
+  }))
+
+  let activeCatId = 'all'
+
+  // 类别优先级映射（按 WAREHOUSE_CATEGORIES 顺序，不含 'all'）
+  const catOrder = Object.fromEntries(
+    WAREHOUSE_CATEGORIES.filter(c => c.id !== 'all').map((c, i) => [c.id, i])
+  )
+
+  function renderGrid(catId) {
+    const grid = container.querySelector('.wh-grid')
+    if (!grid) return
+
+    // 先筛再排：副本避免 sort() 改变 allItems 原始顺序
+    const filtered = (catId === 'all'
+      ? [...allItems]
+      : allItems.filter(item => item.category === catId)
+    ).sort((a, b) => {
+      const catDiff = (catOrder[a.category] ?? 99) - (catOrder[b.category] ?? 99)
+      if (catDiff !== 0) return catDiff
+      return b.count - a.count
+    })
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div class="wh-empty">📦 暂无物品</div>`
+      return
+    }
+
+    grid.innerHTML = filtered.map(item => {
+      const emptyCls = item.count === 0 ? ' wh-item--empty' : ''
+      return `<div class="wh-item${emptyCls}" data-item-id="${item.id}">
+        <span class="wh-item-emoji">${item.emoji}</span>
+        <span class="wh-item-name">${item.name}</span>
+        <span class="wh-item-count">×${item.count}</span>
+      </div>`
+    }).join('')
+  }
+
+  function setActiveTab(catId) {
+    container.querySelectorAll('.wh-tab').forEach(tab => {
+      tab.classList.toggle('wh-tab--active', tab.dataset.catId === catId)
+    })
+  }
+
+  // 初始渲染
+  container.innerHTML = `
+    <div class="wh-tabs">
+      ${WAREHOUSE_CATEGORIES.map(cat => `
+        <button class="wh-tab${cat.id === 'all' ? ' wh-tab--active' : ''}${!cat.enabled ? ' wh-tab--disabled' : ''}"
+                data-cat-id="${cat.id}"
+                ${!cat.enabled ? 'disabled' : ''}>${cat.label}</button>
+      `).join('')}
+    </div>
+    <div class="wh-grid"></div>
+  `
+
+  renderGrid('all')
+
+  // Tab 点击：切分类 → 筛选 + fade 过渡
+  container.querySelector('.wh-tabs').addEventListener('click', (e) => {
+    const tab = e.target.closest('.wh-tab')
+    if (!tab || tab.disabled) return
+    const catId = tab.dataset.catId
+    if (catId === activeCatId) return
+
+    activeCatId = catId
+    setActiveTab(catId)
+
+    const grid = container.querySelector('.wh-grid')
+    grid.style.opacity = '0'
+    setTimeout(() => {
+      renderGrid(catId)
+      requestAnimationFrame(() => { grid.style.opacity = '1' })
+    }, 200)
+  })
+
+  // 订阅库存变更，自动刷新网格
+  const unsub = PetState.subscribe(EVENTS.PET_STATE_CHANGED, ({ key }) => {
+    if (key !== 'foodInventory') return
+    const inv = PetState.get('foodInventory') || []
+    const map = {}
+    inv.forEach(item => { map[item.id] = item.count })
+    allItems.forEach(item => { item.count = map[item.id] || 0 })
+    renderGrid(activeCatId)
+  })
+
+  // 返回清理函数：切换离开仓库页时取消订阅
+  return () => { unsub() }
+}
+
 // ── 页面切换 ──
 function switchPage(pageId) {
   if (currentPageId === pageId) return
@@ -154,8 +259,16 @@ function switchPage(pageId) {
   area.style.opacity = '0'
 
   setTimeout(() => {
+    // 清理旧页面（取消订阅等，防泄漏 — ADR-006 精神）
+    if (_pageCleanup) {
+      _pageCleanup()
+      _pageCleanup = null
+    }
+
     // 渲染目标页面（配置驱动：所有页面统一走 item.render）
-    item.render(area)
+    // render 可返回清理函数（仓库等有内部订阅的页面）
+    const cleanup = item.render(area)
+    if (typeof cleanup === 'function') _pageCleanup = cleanup
 
     currentPageId = pageId
 
@@ -243,13 +356,6 @@ function bindHomePageEvents() {
   }, true)
 }
 
-const MOOD_MAP = {
-  happy:   { emoji: '😊', label: '开心' },
-  neutral: { emoji: '😐', label: '一般' },
-  hungry:  { emoji: '😋', label: '饥饿' },
-  sad:     { emoji: '😢', label: '难过' },
-}
-
 function renderLevel() {
   const card = document.getElementById('card-level')
   if (!card) return
@@ -270,11 +376,33 @@ function renderLevel() {
 function renderMood() {
   const card = document.getElementById('card-mood')
   if (!card) return
-  const mood = PetState.get('mood') || 'neutral'
-  const m = MOOD_MAP[mood] || MOOD_MAP.neutral
+
+  let mood = PetState.get('mood')
+
+  // 迁移旧 string 存档 → number
+  if (mood === undefined || mood === null || typeof mood === 'string') {
+    mood = migrateMood(mood)
+    PetState.set('mood', mood)
+  }
+
+  const tier = getMoodTier(mood)
+  const pct = Math.min(100, Math.max(0, Math.round(mood)))
+
+  // 进度条颜色（和饱腹条同款三色）
+  let fillCls = 'progress-fill--high'
+  if (mood <= 30) fillCls = 'progress-fill--low'
+  else if (mood <= 60) fillCls = 'progress-fill--mid'
+
   card.innerHTML = `
-    <span class="mood-emoji">${m.emoji}</span>
-    <span class="mood-label">心情：${m.label}</span>
+    <div class="mood-header">
+      <span class="mood-emoji">${tier.emoji}</span>
+      <span class="mood-label">心情：${tier.label}</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill ${fillCls}" style="width:${pct}%"></div>
+    </div>
+    <span class="mood-value">${Math.round(mood)}/100</span>
+    <span class="mood-tier-badge">${tier.label}</span>
   `
 }
 
@@ -443,13 +571,16 @@ function hideTooltip() {
 async function initStatus() {
   await PetState.init()
 
-  // 注入主页渲染函数到 nav-config
+  // 注入页面渲染函数到 nav-config（配置驱动，render 在 init 时绑定）
   const homeItem = NAV_ITEMS.find(n => n.id === 'home')
   if (homeItem) homeItem.render = (container) => {
     buildHomePage()
     bindHomePageEvents()
     renderAll()
   }
+
+  const whItem = NAV_ITEMS.find(n => n.id === 'warehouse')
+  if (whItem) whItem.render = buildWarehousePage
 
   // 渲染导航栏
   buildNavBar()

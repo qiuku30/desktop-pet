@@ -13,7 +13,7 @@
 | 事件名 | 参数 | 触发时机 |
 |--------|------|----------|
 | `pet:satiety:changed` | `{ value: number }` | 饱腹值变化 |
-| `pet:mood:changed` | `{ mood: string }` | 心情变化 |
+| `pet:mood:changed` | `{ mood: number, tier: object }` | 心情变化（infra-10: mood 从 string 升级为 0-100 number，tier 为 MOOD_TIERS 档位对象） |
 | `pet:state:changed` | `{ key: string, value: any }` | 任意宠物状态变更（set() 调用时） |
 | `pet:level:up` | `{ level: number }` | 宠物升级 |
 | `pet:fed` | `{ food: string }` | 喂食成功 |

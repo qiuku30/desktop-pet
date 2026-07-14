@@ -72,6 +72,7 @@ function createWindow() {
 
   // 右键菜单
   mainWindow.webContents.on('context-menu', (_, params) => {
+    if (currentMode !== 'pet') return  // 非宠物态不弹菜单
     const menu = Menu.buildFromTemplate([
       {
         label: '喂食',

@@ -58,6 +58,7 @@
 | feed-service.js | ✅ | FOODS 配置表 + consumeFood / applyFeed / emitFed；消除 pet.js 和 dashboard.js 重复配置；FOODS 加 exp 字段 |
 | exp-service.js | ✅ | 经验计算服务：分段升级公式（新手1-5/成长6-20/成熟21+）、溢出继承、每日互动上限 20 次、maxLevel 30 |
 | satiety-service.js | ✅ | 饱腹值消耗服务：时间戳差值衰减（0.2/min，8h一轮）、离线生效、动态最大饱腹值（每5级+20）、心情建议（<30→hungry）、主动消耗接口 |
+| mood-service.js | ✅ | 心情系统服务（infra-10）：0-100 数值替换旧 string、自然衰减（饱腹<30 翻倍 2/15）、按自然日分段+单日 50 点上限、离线跨天逐日结算、经验倍率三档、低心情互动减半、migrateMood 兼容旧存档、8 函数全部纯函数 |
 
 ### 渲染进程 — Overlay (src/renderer/overlay/)
 
@@ -72,7 +73,7 @@
 | 任务 | 状态 | 备注 |
 |------|------|------|
 | pet.html — 宠物窗口结构 | ✅ | emoji + 气泡容器 |
-| pet.js — 宠物逻辑 | ✅ | 状态机：原生拖拽 / 随机走动 / 对话气泡 / 双击面板 / PetState.init() / 喂食 flyout（原则5：FOODS 配置 + foodInventory 数据分离）/ 互动经验接入 + 喂食经验结算 + 升级气泡 |
+| pet.js — 宠物逻辑 | ✅ | 状态机：原生拖拽 / 随机走动 / 对话气泡（新心情四档 happy/good/neutral/low）/ 双击面板 / PetState.init() / 喂食 flyout（原则5：FOODS 配置 + foodInventory 数据分离）/ 互动经验接入 + 心情加成 / 喂食经验结算 + 心情加成 + 升级气泡 / 心情衰减结算（每日50点上限）+ 点击/喂食心情加成 |
 | pet-motion.mjs — 纯几何计算 | ✅ | distance/isCursorNear/fleeCenter/wanderTarget/中心↔左上角换算；node --test 6/6 |
 | pet.css — 宠物样式 | ✅ | 透明背景 + padding 拖拽手柄 + no-drag 点击穿透 + 闲置/走动动画 + 气泡样式 |
 | DESIGN.md | ✅ | 已细化：状态机、pet-motion 清单、坐标契约、class 钩子 |
@@ -86,6 +87,8 @@
 | dashboard.css — 面板样式 | ✅ | 顶部栏（标题 drag + 关闭按钮）+ 两层布局（portrait-layer + info-layer）+ 暗色主题 |
 | 宠物状态展示卡片 | ✅ | 等级/经验/心情/饱腹/亲密度/金币/食物库存 + 快速投喂；上半区形象展示+下半区信息数据 |
 | 左侧导航栏 + 多页切换 | ✅ | dash-03：nav-config.js 配置驱动（原则5）、4 项导航（主页/仓库/商店/设置）、占位页面（即将开放）、暗色主题 + 选中高亮（#2196f3 左边框）+ fade 动画 |
+| 仓库页面 | ✅ | dash-04：分类 Tab 栏（全部/食物/道具）+ 物品网格（emoji + 名称 + 数量）+ 订阅生命周期管理（防泄漏）+ FOODS 加 category 字段 + 暗色主题 + fade 过渡 |
+| 心情卡片改版 | ✅ | dash-05：emoji + 档位文字 + 进度条 + 档位标签；迁移旧 string 存档→number；三色进度条（和饱腹条同款）；水平单行布局 |
 | DESIGN.md | ✅ | 已细化：两层布局结构、行容器语义化 class、滚动策略 |
 
 ---
@@ -337,9 +340,60 @@
 **工作原理**：
 1. **离线衰减**：`pet.js init()` 中 `PetState.init()` 后立即 `settleSatietyDecay()`，用 `lastSatietyUpdate` 和当前时间差值一次性结算。首次启动（lastSatietyUpdate=null）初始化时间戳，不扣。
 2. **在线定时**：`startSatietyTick()` 每 60s 调用 `settleSatietyDecay()`，时间戳差值保证精度不受定时器漂移影响。
-3. **喂食恢复**：喂食后检查 `suggestMood`，若饱腹回到 30+ 且当前 mood='hungry'，自动恢复到 'neutral'。
+3. **喂食恢复**：喂食后调用 `boostMood(currentMood, MOOD_CONFIG.feedBoost)` 加心情（pet-08 已切换，不再使用 `suggestMood`）。
 
 **关联改动**：
 - `store.js` DEFAULT_STATE 加 `lastSatietyUpdate: null`
 - `feed-service.js` `applyFeed` 新增可选 `level` 参数（默认 1），上限由硬编码 100 → `calcMaxSatiety(level)`，向后兼容 `dashboard.js`
 - `pet.js` 新增 `settleSatietyDecay()` / `startSatietyTick()`，喂食逻辑改用动态上限 + 心情恢复
+
+---
+
+## 设计决策记录 — mood-service.js（infra-10, 2026-07-14）
+
+**新增文件**：`src/renderer/shared/mood-service.js` — 心情纯计算服务，配置驱动，不碰 PetState。
+
+**核心参数**（`MOOD_CONFIG`）：
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| `decayPerMinute` | 1/15 | 饱腹≥30：每 15 分钟降 1 点 |
+| `decayPerMinuteHungry` | 2/15 | 饱腹<30：翻倍，每 7.5 分钟降 1 点 |
+| `dailyDecayCap` | 50 | 单日自然衰减上限（用户确认值） |
+| `hungerAccelThreshold` | 30 | 饱腹低于此触发加速（对齐 satiety-service） |
+| `initialMood` | 70 | 新存档默认心情值 |
+
+**核心函数**（8 个，全部纯函数）：
+
+| 函数 | 签名 | 说明 |
+|------|------|------|
+| `getMoodTier(mood)` | number → { tier, label, emoji, min, max } | 数值→档位（happy/good/neutral/low） |
+| `calcMoodDecay(lastUpdate, now, isHungry, todayAccumulatedDecay)` | (string\|null, string, boolean, number) → number | 按自然日零点分段结算，逐日 apply 50 点上限；isHungry 切换速率；首次启动不扣 |
+| `reduceMood(mood, amount)` | (number, number) → number | 减少心情，最低 0 |
+| `boostMood(mood, amount)` | (number, number) → number | 增加心情，最高 100 |
+| `getExpMultiplier(mood)` | number → number | ≥80→1.2, 50-79→1.0, <30→0.7 |
+| `getClickBoost(mood)` | number → number | <30→减半，否则全量 |
+| `migrateMood(oldMood)` | string\|number\|undefined → number | 旧 string 映射（happy→85/neutral→60/hungry→25/sad→15），number 直通 + clamp，null/undefined→70 |
+| `clampMood(mood)` | number → number | clamp 到 0-100 |
+
+**心情档位**（`MOOD_TIERS`）：
+
+| tier | label | 范围 | emoji |
+|------|-------|------|-------|
+| happy | 开心 | 80-100 | 😊 |
+| good | 良好 | 50-79 | 🙂 |
+| neutral | 一般 | 30-49 | 😐 |
+| low | 低落 | 0-29 | 😢 |
+
+**离线结算算法**：
+1. 将 `[lastUpdate, now]` 按本地时间 00:00 分界切成若干段
+2. 每段：`min(段分钟数 × 速率, 当日剩余额度)`；段 1 的当日额度 = `50 − todayAccumulatedDecay`
+3. 跨入新一天：当日额度重置为满额 50
+4. 返回各段实扣之和
+
+**关联改动**：
+- `store.js` DEFAULT_STATE：`mood: 'neutral'` → `mood: 70`
+- `events.js`：`PET_MOOD_CHANGED` 注释更新 payload 为 `{ mood: number, tier: object }`
+- 后续 `pet-08` / `dash-05` 负责接入 PetState 和 UI
+- `satiety-service.js` 的 `suggestMood()`（返回旧 string）已废弃，pet-08 已切换所有调用到 mood-service
+- ✅ **pet-08 已完成**（2026-07-14）：宠物侧全部接入（迁移、衰减、点击/喂食加成、经验倍率、台词重构）

@@ -12,7 +12,7 @@ let dataPath = null;
 const DEFAULT_STATE = {
   level: 1,
   exp: 0,
-  mood: 'neutral',    // happy | neutral | hungry | sad
+  mood: 70,            // 0-100 数值心情（infra-10: 从 string 升级）
   satiety: 100,        // 0+，越高越饱，随时间下降
   intimacy: 0,         // 亲密度
   coins: 0,
@@ -21,6 +21,11 @@ const DEFAULT_STATE = {
   dailyInteractionCount: 0,    // 今日互动次数
   lastInteractionDate: null,   // 上次互动日期（YYYY-MM-DD）
   lastSatietyUpdate: null,     // 上次饱腹值结算时间戳（ISO 字符串）
+  lastMoodUpdate: null,         // 上次心情衰减结算时间戳（ISO 字符串）
+  lastMoodDecayDate: null,      // 上次心情衰减日期（YYYY-MM-DD），用于跨天重置
+  todayMoodDecay: 0,            // 今日已累计心情衰减量
+  dailyMoodClicks: 0,           // 今日心情点击次数
+  lastMoodClickDate: null,      // 上次心情点击日期（YYYY-MM-DD）
   lastSaved: null,
 };
 

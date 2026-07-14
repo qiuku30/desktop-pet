@@ -10,7 +10,8 @@ import {
 import { PetState } from '../shared/pet-state.js'
 import { FOODS, consumeFood, applyFeed, emitFed } from '../shared/feed-service.js'
 import { checkDailyInteraction, addExp, getFoodExp, EXP_CONFIG } from '../shared/exp-service.js'
-import { SATIETY_CONFIG, calcMaxSatiety, calcDecay, reduceSatiety, suggestMood } from '../shared/satiety-service.js'
+import { SATIETY_CONFIG, calcMaxSatiety, calcDecay, reduceSatiety } from '../shared/satiety-service.js'
+import { MOOD_CONFIG, getMoodTier, calcMoodDecay, reduceMood, boostMood, getExpMultiplier, getClickBoost, migrateMood, clampMood } from '../shared/mood-service.js'
 
 // 动态窗口尺寸（配合 scaleFactor 自适应 + 用户缩放）
 function getWinSize() {
@@ -140,20 +141,27 @@ const DIALOGS = {
     mid:  ['快乐摸鱼中...', '今天效率为零！', '上班好开心（假的）', '嘿嘿，今天运气不错！'],
     high: ['带薪聊天真爽', '已经摸到出神入化了', '跟着主人有肉吃！', '我是摸鱼达人 🏆'],
   },
+  good: {
+    low:  ['还不错~', '日子过得去 🍃', '挺好挺好', '一切正常运转中'],
+    mid:  ['摸鱼进行时...', '悠然自得~', '今天天气不错', '等待投喂中'],
+    high: ['心情不错！', '状态良好 😎', '今天效率不错哦', '快乐搬砖 🧱'],
+  },
   neutral: {
     low:  ['嗯？有什么事吗？', '好无聊啊...', '主人在干嘛呢？', '有点想睡觉...'],
     mid:  ['发呆中...', '今天会议真多 😵', '等待投喂', '思考猫生中...'],
+    high: ['忙碌的一天...', '还好还好，不算太糟', '努力摸鱼中 🐟', '时间过得真慢...'],
   },
-  hungry: {
-    low:  ['好饿啊...有没有吃的？', '肚子在叫了 🥺', '主人，该喂食了吧？', '零食时间到了吗？'],
-  },
-  sad: {
-    low:  ['今天不太开心...', '陪陪我好不好？😢', '好想出去玩...', '有点孤单...'],
+  low: {
+    low:  ['好饿啊...有没有吃的？', '肚子在叫了 🥺', '主人，该喂食了吧？', '零食时间到了吗？', '今天不太开心...', '陪陪我好不好？😢', '好想出去玩...', '有点孤单...'],
+    mid:  ['好想出去走走...', '主人在忙吗？', '心情有点低落 😔', '饿着肚子真难受...'],
+    high: ['今天真的不太好...', '感觉被忽略了 😿', '能不能陪我一会儿？', '又饿又孤单...'],
   },
 }
 
-function pickDialog(mood, level) {
-  const m = mood && DIALOGS[mood] ? mood : 'neutral'
+function pickDialog(moodValue, level) {
+  // moodValue 现在是 0-100 数值，用 getMoodTier 获取档位 key
+  const tierInfo = getMoodTier(moodValue)
+  const m = tierInfo && DIALOGS[tierInfo.tier] ? tierInfo.tier : 'neutral'
   const tier = level >= 7 ? 'high' : level >= 4 ? 'mid' : 'low'
 
   // 从对应层级取，没有则向上 fallback，再没有则向下
@@ -198,9 +206,11 @@ function grantInteractionExp() {
   PetState.set('lastInteractionDate', newDate)
 
   if (canGain) {
+    const mood = PetState.get('mood') ?? MOOD_CONFIG.initialMood
     const exp = PetState.get('exp') || 0
     const level = PetState.get('level') || 1
-    const result = addExp(exp, level, EXP_CONFIG.interactionExp)
+    const adjustedExp = Math.round(EXP_CONFIG.interactionExp * getExpMultiplier(mood))
+    const result = addExp(exp, level, adjustedExp)
     PetState.set('exp', result.newExp)
     if (result.leveledUp) {
       PetState.set('level', result.newLevel)
@@ -210,6 +220,27 @@ function grantInteractionExp() {
     _dailyCapHintShown = true
     showBubble('今天的互动经验已经领完啦～（每日20次）')
   }
+}
+
+// ── 点击心情加成 ──
+// 每日上限由 MOOD_CONFIG.clickDailyCap 控制（默认 20 次）
+function grantClickMoodBoost() {
+  const today = new Date().toISOString().slice(0, 10)
+  const lastClickDate = PetState.get('lastMoodClickDate')
+  let dailyClicks = PetState.get('dailyMoodClicks') || 0
+
+  if (lastClickDate !== today) {
+    dailyClicks = 0
+  }
+
+  if (dailyClicks >= MOOD_CONFIG.clickDailyCap) return
+
+  const mood = PetState.get('mood') ?? MOOD_CONFIG.initialMood
+  const boost = getClickBoost(mood)
+  const newMood = boostMood(mood, boost)
+  PetState.set('mood', newMood)
+  PetState.set('dailyMoodClicks', dailyClicks + 1)
+  PetState.set('lastMoodClickDate', today)
 }
 
 // 点击 / 拖拽 区分
@@ -240,13 +271,15 @@ body.addEventListener('click', async (e) => {
     clickTimer = null
     showBubble()
     grantInteractionExp()
+    grantClickMoodBoost()
   }, 300)
 })
 
 // ── 饱腹值衰减结算 ──
 
-// 执行一次衰减结算：计算时间差 → 扣饱腹 → 更新心情
+// 执行一次饱腹衰减结算：计算时间差 → 扣饱腹
 // 用于离线恢复和在线定时结算
+// 心情不再由饱腹单独决定，已拆分为独立的 settleMoodDecay()
 function settleSatietyDecay() {
   const now = new Date().toISOString()
   const lastUpdate = PetState.get('lastSatietyUpdate')
@@ -257,23 +290,60 @@ function settleSatietyDecay() {
     const newSatiety = reduceSatiety(satiety, decay)
     PetState.set('satiety', newSatiety)
     PetState.set('lastSatietyUpdate', now)
-
-    const currentMood = PetState.get('mood') || 'neutral'
-    const suggestedMood = suggestMood(newSatiety, currentMood)
-    if (suggestedMood !== currentMood) {
-      PetState.set('mood', suggestedMood)
-    }
   } else if (!lastUpdate) {
     // 首次启动，初始化时间戳
     PetState.set('lastSatietyUpdate', now)
   }
 }
 
-// 启动在线定时结算（每 60s 一次）
+// ── 心情衰减结算 ──
+// 独立的心情衰减：按自然日分段 + 单日 50 点上限 + 饱腹 < 30 翻倍速率
+// 首次启动（lastMoodUpdate=null）仅初始化时间戳，不扣心情
+function settleMoodDecay() {
+  const now = new Date().toISOString()
+  const lastUpdate = PetState.get('lastMoodUpdate')
+  const mood = PetState.get('mood') ?? MOOD_CONFIG.initialMood
+  const satiety = PetState.get('satiety') ?? 100
+  const isHungry = satiety < MOOD_CONFIG.hungerAccelThreshold
+
+  const today = new Date().toISOString().slice(0, 10)
+  const lastDecayDate = PetState.get('lastMoodDecayDate')
+  // 不在此处重置 todayAccumulated：它代表 lastMoodUpdate 所在日的已累计衰减，
+  // 直接传给 calcMoodDecay 作为 segment 1 的当日额度消耗量。
+  // 若 lastMoodUpdate 是昨天，todayAccumulated 记录的是昨天的值，不应清零，
+  // 否则 segment 1（昨天）会获得全新 50 点配额，造成衰减过量。
+  const todayAccumulated = PetState.get('todayMoodDecay') || 0
+
+  const decay = calcMoodDecay(lastUpdate, now, isHungry, todayAccumulated)
+
+  if (decay > 0) {
+    const newMood = reduceMood(mood, decay)
+    PetState.set('mood', newMood)
+    PetState.set('lastMoodUpdate', now)
+    PetState.set('lastMoodDecayDate', today)
+
+    // 跨天：单独计算今天部分的衰减量，保证 todayMoodDecay 准确
+    if (lastDecayDate && lastDecayDate !== today) {
+      const todayMidnight = new Date()
+      todayMidnight.setHours(0, 0, 0, 0)
+      const todayOnlyDecay = calcMoodDecay(todayMidnight.toISOString(), now, isHungry, 0)
+      PetState.set('todayMoodDecay', todayOnlyDecay)
+    } else {
+      PetState.set('todayMoodDecay', todayAccumulated + decay)
+    }
+  } else if (!lastUpdate) {
+    // 首次启动，初始化时间戳
+    PetState.set('lastMoodUpdate', now)
+    PetState.set('lastMoodDecayDate', today)
+  }
+}
+
+// 启动在线定时结算（每 60s 一次，饱腹 + 心情）
 function startSatietyTick() {
   if (satietyTickTimer) clearInterval(satietyTickTimer)
   satietyTickTimer = setInterval(() => {
     settleSatietyDecay()
+    settleMoodDecay()
   }, SATIETY_CONFIG.onlineTickMs)
 }
 
@@ -281,8 +351,16 @@ function startSatietyTick() {
 async function init() {
   await PetState.init()
 
+  // 迁移旧心情存档（string → number）
+  const oldMood = PetState.get('mood')
+  const newMood = migrateMood(oldMood)
+  if (newMood !== oldMood) {
+    PetState.set('mood', newMood)
+  }
+
   // 结算离线衰减 + 启动在线定时器
   settleSatietyDecay()
+  settleMoodDecay()
   startSatietyTick()
 
   const pos = await window.electronAPI.getWindowPosition()
@@ -403,21 +481,20 @@ async function init() {
     PetState.set('satiety', newSatiety)
     PetState.set('intimacy', newIntimacy)
 
-    // 饱腹恢复后心情自动恢复
-    const currentMood = PetState.get('mood') || 'neutral'
-    const suggestedMood = suggestMood(newSatiety, currentMood)
-    if (suggestedMood !== currentMood) {
-      PetState.set('mood', suggestedMood)
-    }
+    // 喂食加心情
+    const currentMood = PetState.get('mood') ?? MOOD_CONFIG.initialMood
+    const newMoodVal = boostMood(currentMood, MOOD_CONFIG.feedBoost)
+    PetState.set('mood', newMoodVal)
 
     // 发投喂事件
     emitFed(result)
 
-    // 喂食经验结算（复用外层 level，避免重复取值）
+    // 喂食经验结算（心情加成 + 复用外层 level，避免重复取值）
     const foodExp = getFoodExp(food)
     if (foodExp > 0) {
       const exp = PetState.get('exp') || 0
-      const addResult = addExp(exp, level, foodExp)
+      const adjustedExp = Math.round(foodExp * getExpMultiplier(newMoodVal))
+      const addResult = addExp(exp, level, adjustedExp)
       PetState.set('exp', addResult.newExp)
       if (addResult.leveledUp) {
         PetState.set('level', addResult.newLevel)

@@ -47,41 +47,34 @@ GitHub：https://github.com/qiuku30/desktop-pet
 
 ## 实现进度
 
-### ✅ 已完成（在 main 分支）
+### ✅ 已完成（全部在 main 分支）
 
-| 组件 | 文件 | 备注 |
+| 组件 | 窗口 | 备注 |
 |------|------|------|
-| EventBus | `shared/event-bus.js` | on/off/once/emit，try-catch 隔离，DEBUG 日志 |
-| PetState | `shared/pet-state.js` | 薄：async init/get(副本)/set(发事件+防抖存盘)/subscribe |
-| 事件常量 | `shared/events.js` | 14 个 EventBus 事件 + 注意 PET_SHOOED 已修正 |
-| 模块注册表 | `shared/module-registry.js` | 目前只有 pet-status |
-| 统一存取 | `main/storage/store.js` | initStore/getState/setState |
-| 主进程窗口 | `main/index.js` | 单窗口双状态 + 移窗/光标/状态 IPC |
-| 安全桥接 | `main/preload.js` | 所有 IPC 接口（含 onUserDrag 返回取消函数） |
-| 宠物 HTML | `pet/pet.html` | type="module" 已加 ✅ |
-
-### 🔨 已完成（在 feature/pet-movement 分支，待合并）
-
-| 组件 | 文件 | 备注 |
-|------|------|------|
-| 宠物移动 | `pet/pet.js` | CSS 原生拖拽 + 随机走动，~110 行 |
-| 宠物样式 | `pet/pet.css` | 呼吸/轻晃/waddle 动画 |
-| 纯几何 | `pet/pet-motion.mjs` | distance/isCursorNear/wanderTarget 等，6/6 测试过 |
-| 状态 IPC | `main/ipc/pet-ipc.js` | 整体覆盖 + 空快照保护，已接线到 index.js |
-| 对话气泡 | `pet/pet.js` `pet/pet.css` | 28 条台词 mood×level 分层、300ms 延迟 + 拖拽检测(3px)、2s 气泡弹出动画、no-drag 点击穿透 |
-| 双击面板 | `pet/pet.js` `main/index.js` `dashboard/*` | 双击→toggleWindow→loadFile、面板顶部栏+✕关闭、面板边缘拖拽缩放 |
-| 右键菜单 | `pet/pet.js` | 喂食（消耗食物→hunger-20/intimacy+5→气泡）、状态（→切面板） |
-| 喂食 flyout | `pet/pet.js` | 食物库存 C→A、FOODS 配置表（原则 5）、overlay 选食投喂 |
-| 窗口动态缩放 | `main/index.js` | getPetSize() = 200 × scaleFactor × zoom；四档右键菜单(75/100/125/150%)；zoomLevel 持久化保护；lockPetSize() min=max 锁定 |
-| 响应式布局 | `pet/pet.css` | 所有尺寸从固定 px → vw，窗口变大内容等比放大 |
-| Overlay 悬浮面板 | `main/overlay-manager.js` `renderer/overlay/*` | showOverlay(opts)→Promise；独立子 BrowserWindow；data-overlay-result 事件委托；CSS 原生拖拽；单实例 |
+| 基础设施（7 个共享服务） | infra-01~09 | EventBus / PetState / events / module-registry / feed-service / exp-service / satiety-service / overlay-manager / tooltip-manager |
+| 宠物移动 + 动画 | pet-01 | CSS 原生拖拽 + 随机走动 + 呼吸/轻晃/waddle 动画 |
+| 对话气泡 | pet-02 | 28 条台词 mood×level、300ms 延迟 + 拖拽检测、2s 动画 |
+| 窗口缩放 + 高 DPI 修复 | pet-02/03 | 四档缩放(75~150%)、setBounds 原子操作、中心锚点 |
+| 双击面板切换 | pet-03 | 双击→toggleWindow→loadFile、面板边缘拖拽缩放 |
+| 右键菜单喂食/状态 | pet-04 | 消耗食物→饱腹+亲密度→气泡反馈 |
+| 喂食 overlay | pet-05 | FOODS 配置 + foodInventory 数据分离、overlay 选食投喂 |
+| 经验系统 | infra-07 + pet-07 | 分段升级/溢出继承/每日上限、互动+喂食经验 |
+| 饱腹消耗 | infra-08 | 时间戳差值衰减、离线生效、动态上限、心情联动 |
+| 心情系统 | **infra-10** | mood-service.js：0-100 数值、4 档位、衰减/加成/迁移，44 测试 |
+| 宠物心情接入 | **pet-08** | 台词池重构(4 tier)、衰减 tick、点击/喂食加心情、经验倍率、旧存档迁移 |
+| 面板心情卡片改版 | **dash-05** | emoji+档位文字+进度条+档位标签、修复 MOOD_TIERS 浮点间隙 bug |
+| 面板 RPG 角色卡 | dash-01/02 | 两层布局：形象展示 + 信息数据、经验/饱腹进度条、快速投喂 |
+| **面板左侧导航栏** | **dash-03** | nav-config.js 配置驱动、主页/仓库/商店/设置 4 项、多页切换 |
+| **仓库页面** | **dash-04** | 分类 Tab（全部/食物/道具）、物品网格、`_pageCleanup` 生命周期 |
 
 ### ⏳ 待实现
 
-| 任务 | 依赖 |
+| 任务 | 说明 |
 |------|------|
-| 面板状态页（dash-01）| — |
-| 躲避光标（搁置）| 需主进程侧方案 |
+| 仓库页面（dashboard） | 导航已占位，页面内容待实现 |
+| 商店页面（dashboard） | 导航已占位，页面内容待实现 |
+| 设置页面（dashboard） | 导航已占位，页面内容待实现 |
+| 躲避光标 | 搁置，需主进程侧方案 |
 
 ### ⏳ 未来模块
 
@@ -107,7 +100,8 @@ GitHub：https://github.com/qiuku30/desktop-pet
 
 ## 待决策事项
 
-- [ ] 宠物做完后，下一个模块做哪个？
+- [x] 宠物做完后，下一个模块做哪个？→ dash-03 面板导航栏，为仓库/商店/设置占位
+- [ ] 仓库页面内容实现
 - [ ] Phase 1 食物价格（初版不需要，先记着）
 
 ---
@@ -116,8 +110,10 @@ GitHub：https://github.com/qiuku30/desktop-pet
 
 | 分支 | 状态 | 说明 |
 |------|------|------|
-| `main` | ✅ 稳定 | Phase 1 完成（本地已合并，待 push） |
-| `feature/pet-movement` | ✅ 已合并 | 2026-07-13 合并回 main |
+| `main` | ✅ 稳定 | Phase 1 完成（本地 68 commits 待 push，等网络） |
+| `feature/pet-movement` | 🗑️ 已删除 | 2026-07-14 ARCH-04 清理本地残留 |
+| `origin/feature/pet-movement` | ⏳ 待清理 | 远程残留，等网络恢复 |
+| `origin/feature/shared-event-bus-pet-state` | ⏳ 待清理 | 远程残留，等网络恢复 |
 
 ---
 
@@ -341,3 +337,101 @@ main 分支，67 commits 领先 origin/main（未推送）
 - 实现窗口超过模块边界改文件 → 必须在 session-log 登记越界授权
 - 每开新窗口/做完改动 → 同步 PROJECT_BRIEF、progress、session-log
 - 具体设计细节在实现窗口内讨论，架构窗口只锁死方向
+
+## 2026-07-14 — ARCH-04 接替 + 分支清理
+
+**处理事项**：接替 ARCH-03，尝试推送代码 + 清理残留分支。
+
+**已执行**：
+1. 本地删除 `feature/pet-movement` 残留分支（已合并入 main，比 main 少 1 commit）
+2. `git push origin main` 失败 — 网络不通（`Connection was reset`）
+3. 更新 `PROJECT_BRIEF.md` 分支状态表
+4. `docs/session-log.md` 登记 ARCH-04
+
+**阻塞项**（等网络恢复）：
+- `git push origin main`（68 commits）
+- `git push origin --delete feature/pet-movement feature/shared-event-bus-pet-state`
+
+**当前全局状态**：
+- main 分支，68 commits 领先 origin/main
+- 工作区干净，31 测试通过
+- 下一步模块方向待用户决定
+
+## 2026-07-14 — ARCH-04 接收 dash-03
+
+**dash-03 成果**：面板左侧导航栏
+- 新建 `dashboard/nav-config.js` — 导航配置数组 + 占位渲染器（原则 5 配置驱动）
+- `dashboard/dashboard.js` — buildHomePage / switchPage / buildNavBar / updateNavActive，重构 initStatus
+- `dashboard/dashboard.css` — 导航栏暗色主题、选中高亮、占位居中、fade 过渡
+- 4 个导航项：🏠 主页（可用）、🎒 仓库（置灰占位）、🛒 商店（置灰占位）、⚙️ 设置（底部固定，置灰占位）
+- 3 commits，无越界授权，遵守所有约束
+
+**当前全局状态**：
+- main 分支，71 commits 领先 origin/main（68 + 3 from dash-03）
+- 工作区有 PROJECT_BRIEF.md 未提交（本记录）
+- 下一步：仓库/商店/设置任选一个落地实现？
+
+## 2026-07-14 — ARCH-04 接收 dash-04
+
+**dash-04 成果**：仓库页面 — 分类 Tab 栏 + 物品网格
+- `dashboard/nav-config.js` — 新增 `WAREHOUSE_CATEGORIES` 配置数组 + `buildWarehousePage` 渲染器
+- `dashboard/dashboard.js` — 仓库页：Tab 切换筛选 + 物品网格渲染 + `PET_STATE_CHANGED` 自动刷新 + `_pageCleanup` 生命周期
+- `dashboard/dashboard.css` — Tab 栏暗色主题、`#2196f3` 底部高亮条、CSS Grid 自适应网格、fade 过渡
+- `shared/feed-service.js` — FOODS 5 个条目加 `category: 'food'` 字段（越界授权：ARCH-04 直接给）
+- **新模式**：`item.render(container)` 可选返回清理函数，`switchPage` 切页时调 `_pageCleanup()`，防止订阅泄漏
+
+**当前全局状态**：
+- main 分支，74 commits 领先 origin/main（71 + 3 from dash-04，待提交确认）
+- 工作区有未提交改动（dash-04 的 7 个文件 + PROJECT_BRIEF.md）
+- 仓库页可用，道具 Tab 置灰占位
+- 下一个：商店页面？
+
+## 2026-07-14 — ARCH-04 接收 infra-10
+
+**infra-10 成果**：心情系统共享层 mood-service.js
+- `mood-service.js`：8 个纯函数 + MOOD_CONFIG + MOOD_TIERS（原则 5 配置驱动）
+- `mood-service.test.mjs`：44 个测试用例，全部通过
+- 心情从 string 升级为 0-100 数值：4 档位（happy/good/neutral/low）、自然衰减（按自然日零点分段 + 单日 50 上限）、饱腹<30 衰减翻倍、离线跨天逐日结算
+- 经验倍率三档（≥80→1.2x, 50-79→1.0x, <30→0.7x）、低心情互动减半
+- `migrateMood()` 兼容旧 string 存档（happy→85, neutral→60, hungry→25, sad→15）
+- 越界授权：`store.js`（mood 默认值）、`events.js`（注释更新）、`events.md`（payload 类型）
+
+**待接入**：pet-08（台词池 + 衰减 tick + 互动/喂食加心情）、dash-05（心情卡片改版）
+
+**当前全局状态**：
+- 工作区有 14 个文件未提交（dash-04 + infra-10 + pet-08 + bugfix + PROJECT_BRIEF.md）
+- 50 测试通过（44 mood + 6 pet-motion）
+- 心情系统：infra-10 地基 + pet-08 宠物侧接入完成，等待 dash-05 面板心情卡片改版
+
+## 2026-07-14 — ARCH-04 接收 dash-05
+
+**dash-05 成果**：面板心情卡片改版
+- `dashboard/dashboard.js`：删除 MOOD_MAP、重写 `renderMood()`（emoji + 档位文字 + 进度条 + 数值 + 档位标签）
+- `dashboard/dashboard.css`：`.card--mood` 新增 `.mood-header` / `.mood-value` / `.mood-tier-badge`
+- 🔧 **修复 MOOD_TIERS 浮点间隙 bug**：infra-10 的边界值 79/49/29 导致衰减浮点值（如 79.3）掉入间隙 fallback 到"低落"，改为 80/50/30 消除间隙。这是越界授权修改 `mood-service.js`
+- 手动验证 32 项全部 PASS（浮点间隙 9 + 边界重叠 5 + 颜色阈值 6 + 迁移 12）
+- 已知小问题：窄窗口（600-700px）时进度条可能被压缩
+
+**心情系统三连窗口全部完成** ✅
+
+**当前全局状态**：
+- 工作区有 ~15 个文件未提交（dash-04 + infra-10 + pet-08 + dash-05 + bugfix + PROJECT_BRIEF.md）
+- 50 测试通过（44 mood + 6 pet-motion）
+- 建议：mood-service.test.mjs 补充浮点值用例（infra-10 测试只测了整数边界）
+
+## 2026-07-14 — ARCH-04 接收 pet-08
+
+**pet-08 成果**：宠物侧接入新心情系统
+- `pet/pet.js`：心情系统全面接入（~120 行改动）
+  - init() 中 `migrateMood()` 迁移旧 string 存档 → number
+  - `settleMoodDecay()`：离线衰减结算，按自然日分段 + 单日 50 上限，饱腹<30 翻倍
+  - `grantClickMoodBoost()`：点击互动 +2 心情，每日 20 上限，低心情减半
+  - 喂食 +3 心情（`boostMood`）
+  - 经验倍率接入（`getExpMultiplier`）
+  - 台词池重构：4 档 happy/good/neutral/low，旧 hungry+sad → low 合并
+  - `suggestMood` 全部废弃
+- `store.js`：DEFAULT_STATE 新增 5 个心情字段（越界授权）
+- 踩坑：跨天 `todayAccumulated` 清零导致衰减过量，已修复
+- 边界条件 13 项全部验证通过
+
+**待接**：dash-05（面板心情卡片改版）

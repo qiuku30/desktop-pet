@@ -5,7 +5,7 @@ export const EVENTS = {
   // 宠物状态
   PET_STATE_CHANGED:   'pet:state:changed',
   PET_SATIETY_CHANGED:  'pet:satiety:changed',
-  PET_MOOD_CHANGED:    'pet:mood:changed',
+  PET_MOOD_CHANGED:    'pet:mood:changed',      // payload: { mood: number, tier: object }  — infra-10: mood 从 string 升级为 0-100 number
   PET_LEVEL_UP:        'pet:level:up',
   PET_FED:             'pet:fed',
   PET_SHOOED:          'pet:shooed',
