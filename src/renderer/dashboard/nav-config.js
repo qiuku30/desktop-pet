@@ -22,10 +22,6 @@ function buildShopPlaceholder(container) {
   buildPlaceholderPage(container, '🛒', '商店')
 }
 
-function buildSettingsPlaceholder(container) {
-  buildPlaceholderPage(container, '⚙️', '设置')
-}
-
 // ── 仓库分类配置（原则 5：配置驱动）──
 // 新增分类只需追加一行，不改渲染逻辑。
 // enabled: false → 置灰占位（半透明 + pointer-events: none）

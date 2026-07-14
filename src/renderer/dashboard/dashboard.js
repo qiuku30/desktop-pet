@@ -638,9 +638,9 @@ function buildSettingsPage(container) {
   container.className = 'page page--settings'
 
   // 从 PetState 读取当前设置，首次访问时 fallback 到配置 default
-  const currentSettings = PetState.get('settings') || {}
   const resolve = (item) => {
-    if (currentSettings && currentSettings[item.id] != null) return currentSettings[item.id]
+    const s = PetState.get('settings') || {}
+    if (s[item.id] != null) return s[item.id]
     return item.default
   }
 
@@ -1143,7 +1143,7 @@ function buildTooltipHTML(food) {
 
 function showTooltip(food, rect) {
   const settings = PetState.get('settings')
-  if (!settings || !settings.showTooltip) return
+  if (settings && settings.showTooltip === false) return
   // 根据内容行数动态计算高度，避免溢出滚动条
   const fields = food.tooltipFields
   const fieldCount = (fields && fields.length > 0) ? fields.length : (food.sellPrice ? 1 : 0)
