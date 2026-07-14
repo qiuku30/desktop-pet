@@ -183,7 +183,7 @@ function setupIPC() {
   // 窗口模式切换
   ipcMain.handle('window:toggle', () => {
     if (currentMode === 'pet') {
-      switchToDashboard();
+      switchToDashboard().catch(err => console.error('switchToDashboard failed:', err));
     } else {
       switchToPet();
     }
