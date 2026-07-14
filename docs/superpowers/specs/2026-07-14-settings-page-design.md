@@ -62,7 +62,7 @@ settings: {
 设置页 Toggle/Slider 变化
   → PetState.set('settings', {...})     // 即时生效 + 防抖存盘
   → 副作用（按控件类型）:
-      Toggle(alwaysOnTop) → IPC → mainWindow.setAlwaysOnTop(bool)
+      Toggle(alwaysOnTop) → IPC send → mainWindow.setAlwaysOnTop(bool)
       Slider(panelOpacity) → document.body.style.setProperty('--panel-opacity', val)
       Toggle(showTooltip)  → 无副作用，下次 showTooltip() 调用时读值判断
 ```
@@ -86,18 +86,22 @@ function showTooltip(food, rect) {
 
 ### 面板置顶
 
-- IPC 通道：`settings:setAlwaysOnTop`
-- `main/preload.js` 暴露：`setAlwaysOnTop: (val) => ipcRenderer.invoke('settings:setAlwaysOnTop', val)`
-- `main/index.js` handler：`mainWindow.setAlwaysOnTop(val)`
+- IPC 通道：`settings:setAlwaysOnTop`，使用 `send/on`（fire-and-forget，无返回值，对齐 `tooltip:show` 风格）
+- `main/preload.js` 暴露：`setAlwaysOnTop: (val) => ipcRenderer.send('settings:setAlwaysOnTop', val)`
+- `main/index.js` handler：`ipcMain.on('settings:setAlwaysOnTop', (_e, val) => { mainWindow.setAlwaysOnTop(val) })`
 - 切换回面板态时也需恢复：`switchToDashboard()` 读 `settings.alwaysOnTop` 决定是否置顶（当前硬编码 `false`）
 
 ### 面板透明度
 
 - 纯 CSS + JS，零 IPC
-- `dashboard.css`：`body { background-color: rgba(30, 30, 30, var(--panel-opacity, 1)); }`
-- 只影响 `body` 底色，导航栏/卡片/按钮等保持实色
+- CSS 级联：`html, body { background: #1e1e1e; }` → `body { background: rgba(30, 30, 30, var(--panel-opacity, 1)); }` 覆盖
+- `.card`、`#top-bar`、`#nav-bar` 各自有独立 `background`，不被 body 透传
+- 恢复时机：`initStatus()` 中 `PetState.init()` 之后立即设 CSS 变量（不等用户切到设置页）：
+  ```js
+  const s = PetState.get('settings')
+  document.body.style.setProperty('--panel-opacity', s?.panelOpacity ?? 1)
+  ```
 - 滑块 input 事件 → 同时设 CSS 变量 + PetState
-- 页面加载时从 PetState 恢复 CSS 变量
 
 ## 页面布局
 
@@ -127,7 +131,7 @@ function showTooltip(food, rect) {
 2. 读取 `PetState.get('settings')` 当前值（首次访问时可能为 undefined，fallback 到配置里的 default）
 3. 遍历当前 Tab 的 items 生成设置行（`.settings-row`）
 4. 绑定事件：Toggle 切换 / Slider 拖动 → 更新 PetState + 触发副作用
-5. 首次加载时执行恢复副作用（设 CSS 变量、调 IPC 置顶）
+5. 首次进入设置页时恢复面板置顶（调 IPC）— 透明度恢复在 `initStatus()` 更早完成，不在此处
 6. 返回清理函数（如有订阅，首期无）
 
 ## 边界情况
