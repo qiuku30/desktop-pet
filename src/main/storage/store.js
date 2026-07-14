@@ -26,6 +26,11 @@ const DEFAULT_STATE = {
   todayMoodDecay: 0,            // 今日已累计心情衰减量
   dailyMoodClicks: 0,           // 今日心情点击次数
   lastMoodClickDate: null,      // 上次心情点击日期（YYYY-MM-DD）
+  settings: {
+    showTooltip: true,
+    alwaysOnTop: false,
+    panelOpacity: 1.0,
+  },
   lastSaved: null,
 };
 
