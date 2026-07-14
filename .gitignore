@@ -2,6 +2,8 @@ node_modules/
 out/
 dist/
 .claude/
+.superpowers/
+docs/superpowers/
 .DS_Store
 Thumbs.db
 *.log
