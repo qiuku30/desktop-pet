@@ -90,6 +90,7 @@
 | 仓库页面 | ✅ | dash-04：分类 Tab 栏（全部/食物/道具）+ 物品网格（emoji + 名称 + 数量）+ 订阅生命周期管理（防泄漏）+ FOODS 加 category 字段 + 暗色主题 + fade 过渡 |
 | 仓库物品 tooltip + 右键菜单 | ✅ | dash-07：悬停 tooltip（照搬主页 mouseenter/mouseleave 模式，字段驱动 TOOLTIP_FIELDS 扩展）+ 右键 overlay 菜单（使用/出售/销毁，WH_MENU_ACTIONS 配置驱动，show/hide 函数控制显示/置灰）+ FOODS 加 sellPrice + tooltipFields 字段 |
 | 心情卡片改版 | ✅ | dash-05：emoji + 档位文字 + 进度条 + 档位标签；迁移旧 string 存档→number；三色进度条（和饱腹条同款）；水平单行布局 |
+| 商店页面 | ✅ | dash-08：金币余额栏 + 分类 Tab（复用仓库组件）+ 商品网格（buyPrice 从低到高）+ 购买按钮（金币不足置灰）+ 悬停 tooltip（buyPrice 替换 sellPrice）+ 右键购买菜单 + 状态订阅自动刷新；FOODS 加 buyPrice 字段；store.js coins 默认 100 |
 | DESIGN.md | ✅ | 已细化：两层布局结构、行容器语义化 class、滚动策略 |
 
 ---

@@ -587,3 +587,116 @@ html, body {
   font-size: 15px;
   user-select: none;
 }
+
+/* ── 商店页面 ── */
+
+.page--shop {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 金币余额栏 */
+
+.shop-coins-bar {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background: #252525;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.shop-coins-label {
+  font-size: 15px;
+  color: #ddd;
+}
+
+.shop-coins-value {
+  font-weight: bold;
+  color: #ffc107;
+}
+
+/* 商品网格 */
+
+.shop-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+  align-content: start;
+  transition: opacity 0.2s ease;
+}
+
+/* 商品卡片 */
+
+.shop-item {
+  background: #2c2c2c;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: default;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.shop-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.shop-item-emoji {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.shop-item-name {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.shop-item-count {
+  font-size: 11px;
+  color: #666;
+}
+
+.shop-item-price {
+  font-size: 13px;
+  color: #ffc107;
+  font-weight: bold;
+}
+
+/* 购买按钮 */
+
+.shop-btn {
+  margin-top: 4px;
+  padding: 4px 16px;
+  border: 1px solid #4caf50;
+  border-radius: 4px;
+  background: transparent;
+  color: #4caf50;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  width: 100%;
+}
+
+.shop-btn:hover:not(:disabled) {
+  background: #4caf50;
+  color: #fff;
+}
+
+.shop-btn--disabled,
+.shop-btn:disabled {
+  border-color: #555;
+  color: #555;
+  cursor: default;
+  pointer-events: none;
+}

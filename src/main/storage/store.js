@@ -15,7 +15,7 @@ const DEFAULT_STATE = {
   mood: 70,            // 0-100 数值心情（infra-10: 从 string 升级）
   satiety: 100,        // 0+，越高越饱，随时间下降
   intimacy: 0,         // 亲密度
-  coins: 0,
+  coins: 100,
   foodInventory: [],   // 食物库存
   zoomLevel: 1.0,      // 窗口缩放倍率（0.75 / 1.0 / 1.25 / 1.5）
   dailyInteractionCount: 0,    // 今日互动次数

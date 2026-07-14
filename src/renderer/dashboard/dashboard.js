@@ -103,6 +103,7 @@ const TOOLTIP_FIELDS = {
   satiety:   { label: '饱腹',   icon: '🍽' },
   exp:       { label: '经验',   icon: '⭐' },
   sellPrice: { label: '售价',   icon: '🪙' },
+  buyPrice:  { label: '售价',   icon: '💰' },
   effect:    { label: '效果',   icon: '✨' },  // 道具预留
 }
 
@@ -374,6 +375,259 @@ function buildWarehousePage(container) {
   })
 
   // 返回清理函数：切换离开仓库页时取消订阅
+  return () => { unsub() }
+}
+
+// ── 商店页面 ──
+
+function buildShopPage(container) {
+  container.className = 'page page--shop'
+
+  // 数据源：FOODS 配置 + foodInventory 库存
+  const foodInventory = PetState.get('foodInventory') || []
+  const invMap = {}
+  foodInventory.forEach(item => { invMap[item.id] = item.count })
+
+  const allItems = Object.values(FOODS)
+    .filter(f => f.buyPrice > 0)
+    .map(food => ({
+      ...food,
+      count: invMap[food.id] || 0,
+    }))
+    .sort((a, b) => a.buyPrice - b.buyPrice)
+
+  let activeCatId = 'all'
+
+  function renderCoinsBar() {
+    const el = container.querySelector('#shop-coins-value')
+    if (!el) return
+    el.textContent = PetState.get('coins') || 0
+  }
+
+  function renderGrid(catId) {
+    const grid = container.querySelector('.shop-grid')
+    if (!grid) return
+
+    const filtered = catId === 'all'
+      ? [...allItems]
+      : allItems.filter(item => item.category === catId)
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div class="wh-empty">📦 暂无商品</div>`
+      return
+    }
+
+    const coins = PetState.get('coins') || 0
+
+    grid.innerHTML = filtered.map(item => {
+      const canBuy = coins >= item.buyPrice
+      return `<div class="shop-item" data-item-id="${item.id}">
+        <span class="shop-item-emoji">${item.emoji}</span>
+        <span class="shop-item-name">${item.name}</span>
+        <span class="shop-item-count">×${item.count}</span>
+        <span class="shop-item-price">💰${item.buyPrice}</span>
+        <button class="shop-btn${canBuy ? '' : ' shop-btn--disabled'}"
+                data-action="buy" data-item-id="${item.id}"
+                ${canBuy ? '' : 'disabled'}>购买</button>
+      </div>`
+    }).join('')
+  }
+
+  function setActiveTab(catId) {
+    container.querySelectorAll('.wh-tab').forEach(tab => {
+      tab.classList.toggle('wh-tab--active', tab.dataset.catId === catId)
+    })
+  }
+
+  // 初始渲染
+  container.innerHTML = `
+    <div class="shop-coins-bar">
+      <span class="shop-coins-label">🪙 金币：<span class="shop-coins-value" id="shop-coins-value">${PetState.get('coins') || 0}</span></span>
+    </div>
+    <div class="wh-tabs">
+      ${WAREHOUSE_CATEGORIES.map(cat => `
+        <button class="wh-tab${cat.id === 'all' ? ' wh-tab--active' : ''}${!cat.enabled ? ' wh-tab--disabled' : ''}"
+                data-cat-id="${cat.id}"
+                ${!cat.enabled ? 'disabled' : ''}>${cat.label}</button>
+      `).join('')}
+    </div>
+    <div class="shop-grid"></div>
+  `
+
+  renderGrid('all')
+
+  // Tab 点击：切分类 → 筛选 + fade 过渡
+  container.querySelector('.wh-tabs').addEventListener('click', (e) => {
+    const tab = e.target.closest('.wh-tab')
+    if (!tab || tab.disabled) return
+    const catId = tab.dataset.catId
+    if (catId === activeCatId) return
+
+    activeCatId = catId
+    setActiveTab(catId)
+
+    const grid = container.querySelector('.shop-grid')
+    grid.style.opacity = '0'
+    setTimeout(() => {
+      renderGrid(catId)
+      requestAnimationFrame(() => { grid.style.opacity = '1' })
+    }, 200)
+  })
+
+  // ── 购买按钮点击 ──
+  container.querySelector('.shop-grid').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action="buy"]')
+    if (!btn || btn.disabled) return
+    const itemId = btn.dataset.itemId
+    const food = FOODS[itemId]
+    if (!food) return
+
+    const coins = PetState.get('coins') || 0
+    if (coins < food.buyPrice) {
+      showToast('金币不足 💰')
+      return
+    }
+
+    // 扣金币
+    PetState.set('coins', coins - food.buyPrice)
+
+    // 库存 +1
+    const inv = PetState.get('foodInventory') || []
+    const existing = inv.find(item => item.id === itemId)
+    const newInventory = existing
+      ? inv.map(item => item.id === itemId ? { ...item, count: item.count + 1 } : item)
+      : [...inv, { id: itemId, count: 1 }]
+    PetState.set('foodInventory', newInventory)
+
+    showToast(`购买了${food.name}！`)
+  })
+
+  // ── 商品悬停 tooltip ──
+  let _shopTooltipItem = null
+  let _shopContextMenuOpen = false
+
+  container.querySelector('.shop-grid').addEventListener('mouseenter', (e) => {
+    if (_shopContextMenuOpen) return
+    const itemEl = e.target.closest('.shop-item')
+    if (itemEl === _shopTooltipItem) return
+    _shopTooltipItem = itemEl
+    if (!itemEl) return
+    const itemId = itemEl.dataset.itemId
+    const food = FOODS[itemId]
+    if (!food) return
+    // 商店 tooltip：把 sellPrice 替换为 buyPrice
+    const shopFood = {
+      ...food,
+      tooltipFields: food.tooltipFields.map(f => f === 'sellPrice' ? 'buyPrice' : f),
+    }
+    showTooltip(shopFood, itemEl.getBoundingClientRect())
+  }, true)
+
+  container.querySelector('.shop-grid').addEventListener('mouseleave', (e) => {
+    if (e.relatedTarget && e.relatedTarget.closest('.shop-item')) return
+    _shopTooltipItem = null
+    hideTooltip()
+  }, true)
+
+  // ── 商品右键操作菜单 ──
+
+  const SHOP_MENU_ACTIONS = [
+    { id: 'buy', label: '购买', icon: '💰', show: (item, coins) => coins >= item.buyPrice },
+  ]
+
+  container.querySelector('.shop-grid').addEventListener('contextmenu', async (e) => {
+    const itemEl = e.target.closest('.shop-item')
+    if (!itemEl) return
+    e.preventDefault()
+
+    hideTooltip()
+    _shopTooltipItem = null
+    _shopContextMenuOpen = true
+
+    const itemId = itemEl.dataset.itemId
+    const food = FOODS[itemId]
+    if (!food) { _shopContextMenuOpen = false; return }
+
+    const coins = PetState.get('coins') || 0
+
+    const menuItems = SHOP_MENU_ACTIONS.map(action => {
+      const enabled = action.show(food, coins)
+      return { action, enabled }
+    })
+
+    if (menuItems.every(m => !m.enabled)) { _shopContextMenuOpen = false; return }
+
+    const menuHTML = menuItems.map(({ action, enabled }) => {
+      const attr = enabled ? `data-overlay-result="${action.id}"` : ''
+      const style = enabled ? '' : 'opacity:0.35;pointer-events:none;'
+      return `<div class="wh-menu-item" ${attr} style="${style}">
+        <span>${action.icon}</span>
+        <span>${action.label}</span>
+      </div>`
+    }).join('')
+
+    const menuHTMLFull = `
+      <style>
+        #overlay-handle { display: none; }
+        #overlay-content { padding: 4px 0; }
+        .wh-menu { display: flex; flex-direction: column; }
+        .wh-menu-item {
+          display: flex; align-items: center; gap: 8px;
+          padding: 10px 14px; cursor: pointer;
+          color: #ccc; font-size: 13px;
+          font-family: 'Microsoft YaHei','PingFang SC',sans-serif;
+          transition: background 0.12s, color 0.12s;
+        }
+        .wh-menu-item:hover { background: #2196f3; color: #fff; }
+        .wh-menu-item:first-child { border-radius: 8px 8px 0 0; }
+        .wh-menu-item:last-child { border-radius: 0 0 8px 8px; }
+        .wh-menu-item:only-child { border-radius: 8px; }
+      </style>
+      <div class="wh-menu" data-overlay-result="null">${menuHTML}</div>`
+
+    const result = await window.electronAPI.showOverlay({
+      html: menuHTMLFull,
+      width: 130,
+      height: SHOP_MENU_ACTIONS.length * 42 + 8,
+      x: e.clientX,
+      y: e.clientY,
+    })
+
+    _shopContextMenuOpen = false
+
+    if (result !== 'buy') return
+
+    // 右键购买（与左键逻辑一致）
+    if (coins < food.buyPrice) return
+
+    PetState.set('coins', coins - food.buyPrice)
+
+    const inv = PetState.get('foodInventory') || []
+    const existing = inv.find(item => item.id === itemId)
+    const newInventory = existing
+      ? inv.map(item => item.id === itemId ? { ...item, count: item.count + 1 } : item)
+      : [...inv, { id: itemId, count: 1 }]
+    PetState.set('foodInventory', newInventory)
+
+    showToast(`购买了${food.name}！`)
+  })
+
+  // ── 订阅状态变更，自动刷新 ──
+  const unsub = PetState.subscribe(EVENTS.PET_STATE_CHANGED, ({ key }) => {
+    if (key === 'coins') {
+      renderCoinsBar()
+      renderGrid(activeCatId)
+    }
+    if (key === 'foodInventory') {
+      const inv = PetState.get('foodInventory') || []
+      const map = {}
+      inv.forEach(item => { map[item.id] = item.count })
+      allItems.forEach(item => { item.count = map[item.id] || 0 })
+      renderGrid(activeCatId)
+    }
+  })
+
+  // 返回清理函数：切换离开商店页时取消订阅
   return () => { unsub() }
 }
 
@@ -719,7 +973,7 @@ function buildTooltipHTML(food) {
     for (const key of fields) {
       const cfg = TOOLTIP_FIELDS[key]
       if (!cfg) continue
-      const prefix = key === 'sellPrice' ? '' : '+'
+      const prefix = (key === 'sellPrice' || key === 'buyPrice') ? '' : '+'
       html += `<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.6"><span style="color:#999">${cfg.icon} ${cfg.label}</span><span style="color:#7eb">${prefix}${food[key]}</span></div>`
     }
   } else if (food.sellPrice) {
@@ -764,6 +1018,9 @@ async function initStatus() {
 
   const whItem = NAV_ITEMS.find(n => n.id === 'warehouse')
   if (whItem) whItem.render = buildWarehousePage
+
+  const shopItem = NAV_ITEMS.find(n => n.id === 'shop')
+  if (shopItem) shopItem.render = buildShopPage
 
   // 渲染导航栏
   buildNavBar()
