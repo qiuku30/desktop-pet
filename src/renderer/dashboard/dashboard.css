@@ -13,9 +13,7 @@ html, body {
   cursor: default;
 }
 
-body {
-  background: rgba(30, 30, 30, var(--panel-opacity, 1));
-}
+
 
 /* 顶部栏 */
 #top-bar {

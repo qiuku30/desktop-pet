@@ -29,7 +29,6 @@ const DEFAULT_STATE = {
   settings: {
     showTooltip: true,
     alwaysOnTop: false,
-    panelOpacity: 1.0,
   },
   lastSaved: null,
 };

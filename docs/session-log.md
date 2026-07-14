@@ -67,7 +67,7 @@
 
 ## dash-09 — 2026-07-14
 
-**功能**：设置页面（首期 3 个设置项：悬浮提示开关 / 面板置顶 / 面板透明度）
+**功能**：设置页面（首期 2 个设置项：悬浮提示开关 / 面板置顶。面板透明度搁置 — CSS 变量无法穿透 `transparent: false` 的窗口到达桌面，恢复需同时改窗口透明 + frame:false）
 **改动文件**：
 - `src/renderer/dashboard/settings-config.js`（新建）
 - `src/renderer/dashboard/nav-config.js`

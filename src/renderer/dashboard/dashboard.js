@@ -652,9 +652,6 @@ function buildSettingsPage(container) {
       case 'alwaysOnTop':
         window.electronAPI.setAlwaysOnTop(value)
         break
-      case 'panelOpacity':
-        document.body.style.setProperty('--panel-opacity', value)
-        break
       // showTooltip: 无副作用，下次 showTooltip() 调用时读值
     }
   }
@@ -1165,12 +1162,6 @@ function hideTooltip() {
 // ── 初始化 ──
 async function initStatus() {
   await PetState.init()
-
-  // 恢复面板透明度（必须在 init 之后、渲染之前，避免闪默认值）
-  const settings = PetState.get('settings')
-  if (settings && settings.panelOpacity != null) {
-    document.body.style.setProperty('--panel-opacity', settings.panelOpacity)
-  }
 
   // 注入页面渲染函数到 nav-config（配置驱动，render 在 init 时绑定）
   const homeItem = NAV_ITEMS.find(n => n.id === 'home')
