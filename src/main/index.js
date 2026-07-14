@@ -137,7 +137,7 @@ async function applyZoom(zoom) {
 }
 
 // ── 窗口模式切换 ──
-function switchToDashboard() {
+async function switchToDashboard() {
   currentMode = 'dashboard';
 
   // 保存宠物态位置，切回时恢复
@@ -148,7 +148,10 @@ function switchToDashboard() {
 
   mainWindow.setMaximumSize(0, 0);
   mainWindow.setMinimumSize(600, 400);
-  mainWindow.setAlwaysOnTop(false);
+  // 读取用户设置决定是否置顶
+  const state = await getState()
+  const alwaysOnTop = state.settings?.alwaysOnTop ?? false
+  mainWindow.setAlwaysOnTop(alwaysOnTop);
   mainWindow.setSkipTaskbar(false);
 
   mainWindow.setSize(DASHBOARD_MODE.width, DASHBOARD_MODE.height);
@@ -260,6 +263,13 @@ function setupIPC() {
     isAutoMoving = false;
     return { x, y };
   });
+
+  // 设置：面板置顶
+  ipcMain.on('settings:setAlwaysOnTop', (_event, val) => {
+    if (currentMode === 'dashboard') {
+      mainWindow.setAlwaysOnTop(val)
+    }
+  })
 }
 
 // ── 应用生命周期 ──

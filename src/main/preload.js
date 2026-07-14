@@ -51,4 +51,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   showTooltip: (opts) => ipcRenderer.send('tooltip:show', opts),
   hideTooltip: () => ipcRenderer.send('tooltip:hide'),
   closeTooltip: () => ipcRenderer.send('tooltip:close'),
+
+  // 设置
+  setAlwaysOnTop: (val) => ipcRenderer.send('settings:setAlwaysOnTop', val),
 });
