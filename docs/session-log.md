@@ -62,3 +62,21 @@
 | **dash-06** | 2026-07-14 | 🐛 修复 tooltip：不显示 / 闪烁 / 快速滑动 Mojo 报错 | `main/tooltip-manager.js` `dashboard/dashboard.js` `docs/session-log.md` | ✅ 越界授权：用户授权改 `src/main/tooltip-manager.js` | 三个子问题：①不显示 — `42dafdd` 复用路径 `hide()+ready-to-show`，Electron 中 `ready-to-show` 仅首次渲染触发→窗口永远隐藏，回退为 `setPosition→stop→loadURL→showInactive`；②闪烁 — `mouseleave` 捕获在子元素间/穿过 gap 时误触发 hide，加 `relatedTarget.closest('#card-inventory')` 守卫，只在真正离开库存区时隐藏；③快速滑动 Mojo 报错 — 多个 `loadURL` 抢占，旧导航取消后残留 IPC 消息，加 `webContents.stop()` 清理。 |
 | **dash-07** | 2026-07-14 | 仓库物品悬停 tooltip + 右键操作菜单 + 多轮 bug 修复 | `dashboard/dashboard.js` `shared/feed-service.js` `main/tooltip-manager.js` `main/overlay-manager.js` `main/index.js` `main/preload.js` `docs/progress.md` `docs/session-log.md` | ✅ 越界授权：改 `shared/feed-service.js`（FOODS 加 sellPrice + tooltipFields 字段）+ 修 bug 需改 `main/` 四个文件 | ①悬停 tooltip：照搬主页 mouseenter/mouseleave 捕获模式，_whTooltipItem 防抖；TOOLTIP_FIELDS 扩展为字段驱动；buildTooltipHTML 按 food.tooltipFields 声明顺序渲染；②右键菜单：WH_MENU_ACTIONS 配置驱动，show() 控制显示/置灰，overlay 弹出；hover #2196f3 高亮；操作 use/sell/destroy；③tooltip 自动高度（方案B）：executeJavaScript 取 scrollHeight→fitToContent→setBounds；模块级 _targetX/Y/W 防竞态；ready-to-show await 消除首次闪烁；④mouseleave 守卫：closest('.wh-grid')→closest('.wh-item')，修垂直方向不消失 bug；⑤右键关闭三道保险：点菜单项/点菜单空白(data-overlay-result="null")/点外部(blur)；overlay-manager closeOverlayWindow() + force-close IPC；dashboard 切页/关闭调 closeOverlay；⑥tooltip 复用路径 loadURL().then() 替代 once('did-finish-load')，防监听器累积 |
 | **dash-08** | 2026-07-14 | 商店页面：食物购买 | `dashboard/dashboard.js` `dashboard/dashboard.css` `dashboard/nav-config.js` `shared/feed-service.js` `main/storage/store.js` `docs/progress.md` `docs/session-log.md` | ✅ 越界授权：改 `shared/feed-service.js`（FOODS 加 buyPrice）+ `main/storage/store.js`（coins 默认 0→100）+ `nav-config.js`（shop enabled: true） | 商店页面落地：金币余额栏（#252525 暗色背景）+ 分类 Tab（完全复用仓库 wh-tabs 组件/样式/交互）+ 商品网格（shop-grid, minmax(100px,1fr)）+ 商品卡片（emoji + 名称 + 持有数量弱显示 #666 + 购买价金黄色 #ffc107 + 购买按钮绿色边框）；排序按 buyPrice 从低到高；购买按钮金币不足置灰 disabled；悬停 tooltip 复用主页 mouseenter/mouseleave 捕获模式，动态替换 tooltipFields（sellPrice→buyPrice）；右键菜单 SHOP_MENU_ACTIONS 配置驱动，首期仅「💰 购买」一项；状态订阅 PET_STATE_CHANGED（coins/foodInventory）自动刷新；_pageCleanup 防订阅泄漏；buildTooltipHTML 前缀逻辑扩展（buyPrice 同 sellPrice 不加 +） |
+
+---
+
+## dash-09 — 2026-07-14
+
+**功能**：设置页面（首期 3 个设置项：悬浮提示开关 / 面板置顶 / 面板透明度）
+**改动文件**：
+- `src/renderer/dashboard/settings-config.js`（新建）
+- `src/renderer/dashboard/nav-config.js`
+- `src/renderer/dashboard/dashboard.js`
+- `src/renderer/dashboard/dashboard.css`
+- `src/main/storage/store.js`
+- `src/main/preload.js`
+- `src/main/index.js`
+- `docs/progress.md`
+- `docs/session-log.md`
+**越界授权**：`store.js`（settings 默认值）、`index.js`（setAlwaysOnTop IPC）、`preload.js`（暴露 setAlwaysOnTop）
+**备注**：透明度在 initStatus() 中恢复避免闪烁；IPC 用 send/on 对齐项目风格；Tab 复用 .wh-tabs 样式
