@@ -87,7 +87,35 @@ function showOverlayWindow(parentWindow, opts) {
         pendingOverlays.delete(win.id);
       }
     });
+
+    // 用户点击 overlay 之外的区域 → 失去焦点 → 自动关闭（等价于点取消）
+    win.on('blur', () => {
+      const entry = pendingOverlays.get(win.id);
+      if (entry) {
+        entry.resolve(null);
+        pendingOverlays.delete(win.id);
+        if (win && !win.isDestroyed()) {
+          win.close();
+        }
+      }
+    });
   });
 }
 
-module.exports = { initOverlayIPC, showOverlayWindow };
+/**
+ * 强制关闭当前 overlay（面板切页/关闭时清理用）
+ */
+function closeOverlayWindow() {
+  // 先收集再操作：win.close() 同步触发 closed 事件会修改 pendingOverlays
+  const entries = Array.from(pendingOverlays.entries())
+  pendingOverlays.clear()
+  for (const [id, entry] of entries) {
+    entry.resolve(null)
+    const win = BrowserWindow.fromId(id)
+    if (win && !win.isDestroyed()) {
+      win.close()
+    }
+  }
+}
+
+module.exports = { initOverlayIPC, showOverlayWindow, closeOverlayWindow };

@@ -83,11 +83,12 @@
 | 任务 | 状态 | 备注 |
 |------|------|------|
 | dashboard.html — 面板框架 | ✅ | 顶部栏（标题 + 关闭按钮）+ 导航 + 内容区 |
-| dashboard.js — 面板逻辑 | ✅ | 窗口切换 + 边缘拖拽缩放 + 光标控制（RAF 循环）；buildStatusDOM() 重构为 RPG 角色卡两层布局 |
+| dashboard.js — 面板逻辑 | ✅ | 窗口切换 + 边缘拖拽缩放 + 光标控制（RAF 循环）；buildStatusDOM() 重构为 RPG 角色卡两层布局；dash-06 修 tooltip 不显示/闪烁/Mojo 报错 |
 | dashboard.css — 面板样式 | ✅ | 顶部栏（标题 drag + 关闭按钮）+ 两层布局（portrait-layer + info-layer）+ 暗色主题 |
 | 宠物状态展示卡片 | ✅ | 等级/经验/心情/饱腹/亲密度/金币/食物库存 + 快速投喂；上半区形象展示+下半区信息数据 |
 | 左侧导航栏 + 多页切换 | ✅ | dash-03：nav-config.js 配置驱动（原则5）、4 项导航（主页/仓库/商店/设置）、占位页面（即将开放）、暗色主题 + 选中高亮（#2196f3 左边框）+ fade 动画 |
 | 仓库页面 | ✅ | dash-04：分类 Tab 栏（全部/食物/道具）+ 物品网格（emoji + 名称 + 数量）+ 订阅生命周期管理（防泄漏）+ FOODS 加 category 字段 + 暗色主题 + fade 过渡 |
+| 仓库物品 tooltip + 右键菜单 | ✅ | dash-07：悬停 tooltip（照搬主页 mouseenter/mouseleave 模式，字段驱动 TOOLTIP_FIELDS 扩展）+ 右键 overlay 菜单（使用/出售/销毁，WH_MENU_ACTIONS 配置驱动，show/hide 函数控制显示/置灰）+ FOODS 加 sellPrice + tooltipFields 字段 |
 | 心情卡片改版 | ✅ | dash-05：emoji + 档位文字 + 进度条 + 档位标签；迁移旧 string 存档→number；三色进度条（和饱腹条同款）；水平单行布局 |
 | DESIGN.md | ✅ | 已细化：两层布局结构、行容器语义化 class、滚动策略 |
 

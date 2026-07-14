@@ -401,7 +401,8 @@ main 分支，67 commits 领先 origin/main（未推送）
 **当前全局状态**：
 - 工作区有 14 个文件未提交（dash-04 + infra-10 + pet-08 + bugfix + PROJECT_BRIEF.md）
 - 50 测试通过（44 mood + 6 pet-motion）
-- 心情系统：infra-10 地基 + pet-08 宠物侧接入完成，等待 dash-05 面板心情卡片改版
+- 心情系统：infra-10 地基 + pet-08 + dash-05 全部完成
+- Tooltip 修复：dash-06（ready-to-show 只触发一次 → did-finish-load/stop+showInactive）+ dash-07（自动高度 fitToContent、loadURL().then()、overlay blur 自动关闭）
 
 ## 2026-07-14 — ARCH-04 接收 dash-05
 
@@ -416,6 +417,25 @@ main 分支，67 commits 领先 origin/main（未推送）
 
 **当前全局状态**：
 - 工作区有 ~15 个文件未提交（dash-04 + infra-10 + pet-08 + dash-05 + bugfix + PROJECT_BRIEF.md）
+
+## 2026-07-14 — ARCH-04 接收 dash-06 + dash-07
+
+**dash-06**：tooltip 不显示修复
+- 根因：`42dafdd` 引入的 `once('ready-to-show')` 在 Electron 中只在首次渲染触发，后续 loadURL 不触发 → tooltip 永远卡在隐藏
+- `tooltip-manager.js` 复用路径改为 `stop()+loadURL()+showInactive()`
+
+**dash-07**：仓库物品 tooltip + 右键菜单 + 8 项 bug 修复
+- `dashboard/dashboard.js`：仓库 tooltip（mouseenter 捕获 + TOOLTIP_FIELDS 字段驱动）、右键 overlay 菜单（使用/出售/销毁）、`_whContextMenuOpen` 状态机
+- `feed-service.js`：FOODS 加 `sellPrice` + `tooltipFields`
+- `tooltip-manager.js`：自动高度（`executeJavaScript('scrollHeight')` + `fitToContent`）、`loadURL().then()` 修监听器泄漏
+- `overlay-manager.js`：`closeOverlayWindow()` + blur 自动关闭
+- `main/index.js` + `main/preload.js`：`overlay:force-close` IPC（面板销毁时清理菜单）
+- ⚠️ 越界授权：main 层 4 个文件，ARCH-04 补登记（修复真 bug，提示词未预料）
+
+**当前全局状态**：
+- 工作区有 9 个文件未提交（dash-06 + dash-07 + handleFeed 修复 + ARCH-04 文档）
+- 50 测试通过
+- 仓库物品交互完成：悬停 tooltip（自动高度、字段驱动）+ 右键菜单（使用/出售/销毁、blur 关闭）
 - 50 测试通过（44 mood + 6 pet-motion）
 - 建议：mood-service.test.mjs 补充浮点值用例（infra-10 测试只测了整数边界）
 

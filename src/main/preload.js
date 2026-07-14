@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 通用悬浮面板
   showOverlay: (opts) => ipcRenderer.invoke('overlay:show', opts),
+  closeOverlay: () => ipcRenderer.send('overlay:force-close'),
 
   // Tooltip 悬浮提示（fire-and-forget，无返回值）
   showTooltip: (opts) => ipcRenderer.send('tooltip:show', opts),

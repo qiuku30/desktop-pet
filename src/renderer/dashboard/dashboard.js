@@ -7,6 +7,8 @@ const CORNER = 16
 
 // ── 返回宠物 ──
 document.getElementById('btn-close').addEventListener('click', async () => {
+  window.electronAPI.closeOverlay()      // 关闭可能残留的右键菜单
+  hideTooltip()
   await PetState.flush()
   window.electronAPI.toggleWindow()
 })
@@ -90,16 +92,18 @@ document.addEventListener('pointerup', () => {
 
 import { PetState } from '../shared/pet-state.js'
 import { FOODS, FEED_CONFIG, consumeFood, applyFeed, emitFed } from '../shared/feed-service.js'
-import { calcRequiredExp } from '../shared/exp-service.js'
+import { calcRequiredExp, addExp, getFoodExp } from '../shared/exp-service.js'
 import { calcMaxSatiety } from '../shared/satiety-service.js'
-import { getMoodTier, migrateMood } from '../shared/mood-service.js'
+import { getMoodTier, migrateMood, boostMood, getExpMultiplier, MOOD_CONFIG } from '../shared/mood-service.js'
 import { EVENTS } from '../shared/events.js'
 import { NAV_ITEMS, WAREHOUSE_CATEGORIES } from './nav-config.js'
 
 // tooltip 字段 → 中文标签映射（字段驱动，加新字段只加一行）
 const TOOLTIP_FIELDS = {
-  satiety:  '饱腹',
-  exp:      '经验',
+  satiety:   { label: '饱腹',   icon: '🍽' },
+  exp:       { label: '经验',   icon: '⭐' },
+  sellPrice: { label: '售价',   icon: '🪙' },
+  effect:    { label: '效果',   icon: '✨' },  // 道具预留
 }
 
 // ── 导航状态 ──
@@ -232,6 +236,133 @@ function buildWarehousePage(container) {
     }, 200)
   })
 
+  // ── 仓库物品悬停 tooltip ──
+  let _whTooltipItem = null      // 当前悬停的 .wh-item DOM 元素
+  let _whContextMenuOpen = false // 右键菜单打开期间暂停 tooltip 触发
+
+  container.querySelector('.wh-grid').addEventListener('mouseenter', (e) => {
+    if (_whContextMenuOpen) return  // 右键菜单打开期间不触发 tooltip
+    const itemEl = e.target.closest('.wh-item')
+    if (itemEl === _whTooltipItem) return  // 同一物品内子元素间移动，跳过
+    _whTooltipItem = itemEl
+    if (!itemEl) return  // 进入 gap 区域，保持上一个 tooltip
+    const itemId = itemEl.dataset.itemId
+    const food = FOODS[itemId]
+    if (!food) return
+    showTooltip(food, itemEl.getBoundingClientRect())
+  }, true)
+
+  container.querySelector('.wh-grid').addEventListener('mouseleave', (e) => {
+    // 进入另一个物品 → 保留；进入 gap/padding/空白 → 隐藏
+    if (e.relatedTarget && e.relatedTarget.closest('.wh-item')) return
+    _whTooltipItem = null
+    hideTooltip()
+  }, true)
+
+  // ── 仓库物品右键操作菜单 ──
+
+  const WH_MENU_ACTIONS = [
+    { id: 'use',     label: '使用',  icon: '🍽', show: (item, count) => item.category === 'food' && count > 0 },
+    { id: 'sell',    label: '出售',  icon: '🪙', show: (item, count) => item.sellPrice > 0 && count > 0 },
+    { id: 'destroy', label: '销毁',  icon: '🗑', show: (item, count) => count > 0 },
+  ]
+
+  container.querySelector('.wh-grid').addEventListener('contextmenu', async (e) => {
+    const itemEl = e.target.closest('.wh-item')
+    if (!itemEl) return
+    e.preventDefault()
+
+    // 关闭悬停 tooltip + 暂停后续触发
+    hideTooltip()
+    _whTooltipItem = null
+    _whContextMenuOpen = true
+
+    const itemId = itemEl.dataset.itemId
+    const food = FOODS[itemId]
+    if (!food) { _whContextMenuOpen = false; return }
+
+    // 用实时库存（渲染时的 allItems 可能因订阅更新而滞后，从 PetState 直接读）
+    const currentInv = PetState.get('foodInventory') || []
+    const entry = currentInv.find(item => item.id === itemId)
+    const count = entry ? entry.count : 0
+
+    // 构建菜单项；全禁用则不弹窗（否则无法关闭 overlay）
+    const menuItems = WH_MENU_ACTIONS.map(action => {
+      const enabled = action.show(food, count)
+      return { action, enabled }
+    })
+
+    if (menuItems.every(m => !m.enabled)) { _whContextMenuOpen = false; return }
+
+    const menuHTML = menuItems.map(({ action, enabled }) => {
+      const attr = enabled ? `data-overlay-result="${action.id}"` : ''
+      const style = enabled ? '' : 'opacity:0.35;pointer-events:none;'
+      return `<div class="wh-menu-item" ${attr} style="${style}">
+        <span>${action.icon}</span>
+        <span>${action.label}</span>
+      </div>`
+    }).join('')
+
+    const menuHTMLFull = `
+      <style>
+        #overlay-handle { display: none; }
+        #overlay-content { padding: 4px 0; }
+        .wh-menu { display: flex; flex-direction: column; }
+        .wh-menu-item {
+          display: flex; align-items: center; gap: 8px;
+          padding: 10px 14px; cursor: pointer;
+          color: #ccc; font-size: 13px;
+          font-family: 'Microsoft YaHei','PingFang SC',sans-serif;
+          transition: background 0.12s, color 0.12s;
+        }
+        .wh-menu-item:hover { background: #2196f3; color: #fff; }
+        .wh-menu-item:first-child { border-radius: 8px 8px 0 0; }
+        .wh-menu-item:last-child { border-radius: 0 0 8px 8px; }
+        .wh-menu-item:only-child { border-radius: 8px; }
+      </style>
+      <div class="wh-menu" data-overlay-result="null">${menuHTML}</div>`
+
+    const result = await window.electronAPI.showOverlay({
+      html: menuHTMLFull,
+      width: 130,
+      height: WH_MENU_ACTIONS.length * 42 + 8,  // 每项 42px + 上下各 4px
+      x: e.clientX,
+      y: e.clientY,
+    })
+
+    // overlay 关闭后恢复 tooltip 悬停
+    _whContextMenuOpen = false
+
+    if (!result) return
+
+    // 处理菜单操作
+    switch (result) {
+      case 'use':
+        handleFeed(itemId)
+        break
+
+      case 'sell': {
+        const inv = PetState.get('foodInventory') || []
+        const { newInventory, consumed } = consumeFood(itemId, inv)
+        if (!consumed) break
+        PetState.set('foodInventory', newInventory)
+        const coins = PetState.get('coins') || 0
+        PetState.set('coins', coins + food.sellPrice)
+        showToast(`出售了${food.name}，获得 ${food.sellPrice} 🪙`)
+        break
+      }
+
+      case 'destroy': {
+        const inv = PetState.get('foodInventory') || []
+        const { newInventory, consumed } = consumeFood(itemId, inv)
+        if (!consumed) break
+        PetState.set('foodInventory', newInventory)
+        showToast(`销毁了${food.name}`)
+        break
+      }
+    }
+  })
+
   // 订阅库存变更，自动刷新网格
   const unsub = PetState.subscribe(EVENTS.PET_STATE_CHANGED, ({ key }) => {
     if (key !== 'foodInventory') return
@@ -257,6 +388,10 @@ function switchPage(pageId) {
 
   // fade out
   area.style.opacity = '0'
+
+  // 关闭可能残留的右键菜单 overlay（切页时清理）
+  window.electronAPI.closeOverlay()
+  hideTooltip()
 
   setTimeout(() => {
     // 清理旧页面（取消订阅等，防泄漏 — ADR-006 精神）
@@ -343,15 +478,23 @@ function bindHomePageEvents() {
   })
 
   // 库存悬停：tooltip（捕获阶段，处理子元素事件）
+  let _tooltipItem = null  // 当前悬停的 .inventory-item DOM 元素
+
   document.getElementById('card-inventory').addEventListener('mouseenter', (e) => {
     const item = e.target.closest('.inventory-item')
-    if (!item) { hideTooltip(); return }
+    if (item === _tooltipItem) return  // 同一物品内子元素间移动，跳过
+    _tooltipItem = item
+    // 进入 gap 区域时不隐藏，保持上一个物品的 tooltip 显示
+    if (!item) return
     const food = FOODS[item.dataset.foodId]
-    if (!food) { hideTooltip(); return }
+    if (!food) return
     showTooltip(food, item.getBoundingClientRect())
   }, true)
 
-  document.getElementById('card-inventory').addEventListener('mouseleave', () => {
+  document.getElementById('card-inventory').addEventListener('mouseleave', (e) => {
+    // 进入另一个物品 → 保留；进入 gap/padding/空白 → 隐藏
+    if (e.relatedTarget && e.relatedTarget.closest('.inventory-item')) return
+    _tooltipItem = null
     hideTooltip()
   }, true)
 }
@@ -539,8 +682,29 @@ function handleFeed(foodId) {
   PetState.set('satiety', newSatiety)
   PetState.set('intimacy', newIntimacy)
 
+  // 喂食加心情
+  const currentMood = PetState.get('mood') ?? MOOD_CONFIG.initialMood
+  const newMoodVal = boostMood(currentMood, MOOD_CONFIG.feedBoost)
+  if (newMoodVal !== currentMood) {
+    PetState.set('mood', newMoodVal)
+  }
+
+  // 喂食经验结算（带心情倍率）
+  const foodExp = getFoodExp(food)
+  if (foodExp > 0) {
+    const exp = PetState.get('exp') || 0
+    const adjustedExp = Math.round(foodExp * getExpMultiplier(newMoodVal))
+    const addResult = addExp(exp, level, adjustedExp)
+    PetState.set('exp', addResult.newExp)
+    if (addResult.leveledUp) {
+      PetState.set('level', addResult.newLevel)
+      showToast(`🎉 升级了！Lv.${addResult.newLevel}！`)
+    }
+  }
+
   // 发投喂事件
   emitFed(foodId)
+  showToast(`投喂了${food.name}！`)
 }
 
 // ── tooltip ──
@@ -548,18 +712,37 @@ function handleFeed(foodId) {
 function buildTooltipHTML(food) {
   let html = `<style>body{margin:0;padding:10px 14px;background:#2c2c2c;font-family:'Microsoft YaHei','PingFang SC',sans-serif;color:#ccc;border-radius:8px;}</style>`
   html += `<div style="font-size:14px;color:#fff;margin-bottom:6px">${food.name}</div>`
-  for (const [key, label] of Object.entries(TOOLTIP_FIELDS)) {
-    html += `<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.6"><span style="color:#999">${label}</span><span style="color:#7eb">+${food[key]}</span></div>`
+
+  // 字段驱动：物品声明 tooltipFields → 按声明顺序渲染；否则兜底展示售价
+  const fields = food.tooltipFields
+  if (fields && fields.length > 0) {
+    for (const key of fields) {
+      const cfg = TOOLTIP_FIELDS[key]
+      if (!cfg) continue
+      const prefix = key === 'sellPrice' ? '' : '+'
+      html += `<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.6"><span style="color:#999">${cfg.icon} ${cfg.label}</span><span style="color:#7eb">${prefix}${food[key]}</span></div>`
+    }
+  } else if (food.sellPrice) {
+    // 兜底：未声明 tooltipFields 但有售价
+    html += `<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.6"><span style="color:#999">🪙 售价</span><span style="color:#7eb">${food.sellPrice}</span></div>`
   }
-  html += `<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.6"><span style="color:#999">亲密度</span><span style="color:#7eb">+${FEED_CONFIG.intimacyPerFeed}</span></div>`
+
+  html += `<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.6"><span style="color:#999">💕 亲密度</span><span style="color:#7eb">+${FEED_CONFIG.intimacyPerFeed}</span></div>`
   return html
 }
 
 function showTooltip(food, rect) {
+  // 根据内容行数动态计算高度，避免溢出滚动条
+  const fields = food.tooltipFields
+  const fieldCount = (fields && fields.length > 0) ? fields.length : (food.sellPrice ? 1 : 0)
+  // 名称行(~26px) + N 个字段行(~20px each) + 亲密度行(~20px) + padding(~24px)
+  const h = 26 + fieldCount * 20 + 20 + 24
   window.electronAPI.showTooltip({
     html: buildTooltipHTML(food),
     x: Math.round(rect.right + 8),
     y: Math.round(rect.top),
+    width: 175,
+    height: Math.round(h),
   })
 }
 

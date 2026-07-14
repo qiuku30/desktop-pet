@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, Menu, screen } = require('electron');
 const path = require('path');
 const { initStore, getState, setState } = require('./storage/store');
 const { registerPetIPC, isValidSnapshot } = require('./ipc/pet-ipc');
-const { initOverlayIPC, showOverlayWindow } = require('./overlay-manager');
+const { initOverlayIPC, showOverlayWindow, closeOverlayWindow } = require('./overlay-manager');
 const { showTooltipWindow, hideTooltipWindow, closeTooltipWindow } = require('./tooltip-manager');
 
 // ── 窗口状态常量 ──
@@ -194,6 +194,9 @@ function setupIPC() {
   initOverlayIPC(ipcMain);
   ipcMain.handle('overlay:show', async (_, opts) => {
     return await showOverlayWindow(mainWindow, opts);
+  });
+  ipcMain.on('overlay:force-close', () => {
+    closeOverlayWindow();
   });
 
   // Tooltip 悬浮提示
