@@ -39,3 +39,14 @@
   - `section: 'top'` — 上部区域；`section: 'bottom'` — `margin-top: auto` 推到底部
   - `enabled: false` → `.nav-item--disabled`（`pointer-events: none` + 半透明）
   - 占位页面统一使用 `buildPlaceholderPage(container, icon, label)` 渲染
+
+## 设置页面
+
+- `settings-config.js` — 配置驱动的 Tab + 设置项数组 `SETTINGS_TABS`
+  - 每项：`{ id, label, type, default [, min, max, step] }`
+  - type 枚举：`toggle` | `slider` | `select`（select 未实装）
+- `buildSettingsPage(container)` — 遍历配置生成 Tab（复用 `.wh-tabs`）+ 设置行
+- 数据流：控件变更 → `PetState.set('settings', ...)` → 即时生效 + 500ms 防抖存盘
+- 副作用按控件类型分发：alwaysOnTop → IPC send/on → `mainWindow.setAlwaysOnTop()`；showTooltip → 无副作用，`showTooltip()` 调用时读值判断
+- 扩展预留：底部"重置所有设置"按钮（置灰）、配置项 `unlockLevel` / `disabled` 字段
+- 🟡 搁置：面板透明度（CSS `--panel-opacity` 无法穿透 `transparent:false` 窗口，恢复需窗口透明 + frame:false + 自绘标题栏）
