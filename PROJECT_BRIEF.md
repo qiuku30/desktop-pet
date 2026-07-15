@@ -90,7 +90,7 @@ GitHub：https://github.com/qiuku30/desktop-pet
 2. ✅ ~~-webkit-app-region: drag 与点击冲突~~ 已解决：`#pet-body` 加 `no-drag`，容器 padding 保留拖拽区域。详见 `docs/pet-movement-design.md` 第 6 节。
 3. 🟡 **躲避光标已搁置**：IPC 拉光标延迟高，后续考虑主进程侧实现
 4. ✅ ~~PET_STATE_CHANGED 通用事件~~ infra-02 已实现
-5. 🟡 **event-bus.js DEBUG=true**：开发模式日志，生产环境需要开关
+5. ✅ ~~event-bus.js DEBUG=true~~ ARCH-05 已解决：`let DEBUG` + `setEventBusDebug()`/`isEventBusDebugEnabled()` 导出，默认 true，可运行时切换
 6. 🟢 **pet-state.js 直接依赖 window.electronAPI**：全局依赖，限制了单测。暂不改
 7. 🟡 **整体覆盖写盘风险**：PetState._save() 是完整快照覆盖，新增持久化字段（如 zoomLevel）需在主进程 pet:state:set handler 中保护，防止被渲染端覆盖冲掉。当前 index.js L159-169 有保护逻辑
 8. ✅ ~~喂食逻辑重复~~ infra-06 已解决：抽 `shared/feed-service.js`，导出 FOODS 配置表 + consumeFood/applyFeed/emitFed，pet.js 和 dashboard.js 统一引用
@@ -460,3 +460,42 @@ main 分支，67 commits 领先 origin/main（未推送）
 - 边界条件 13 项全部验证通过
 
 **待接**：dash-05（面板心情卡片改版）
+
+## 2026-07-14 — ARCH-05 接替 + 零碎修复
+
+**处理事项**：接替 ARCH-04，修 3 个零碎问题。
+
+**已执行**：
+
+1. **exp-service 测试日期依赖修复**（4 fail → 0 fail）
+   - `checkDailyInteraction(count, lastDate, _now)` 新增可选 `_now` 参数
+   - 4 个硬编码 `'2026-07-13'` 的测试改为注入 `FIXED_NOW = new Date('2026-07-13T12:00:00')`
+   - 跨天不再影响测试结果
+   - 现有调用方 `pet.js` 只传 2 个参数，向后兼容
+
+2. **event-bus.js DEBUG 开关**
+   - `const DEBUG = true` → `let DEBUG = true`
+   - 新增 `setEventBusDebug(enabled)` / `isEventBusDebugEnabled()` 导出
+   - 默认 true（开发模式），生产环境可运行时关闭
+   - 后续 settings 页面可接线
+
+3. **docs/progress.md pet-motion 测试路径修正**
+   - `node --test 6/6` → `node --test pet-motion.test.mjs 6/6`
+
+4. **审计 — 删除死代码 `suggestMood`**
+   - `satiety-service.js` 的 `suggestMood()` 返回旧 string 心情（'hungry'/'neutral'），infra-10 后无人调用
+   - 三个 import satiety-service 的模块均未引用此函数
+
+5. **审计 — overlay `_reject` → `resolve(null)`**
+   - `overlay-manager.js` `did-fail-load` 走 `_reject`，但 `blur`/`closed` 走 `resolve(null)` — 不一致
+   - 3 个调用方全都没 try-catch，加载失败 = 未处理 rejection
+   - 统一为 `resolve(null)` + `console.error`，调用方无需改
+
+**测试结果**：93 全绿（56 mood + 6 pet-motion + 31 exp-service）
+
+**当前全局状态**：
+- main 分支，74 commits 领先 origin/main（网络不通）
+- 工作区干净（7 个文件未提交），93 测试通过
+- 已知 🟡 问题 4 项：躲避光标、写盘风险、loadFile 切换、面板透明度（全部搁置/Phase 2）
+- 新增 spec：桌宠形象化 & 皮肤系统 (`pet-customization-design.md`)、番茄钟 & 活动监视 (`productivity-modules-design.md`)
+- 下一步待用户决定：打磨体验 vs 启动 Phase 2

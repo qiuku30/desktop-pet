@@ -3,7 +3,16 @@
 // 全项目共用一个单例。模块之间禁止直接 import 通信，一律走此总线。
 
 // 开发模式日志开关：为 true 时打印每次 emit，便于追踪事件链（ADR-002）。
-const DEBUG = true
+// 生产环境通过 setEventBusDebug(false) 关闭。
+let DEBUG = true
+
+export function setEventBusDebug(enabled) {
+  DEBUG = enabled
+}
+
+export function isEventBusDebugEnabled() {
+  return DEBUG
+}
 
 class EventBusCore {
   constructor() {

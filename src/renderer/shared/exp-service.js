@@ -25,8 +25,8 @@ export function calcRequiredExp(level) {
 // count: 当前 dailyInteractionCount
 // lastDate: 上次互动日期（YYYY-MM-DD 字符串，本地时间）
 // 返回 { canGain, newCount, newDate }
-export function checkDailyInteraction(count, lastDate) {
-  const now = new Date()
+export function checkDailyInteraction(count, lastDate, _now) {
+  const now = _now || new Date()
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
   if (lastDate !== today) {

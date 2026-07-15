@@ -74,7 +74,7 @@
 |------|------|------|
 | pet.html — 宠物窗口结构 | ✅ | emoji + 气泡容器 |
 | pet.js — 宠物逻辑 | ✅ | 状态机：原生拖拽 / 随机走动 / 对话气泡（新心情四档 happy/good/neutral/low）/ 双击面板 / PetState.init() / 喂食 flyout（原则5：FOODS 配置 + foodInventory 数据分离）/ 互动经验接入 + 心情加成 / 喂食经验结算 + 心情加成 + 升级气泡 / 心情衰减结算（每日50点上限）+ 点击/喂食心情加成 |
-| pet-motion.mjs — 纯几何计算 | ✅ | distance/isCursorNear/fleeCenter/wanderTarget/中心↔左上角换算；node --test 6/6 |
+| pet-motion.mjs — 纯几何计算 | ✅ | distance/isCursorNear/fleeCenter/wanderTarget/中心↔左上角换算；node --test pet-motion.test.mjs 6/6 |
 | pet.css — 宠物样式 | ✅ | 透明背景 + padding 拖拽手柄 + no-drag 点击穿透 + 闲置/走动动画 + 气泡样式 |
 | DESIGN.md | ✅ | 已细化：状态机、pet-motion 清单、坐标契约、class 钩子 |
 
@@ -152,7 +152,7 @@
 - API：`on`（返回取消订阅函数）/ `off` / `once`（触发一次自动移除，也返回取消函数）/ `emit`
 - 错误隔离：`emit` 逐个调用监听器，每个包 try-catch，单个报错只 `console.error`，不影响其他监听器与 emit 方（ADR-006）
 - 遍历前复制监听器数组，防止回调里 on/off 改动导致漏发/重复
-- `const DEBUG = true` 开关：为 true 时打印每次 emit（ADR-002）
+- `let DEBUG = true` 开关（ARCH-05：`const` → `let`，新增 `setEventBusDebug()`/`isEventBusDebugEnabled()` 导出，可运行时切换）
 - 单例导出 `EventBus`
 
 **pet-state.js（薄）**
@@ -401,5 +401,5 @@
 - `store.js` DEFAULT_STATE：`mood: 'neutral'` → `mood: 70`
 - `events.js`：`PET_MOOD_CHANGED` 注释更新 payload 为 `{ mood: number, tier: object }`
 - 后续 `pet-08` / `dash-05` 负责接入 PetState 和 UI
-- `satiety-service.js` 的 `suggestMood()`（返回旧 string）已废弃，pet-08 已切换所有调用到 mood-service
+- `satiety-service.js` 的 `suggestMood()`（返回旧 string）已废弃，pet-08 已切换所有调用到 mood-service ✅ ARCH-05 已删除死代码
 - ✅ **pet-08 已完成**（2026-07-14）：宠物侧全部接入（迁移、衰减、点击/喂食加成、经验倍率、台词重构）

@@ -152,32 +152,32 @@ test('addExp: 0 级自修正到 1 级', () => {
 // checkDailyInteraction
 // ══════════════════════════════════════════════════════
 
+// 固定测试日期，消除跨天依赖
+const FIXED_NOW = new Date('2026-07-13T12:00:00')
+const FIXED_TODAY = '2026-07-13'
+
 test('checkDailyInteraction: 计数正确 +1', () => {
-  const today = '2026-07-13'
-  const r = checkDailyInteraction(5, today)
+  const r = checkDailyInteraction(5, FIXED_TODAY, FIXED_NOW)
   assert.equal(r.canGain, true)
   assert.equal(r.newCount, 6)
-  assert.equal(r.newDate, today)
+  assert.equal(r.newDate, FIXED_TODAY)
 })
 
 test('checkDailyInteraction: 刚好达到上限前最后一次', () => {
-  const today = '2026-07-13'
-  const r = checkDailyInteraction(EXP_CONFIG.dailyInteractionLimit - 1, today)
+  const r = checkDailyInteraction(EXP_CONFIG.dailyInteractionLimit - 1, FIXED_TODAY, FIXED_NOW)
   assert.equal(r.canGain, true)
   assert.equal(r.newCount, EXP_CONFIG.dailyInteractionLimit)
 })
 
 test('checkDailyInteraction: 达到上限后阻断', () => {
-  const today = '2026-07-13'
-  const r = checkDailyInteraction(EXP_CONFIG.dailyInteractionLimit, today)
+  const r = checkDailyInteraction(EXP_CONFIG.dailyInteractionLimit, FIXED_TODAY, FIXED_NOW)
   assert.equal(r.canGain, false)
   assert.equal(r.newCount, EXP_CONFIG.dailyInteractionLimit)
 })
 
 test('checkDailyInteraction: 上限阻断后不修正超限值', () => {
   // 数据异常时可超 20，不修正但也不让继续加
-  const today = '2026-07-13'
-  const r = checkDailyInteraction(25, today)
+  const r = checkDailyInteraction(25, FIXED_TODAY, FIXED_NOW)
   assert.equal(r.canGain, false)
   assert.equal(r.newCount, 25)
 })

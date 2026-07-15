@@ -47,14 +47,4 @@ export function reduceSatiety(satiety, amount) {
 
 // ── 心情建议 ──
 // 纯计算：根据饱腹值和当前心情，返回建议的心情。
-// 不碰 PetState，调用方决定是否采纳。
-//
-// 规则：
-// - satiety < hungerThreshold → 'hungry'
-// - 当前是 'hungry' 且 satiety ≥ hungerThreshold → 恢复到 'neutral'
-// - 否则维持当前心情不变
-export function suggestMood(satiety, currentMood) {
-  if (satiety < SATIETY_CONFIG.hungerThreshold) return 'hungry'
-  if (currentMood === 'hungry') return 'neutral'
-  return currentMood
-}
+// suggestMood() 已移除（infra-10 后心情改用 mood-service.js 的 boostMood/reduceMood，不再用旧 string 模式）

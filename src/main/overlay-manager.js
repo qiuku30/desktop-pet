@@ -43,7 +43,7 @@ function showOverlayWindow(parentWindow, opts) {
     return Promise.resolve(null);
   }
 
-  return new Promise((resolve, _reject) => {
+  return new Promise((resolve) => {
     const [px, py] = parentWindow.getPosition();
     const win = new BrowserWindow({
       parent: parentWindow,
@@ -71,10 +71,11 @@ function showOverlayWindow(parentWindow, opts) {
 
     pendingOverlays.set(win.id, { resolve, opts });
 
-    // 加载失败时 reject Promise，防止挂起
+    // 加载失败时 resolve null，不 reject — 和 blur/closed 保持一致，调用方无需 try-catch
     win.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
       pendingOverlays.delete(win.id);
-      _reject(new Error(`Overlay failed to load: ${errorDescription} (${errorCode})`));
+      console.error(`[overlay] load failed: ${errorDescription} (${errorCode})`)
+      resolve(null);
     });
 
     win.loadFile(path.join(__dirname, '../renderer/overlay/overlay.html'));
