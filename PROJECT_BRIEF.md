@@ -118,8 +118,10 @@ Phase 1 宠物核心系统全部完成。面板四页（主页/仓库/商店/设
 - [x] 仓库页面内容实现
 - [x] 商店页面内容实现
 - [x] 设置页面内容实现
-- [ ] 游戏模块方向选择（2048 / 单词 / 农场）
-- [ ] Phase 1 食物价格（已通过 buyPrice/sellPrice 实现）
+- [x] 番茄钟 → 全部交付（infra-11 + dash-10 + pet-09）
+- [ ] 🟡 old: 游戏模块方向选择（2048 / 单词 / 农场）
+- [ ] 🟡 old: Phase 1 食物价格（已通过 buyPrice/sellPrice 实现）
+- [ ] 下一个模块：2048 / 单词 / 农场 / 桌宠形象化？
 
 ---
 
@@ -127,10 +129,9 @@ Phase 1 宠物核心系统全部完成。面板四页（主页/仓库/商店/设
 
 | 分支 | 状态 | 说明 |
 |------|------|------|
-| `main` | ✅ 稳定 | Phase 1 完成（本地 68 commits 待 push，等网络） |
-| `feature/pet-movement` | 🗑️ 已删除 | 2026-07-14 ARCH-04 清理本地残留 |
-| `origin/feature/pet-movement` | ⏳ 待清理 | 远程残留，等网络恢复 |
-| `origin/feature/shared-event-bus-pet-state` | ⏳ 待清理 | 远程残留，等网络恢复 |
+| `main` | ✅ 稳定 | Phase 1 + 番茄钟完成，已推送 origin/main |
+| `origin/feature/pet-movement` | ⏳ 待清理 | 远程残留 |
+| `origin/feature/shared-event-bus-pet-state` | ⏳ 待清理 | 远程残留 |
 
 ---
 
