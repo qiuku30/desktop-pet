@@ -14,7 +14,8 @@ export const SETTINGS_TABS = [
     id: 'window',
     label: '窗口',
     items: [
-      { id: 'alwaysOnTop',  label: '面板置顶',   type: 'toggle', default: false },
+      { id: 'alwaysOnTop',   label: '面板置顶',   type: 'toggle', default: false },
+      { id: 'wanderEnabled', label: '自动走动',   type: 'toggle', default: true },
     ],
   },
 ]

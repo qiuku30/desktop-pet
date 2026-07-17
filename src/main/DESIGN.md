@@ -32,7 +32,7 @@
 
 ### 拖拽/走动推送（主→渲染）
 - `user:drag` — 用户正通过 OS 原生拖拽移动窗口，渲染端暂停自动化
-- `wander:toggle` — 右键菜单切换自动走动开关
+- ~~`wander:toggle`~~ 已移除（dash-11）：自动走动开关迁移到设置面板 PetState settings
 
 ### 悬浮面板
 - `overlay:show` — 创建 overlay 子窗口并返回 Promise<结果>

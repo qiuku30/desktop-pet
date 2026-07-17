@@ -98,3 +98,19 @@
 **越界授权**：无
 **备注**：SVG 进度环（circle stroke-dashoffset）+ 倒计时 MM:SS 居中叠加；操作按钮按状态切换（idle→开始 / running→暂停+跳过+放弃/结束 / paused→继续+跳过+放弃/结束）；统计三列 grid（今日/总计含时长 1h 15m 格式 + 连续天数）；设置输入框仅 idle 可改（5~120 / 1~60）；tick 检测 isPaused 变化触发按钮刷新；phaseChange 更新统计和设置输入 disabled 状态；onNavigate 注册在 initStatus 常驻；清理函数取消 tick+phaseChange 订阅；🐛 自审修 3 bug：① tick handler 重复注册泄漏 ② break+paused 状态 data-action 写死 "abort" 而非 "end"→静默无响应 ③ progress() 无 clamp→phase 切换后 dashoffset 负数环溢出
 **续（同日）**：统计行今日/总计加专注时长显示（formatDuration ms→"1h 15m"/"35m"），依赖 infra-11 续新增 todayFocusMs/totalFocusMs 字段；连续天数加"天"后缀；改动 dashboard.js + docs×2，无越界授权
+
+---
+
+## dash-11 — 2026-07-17
+
+**功能**：将「自动走动」开关从右键菜单移到设置面板
+**改动文件**：
+- `src/renderer/dashboard/settings-config.js`
+- `src/main/storage/store.js`
+- `src/main/index.js`
+- `src/main/preload.js`
+- `src/renderer/pet/pet.js`
+- `docs/progress.md`
+- `docs/session-log.md`
+**越界授权**：`store.js`（settings 加 wanderEnabled 默认值）、`index.js`（删右键菜单 checkbox + wanderEnabled 变量）、`preload.js`（删 onWanderToggle）、`pet.js`（改从 PetState settings 读取 + EVENTS 订阅）
+**备注**：wander:toggle IPC 已移除，`docs/events.md` L28 的 wander:toggle 条目待后续窗口清理；pet.js 新增 `import { EVENTS }`，onWanderToggle() 函数保留，仅供 PetState 订阅回调驱动

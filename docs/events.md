@@ -25,7 +25,8 @@
 | 事件名 | 参数 | 触发时机 |
 |--------|------|----------|
 | `user:drag` | - | 用户拖拽宠物窗口（OS 原生拖拽，通知渲染端暂停自动走动） |
-| `wander:toggle` | `{ enabled: boolean }` | 右键菜单切换自动走动开关 |
+
+> ~~`wander:toggle`~~ 已移除（dash-11）：自动走动开关迁移到设置面板，走 PetState settings.wanderEnabled + PET_STATE_CHANGED
 
 ## 经济系统
 

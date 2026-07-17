@@ -92,7 +92,7 @@
 | 仓库物品 tooltip + 右键菜单 | ✅ | dash-07：悬停 tooltip（照搬主页 mouseenter/mouseleave 模式，字段驱动 TOOLTIP_FIELDS 扩展）+ 右键 overlay 菜单（使用/出售/销毁，WH_MENU_ACTIONS 配置驱动，show/hide 函数控制显示/置灰）+ FOODS 加 sellPrice + tooltipFields 字段 |
 | 心情卡片改版 | ✅ | dash-05：emoji + 档位文字 + 进度条 + 档位标签；迁移旧 string 存档→number；三色进度条（和饱腹条同款）；水平单行布局 |
 | 商店页面 | ✅ | dash-08：金币余额栏 + 分类 Tab（复用仓库组件）+ 商品网格（buyPrice 从低到高）+ 购买按钮（金币不足置灰）+ 悬停 tooltip（buyPrice 替换 sellPrice）+ 右键购买菜单 + 状态订阅自动刷新；FOODS 加 buyPrice 字段；store.js coins 默认 100 |
-| 设置页面 | ✅ | dash-09：首期 2 个设置项（悬浮提示开关/面板置顶），配置驱动，Tab 分组，即时生效+自动保存；IPC send/on 置顶；扩展预留 reset 按钮 + unlockLevel/disabled 字段。面板透明度已搁置（见已知问题） |
+| 设置页面 | ✅ | dash-09：首期 2 个设置项（悬浮提示开关/面板置顶），配置驱动，Tab 分组，即时生效+自动保存；IPC send/on 置顶；扩展预留 reset 按钮 + unlockLevel/disabled 字段。面板透明度已搁置（见已知问题）。dash-11：「自动走动」从右键菜单移入设置面板窗口 Tab，pet.js 改从 PetState settings 读取 + PET_STATE_CHANGED 订阅感知变更
 | DESIGN.md | ✅ | 已细化：两层布局结构、行容器语义化 class、滚动策略 |
 
 ### 主进程 — 番茄钟 (src/main/pomodoro.js)
@@ -262,7 +262,7 @@
 - `currentPetSize` 三处同步：`createWindow` / `applyZoom` / `switchToPet`
 
 **wanderEnabled 开关**
-- 右键菜单新增 "自动走动" checkbox，主进程 `wanderEnabled` 变量 + `wander:toggle` IPC 推送到渲染端
+- ~~右键菜单新增 "自动走动" checkbox，主进程 `wanderEnabled` 变量 + `wander:toggle` IPC 推送到渲染端~~（dash-11 已迁移到设置面板）
 
 ---
 

@@ -7,3 +7,4 @@ docs/superpowers/
 .DS_Store
 Thumbs.db
 *.log
+.playwright-mcp/

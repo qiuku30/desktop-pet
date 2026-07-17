@@ -37,12 +37,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setWindowBounds: (bounds) => ipcRenderer.invoke('window:setBounds', bounds),
   getWindowBounds: () => ipcRenderer.invoke('window:bounds:get'),
 
-  // 随机走动开关
-  onWanderToggle: (callback) => {
-    ipcRenderer.on('wander:toggle', (_e, enabled) => callback(enabled));
-    return () => ipcRenderer.removeListener('wander:toggle', callback);
-  },
-
   // 通用悬浮面板
   showOverlay: (opts) => ipcRenderer.invoke('overlay:show', opts),
   closeOverlay: () => ipcRenderer.send('overlay:force-close'),

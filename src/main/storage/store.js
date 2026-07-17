@@ -39,6 +39,7 @@ const DEFAULT_STATE = {
   settings: {
     showTooltip: true,
     alwaysOnTop: false,
+    wanderEnabled: true,
     pomodoroFocusMin: 25,
     pomodoroBreakMin: 5,
   },
