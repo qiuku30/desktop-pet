@@ -54,3 +54,11 @@
 |--------|------|----------|
 | `game:word:correct` | `{ word: string }` | 答对单词 |
 | `game:word:streak` | `{ count: number }` | 连续答对 |
+
+## 番茄钟（主进程 → 渲染进程 IPC 推送）
+
+| 事件名 | 参数 | 触发时机 |
+|--------|------|----------|
+| `pomodoro:tick` | `{ phase, remainingS, isPaused }` | 每秒推送（非 idle 时） |
+| `pomodoro:phase:changed` | `{ phase, stats }` | phase 切换时推送 |
+| `pomodoro:navigate` | — | 右键菜单点击"专注中"/"休息中"时，面板加载后推送，提示切到番茄页 |

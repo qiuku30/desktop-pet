@@ -36,5 +36,6 @@ export const NAV_ITEMS = [
   { id: 'home',      icon: '🏠', label: '主页',  section: 'top',    enabled: true,  render: null }, // render 在 dashboard.js 注入
   { id: 'warehouse', icon: '🎒', label: '仓库',  section: 'top',    enabled: true,  render: null }, // render 在 dashboard.js 注入
   { id: 'shop',      icon: '🛒', label: '商店',  section: 'top',    enabled: true,  render: null }, // render 在 dashboard.js 注入
+  { id: 'pomodoro',  icon: '🍅', label: '番茄',  section: 'top',    enabled: true,  render: null },
   { id: 'settings',  icon: '⚙️', label: '设置',  section: 'bottom', enabled: true,  render: null },
 ]

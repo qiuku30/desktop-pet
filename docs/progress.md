@@ -9,7 +9,8 @@
 
 | 模块 | Phase | 状态 |
 |------|-------|------|
-| 🐾 宠物系统 | Phase 1 | 🔨 进行中 |
+| 🐾 宠物系统 | Phase 1 | ✅ 已完成 |
+| 🍅 番茄钟 | Phase 2 | ✅ 已完成 |
 | 📝 英语单词 | Phase 2+ | ⏳ 待定 |
 | 🎮 2048 | Phase 2+ | ⏳ 待定 |
 | 🌾 农场经营 | Phase 2+ | ⏳ 待定 |
@@ -93,6 +94,18 @@
 | 商店页面 | ✅ | dash-08：金币余额栏 + 分类 Tab（复用仓库组件）+ 商品网格（buyPrice 从低到高）+ 购买按钮（金币不足置灰）+ 悬停 tooltip（buyPrice 替换 sellPrice）+ 右键购买菜单 + 状态订阅自动刷新；FOODS 加 buyPrice 字段；store.js coins 默认 100 |
 | 设置页面 | ✅ | dash-09：首期 2 个设置项（悬浮提示开关/面板置顶），配置驱动，Tab 分组，即时生效+自动保存；IPC send/on 置顶；扩展预留 reset 按钮 + unlockLevel/disabled 字段。面板透明度已搁置（见已知问题） |
 | DESIGN.md | ✅ | 已细化：两层布局结构、行容器语义化 class、滚动策略 |
+
+### 主进程 — 番茄钟 (src/main/pomodoro.js)
+
+| 任务 | 状态 | 备注 |
+|------|------|------|
+| pomodoro.js — 状态机 + 计时器 | ✅ | infra-11：idle/focus/break 三态，setInterval 1000ms tick，phase 切换自动通知，统计含 streak + 时长（todayFocusMs/totalFocusMs）+ dailyLog（按日明细，365 天自动清理） |
+| store.js — pomodoroStats + 设置项 | ✅ | pomodoroStats (todayCount/todayFocusMs/todayDate/totalCount/totalFocusMs/streakDays/lastCompletedDate/dailyLog) + pomodoroFocusMin:25 / pomodoroBreakMin:5 |
+| preload.js — pomodoro 命名空间 | ✅ | getState/command/updateSettings/onTick/onPhaseChange/onNavigate |
+| index.js — IPC 接线 + 右键菜单 | ✅ | 三个 IPC 通道；右键菜单按 phase 动态切换（idle 插入入口 / focus-break 替换全部） |
+| events.js — 事件常量 | ✅ | POMODORO_TICK / POMODORO_PHASE_CHANGED |
+| 番茄页面（渲染进程） | ✅ | dash-10：SVG 进度环 + 倒计时 + 操作按钮（开始/暂停/继续/跳过/放弃/结束）+ 统计三列（今日/总计含时长 1h 15m 格式 + 连续天数）+ 设置输入框（仅 idle 可改） |
+| 宠物浮动图标 + 气泡 | ✅ | pet-09：🍅/☕/⏸ + MM:SS 浮动在宠物上方；onTick 每秒更新；onPhaseChange break→focus 弹出"继续加油！💪" |
 
 ---
 

@@ -36,6 +36,7 @@
 | **infra-08** | 2026-07-13 | 饱腹值消耗系统 | `shared/satiety-service.js` `main/storage/store.js` `shared/feed-service.js` `pet/pet.js` `docs/progress.md` `docs/session-log.md` | ✅ 越界授权：改 `feed-service.js`（applyFeed 改用动态最大饱腹值，level 参数默认 1 向后兼容） | 新建 satiety-service.js（纯函数+配置驱动）；时间戳差值结算离线衰减 0.2/min；在线 60s 定时器；satiety<30→hungry/恢复→neutral 心情建议（不直接改 PetState）；最大饱腹值每5级+20（Lv1=100→Lv30=220）；store.js 加 lastSatietyUpdate；pet.js init() 结算离线+启动在线 tick；feed-service applyFeed 向后兼容 |
 | **infra-09** | 2026-07-13 | tooltip 独立 BrowserWindow IPC 通道 | `main/tooltip-manager.js` `main/index.js` `main/preload.js` `docs/progress.md` `docs/session-log.md` | 无 | 新建 tooltip-manager.js（show/hide/close 三个 IPC 通道）；data:URL 直出无 preload；focusable:false 不抢焦点；mouseleave→close 销毁对齐标准 Tooltip 交互范式；dashboard 侧由 dash-01 后续接线 |
 | **infra-10** | 2026-07-14 | 心情系统共享层 mood-service.js | `shared/mood-service.js` `shared/mood-service.test.mjs` `main/storage/store.js` `shared/events.js` `docs/events.md` `docs/progress.md` `docs/session-log.md` | ✅ 越界授权：改 `store.js`（mood 默认值 'neutral'→70）、`events.js`（PET_MOOD_CHANGED 注释更新 payload 类型） | 新建 mood-service.js（纯函数+配置驱动，8 个函数 + MOOD_CONFIG + MOOD_TIERS）；心情从 string 升级为 0-100 数值；自然衰减按自然日零点分段结算 + 单日 50 点上限（对齐 exp-service 每日重置逻辑）；饱腹<30 衰减翻倍（2/15 vs 1/15）；离线跨天逐日 apply 50 点上限；经验倍率三档 + 低心情互动减半；migrateMood 兼容旧 string 存档；44 个测试用例全部通过；后续 pet-08/dash-05 负责接入 |
+| **infra-11** | 2026-07-17 | 番茄钟主进程 + 共享层 + 时长记录 | `main/pomodoro.js` `main/index.js` `main/preload.js` `main/storage/store.js` `shared/events.js` `docs/events.md` `docs/progress.md` `docs/session-log.md` | 无（基础设施任务，有权改 main 和 shared） | 新建 pomodoro.js（纯模块，状态机 idle/focus/break + setInterval 1000ms tick + Electron Notification + 统计 streak + 时长 todayFocusMs/totalFocusMs + dailyLog 按日明细）；store.js 加 pomodoroStats（含时长+日志）+ pomodoroFocusMin/pomodoroBreakMin 设置项；preload.js 加 pomodoro 命名空间 6 个 API；index.js 加 3 个 IPC 通道 + 右键菜单按 phase 动态切换 + initPomodoro 接线；events.js 加 POMODORO_TICK/POMODORO_PHASE_CHANGED；saveStats 自动清理 >365 天 dailyLog；🐛 三轮审查修 3 bug：① handleCommand('start') 漏推 phase:changed ② 右键导航 pomodoro:navigate 时序竞态 ③ store 加载设置值无边界校验；渲染进程番茄页面待后续实现 |
 
 ## pet（宠物模块）
 
@@ -50,6 +51,7 @@
 | **pet-06** | 2026-07-13 | 补两处 toggleWindow 前缺的 flush() | `pet/pet.js` `docs/progress.md` `docs/session-log.md` | 无 | infra-04 漏了 __warehouse__ 分支和双击切面板两处的 flush()；在 toggleWindow() 前加 await PetState.flush()，确保喂食变更落盘后再切面板 |
 | **pet-07** | 2026-07-13 | 宠物侧经验获取接入 | `pet/pet.js` `docs/progress.md` `docs/session-log.md` | 无 | 点击气泡→grantInteractionExp()（每日20次上限，首次超限提示）；喂食成功→getFoodExp→addExp 结算；升级→showBubble("🎉 升级了！Lv.X！")叠加显示；连升多级只弹最终等级；_dailyCapHintShown 内存标记跨天重置 |
 | **pet-08** | 2026-07-14 | 宠物侧接入新心情系统 | `pet/pet.js` `main/storage/store.js` `docs/progress.md` `docs/session-log.md` | ✅ 越界授权：改 `store.js`（DEFAULT_STATE 加 5 个心情字段） | 基于 infra-10 mood-service.js：1) init() 中 migrateMood 旧 string→number；2) settleMoodDecay() 心情衰减按自然日分界+单日50点上限+饱腹<30翻倍；3) settleSatietyDecay 移除 suggestMood；4) 点击→boostMood+clickDailyCap 20次；5) 喂食→boostMood+3；6) grantInteractionExp 加 getExpMultiplier 心情加成；7) 喂食经验 getExpMultiplier 加成；8) DIALOGS 重构 happy/good/neutral/low 四档，旧 hungry+sad 合并→low；pickDialog 改用 getMoodTier().tier；⚠️ dashboard.js renderMood() 仍用旧 string 模式，dash-05 已跟进修复 |
+| **pet-09** | 2026-07-17 | 宠物番茄浮动图标 + 气泡 | `pet/pet.html` `pet/pet.js` `pet/pet.css` `docs/progress.md` `docs/session-log.md` | 无 | 依赖 infra-11（pomodoro API）：① pet.html 加 #pomodoro-indicator ② pet.js init() 中 getState() 初始化 + onTick 每秒更新 🍅/☕/⏸ + MM:SS + onPhaseChange break→focus 弹出"继续加油！💪" ③ pet.css 白色文字 + 阴影定位在宠物上方 72%；idle 自动隐藏；🐛 审计发现 abort→idle 后图标不消失（pomodoro.js 守卫 phase!=='idle' 时不推 tick），onPhaseChange 加 phase==='idle' 分支兜底；退出 App 重置后 getState() 返回 idle 自动隐藏 |
 
 ## dash（面板模块）
 
@@ -81,3 +83,18 @@
 - `docs/session-log.md`
 **越界授权**：`store.js`（settings 默认值）、`index.js`（setAlwaysOnTop IPC）、`preload.js`（暴露 setAlwaysOnTop）
 **备注**：透明度在 initStatus() 中恢复避免闪烁；IPC 用 send/on 对齐项目风格；Tab 复用 .wh-tabs 样式
+
+---
+
+## dash-10 — 2026-07-17
+
+**功能**：面板番茄钟页面
+**改动文件**：
+- `src/renderer/dashboard/nav-config.js`
+- `src/renderer/dashboard/dashboard.js`
+- `src/renderer/dashboard/dashboard.css`
+- `docs/progress.md`
+- `docs/session-log.md`
+**越界授权**：无
+**备注**：SVG 进度环（circle stroke-dashoffset）+ 倒计时 MM:SS 居中叠加；操作按钮按状态切换（idle→开始 / running→暂停+跳过+放弃/结束 / paused→继续+跳过+放弃/结束）；统计三列 grid（今日/总计含时长 1h 15m 格式 + 连续天数）；设置输入框仅 idle 可改（5~120 / 1~60）；tick 检测 isPaused 变化触发按钮刷新；phaseChange 更新统计和设置输入 disabled 状态；onNavigate 注册在 initStatus 常驻；清理函数取消 tick+phaseChange 订阅；🐛 自审修 3 bug：① tick handler 重复注册泄漏 ② break+paused 状态 data-action 写死 "abort" 而非 "end"→静默无响应 ③ progress() 无 clamp→phase 切换后 dashoffset 负数环溢出
+**续（同日）**：统计行今日/总计加专注时长显示（formatDuration ms→"1h 15m"/"35m"），依赖 infra-11 续新增 todayFocusMs/totalFocusMs 字段；连续天数加"天"后缀；改动 dashboard.js + docs×2，无越界授权

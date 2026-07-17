@@ -4,6 +4,7 @@ const { initStore, getState, setState } = require('./storage/store');
 const { registerPetIPC, isValidSnapshot } = require('./ipc/pet-ipc');
 const { initOverlayIPC, showOverlayWindow, closeOverlayWindow } = require('./overlay-manager');
 const { showTooltipWindow, hideTooltipWindow, closeTooltipWindow } = require('./tooltip-manager');
+const { getPomodoroState, handleCommand, updateSettings, initPomodoro } = require('./pomodoro');
 
 // ── 窗口状态常量 ──
 const DASHBOARD_MODE = {
@@ -73,41 +74,106 @@ function createWindow() {
   // 右键菜单
   mainWindow.webContents.on('context-menu', (_, params) => {
     if (currentMode !== 'pet') return  // 非宠物态不弹菜单
-    const menu = Menu.buildFromTemplate([
-      {
-        label: '喂食',
-        click: () => mainWindow.webContents.send('menu:feed'),
-      },
-      {
-        label: '状态',
-        click: () => mainWindow.webContents.send('menu:status'),
-      },
-      { type: 'separator' },
-      {
-        label: '缩放',
-        submenu: [
-          { label: '小 (75%)',  type: 'radio', checked: currentZoom === 0.75, click: () => applyZoom(0.75) },
-          { label: '中 (100%)', type: 'radio', checked: currentZoom === 1.0,  click: () => applyZoom(1.0) },
-          { label: '大 (125%)', type: 'radio', checked: currentZoom === 1.25, click: () => applyZoom(1.25) },
-          { label: '特大 (150%)', type: 'radio', checked: currentZoom === 1.5,  click: () => applyZoom(1.5) },
-        ],
-      },
-      { type: 'separator' },
-      {
-        label: '自动走动',
-        type: 'checkbox',
-        checked: wanderEnabled,
-        click: () => {
-          wanderEnabled = !wanderEnabled
-          mainWindow.webContents.send('wander:toggle', wanderEnabled)
+
+    const pomState = getPomodoroState();
+    let menu;
+
+    if (pomState.phase === 'focus') {
+      // 专注中 — 替换整个菜单
+      menu = Menu.buildFromTemplate([
+        {
+          label: '🍅 专注中',
+          click: () => {
+            mainWindow.webContents.once('did-finish-load', () => {
+              mainWindow.webContents.send('pomodoro:navigate');
+            });
+            switchToDashboard().catch(err => console.error('switchToDashboard failed:', err));
+          },
         },
-      },
-      { type: 'separator' },
-      {
-        label: '退出',
-        click: () => app.quit(),
-      },
-    ]);
+        { type: 'separator' },
+        {
+          label: pomState.isPaused ? '▶ 继续' : '⏸ 暂停',
+          click: () => handleCommand(pomState.isPaused ? 'resume' : 'pause'),
+        },
+        {
+          label: '⏭ 跳过（去休息）',
+          click: () => handleCommand('skip'),
+        },
+        {
+          label: '❌ 放弃',
+          click: () => handleCommand('abort'),
+        },
+      ]);
+    } else if (pomState.phase === 'break') {
+      // 休息中 — 替换整个菜单
+      menu = Menu.buildFromTemplate([
+        {
+          label: '☕ 休息中',
+          click: () => {
+            mainWindow.webContents.once('did-finish-load', () => {
+              mainWindow.webContents.send('pomodoro:navigate');
+            });
+            switchToDashboard().catch(err => console.error('switchToDashboard failed:', err));
+          },
+        },
+        { type: 'separator' },
+        {
+          label: pomState.isPaused ? '▶ 继续' : '⏸ 暂停',
+          click: () => handleCommand(pomState.isPaused ? 'resume' : 'pause'),
+        },
+        {
+          label: '⏭ 跳过（去专注）',
+          click: () => handleCommand('skip'),
+        },
+        {
+          label: '❌ 结束',
+          click: () => handleCommand('end'),
+        },
+      ]);
+    } else {
+      // idle — 原有菜单 + 番茄入口
+      menu = Menu.buildFromTemplate([
+        {
+          label: '🍅 开始番茄',
+          click: () => handleCommand('start'),
+        },
+        { type: 'separator' },
+        {
+          label: '喂食',
+          click: () => mainWindow.webContents.send('menu:feed'),
+        },
+        {
+          label: '状态',
+          click: () => mainWindow.webContents.send('menu:status'),
+        },
+        { type: 'separator' },
+        {
+          label: '缩放',
+          submenu: [
+            { label: '小 (75%)',  type: 'radio', checked: currentZoom === 0.75, click: () => applyZoom(0.75) },
+            { label: '中 (100%)', type: 'radio', checked: currentZoom === 1.0,  click: () => applyZoom(1.0) },
+            { label: '大 (125%)', type: 'radio', checked: currentZoom === 1.25, click: () => applyZoom(1.25) },
+            { label: '特大 (150%)', type: 'radio', checked: currentZoom === 1.5,  click: () => applyZoom(1.5) },
+          ],
+        },
+        { type: 'separator' },
+        {
+          label: '自动走动',
+          type: 'checkbox',
+          checked: wanderEnabled,
+          click: () => {
+            wanderEnabled = !wanderEnabled
+            mainWindow.webContents.send('wander:toggle', wanderEnabled)
+          },
+        },
+        { type: 'separator' },
+        {
+          label: '退出',
+          click: () => app.quit(),
+        },
+      ]);
+    }
+
     menu.popup();
   });
 }
@@ -270,6 +336,11 @@ function setupIPC() {
       mainWindow.setAlwaysOnTop(val)
     }
   })
+
+  // 番茄钟
+  ipcMain.handle('pomodoro:state:get', () => getPomodoroState());
+  ipcMain.on('pomodoro:command', (_, action) => handleCommand(action));
+  ipcMain.on('pomodoro:settings:update', (_, s) => updateSettings(s));
 }
 
 // ── 应用生命周期 ──
@@ -284,6 +355,9 @@ app.whenReady().then(async () => {
 
   setupIPC();
   createWindow();
+
+  // 番茄钟初始化（需在 createWindow 之后，因为 push tick 需要 mainWindow）
+  initPomodoro(mainWindow, { getState, setState });
 });
 
 app.on('window-all-closed', () => {

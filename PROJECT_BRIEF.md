@@ -1,7 +1,7 @@
 # 架构窗口交接文档
 
-> 最后更新：2026-07-14（ARCH-04 收尾审计）
-> Phase 1 面板四页全部完成。72+ commits 待 push。下一任架构窗口启动时读此文件恢复全局上下文。
+> 最后更新：2026-07-17（ARCH-06 番茄钟全部交付）
+> Phase 1 全部完成。番茄钟三窗口 infra-11 + dash-10 + pet-09 全部交付。代码已推送 origin。
 
 ---
 
@@ -70,17 +70,29 @@ GitHub：https://github.com/qiuku30/desktop-pet
 | **面板左侧导航栏** | **dash-03** | nav-config.js 配置驱动、主页/仓库/商店/设置 4 项、多页切换 |
 | **仓库页面** | **dash-04** | 分类 Tab（全部/食物/道具）、物品网格、`_pageCleanup` 生命周期 |
 
+### ✅ 已完成
+
+Phase 1 宠物核心系统全部完成。面板四页（主页/仓库/商店/设置）全部可用。
+
+### 🔨 进行中
+
+| 模块 | 状态 | 说明 |
+|------|------|------|
+| 🍅 番茄钟 | ✅ 已完成 | infra-11 + dash-10 + pet-09 全部交付 |
+
 ### ⏳ 待实现
 
 | 任务 | 说明 |
 |------|------|
 | 游戏模块（2048/单词/农场） | spec 占位，待细化需求 |
+| 桌宠形象化 + 皮肤系统 | 设计文档已完成，待 Phase 2 |
+| 活动监视 | 设计文档已完成，隐私敏感，番茄钟完成后再议 |
 | 躲避光标 | 搁置，需主进程侧方案 |
 | 面板透明度设置 | 搁置，CSS 变量无法穿透 transparent:false 窗口 |
 
 ### ⏳ 未来模块
 
-单词（Phase 2）、2048（Phase 2）、农场（Phase 2）、超市（待规划）
+单词（Phase 2）、2048（Phase 2）、农场（Phase 2）、超市（待规划）、桌宠形象化
 
 ---
 
@@ -499,3 +511,38 @@ main 分支，67 commits 领先 origin/main（未推送）
 - 已知 🟡 问题 4 项：躲避光标、写盘风险、loadFile 切换、面板透明度（全部搁置/Phase 2）
 - 新增 spec：桌宠形象化 & 皮肤系统 (`pet-customization-design.md`)、番茄钟 & 活动监视 (`productivity-modules-design.md`)
 - 下一步待用户决定：打磨体验 vs 启动 Phase 2
+
+## 2026-07-16~17 — ARCH-06 番茄钟立项 + 拆窗
+
+**处理事项**：选定番茄钟为 Phase 2 首个模块，讨论需求细节，拆分三窗口 + 两次续窗口。
+
+**讨论确认**：
+- 主进程常驻计时，面板开关不影响，退出 App 重置
+- 宠物态浮动图标（🍅/☕/⏸ + 倒计时）
+- 面板新增"🍅 番茄"导航页（SVG 进度环 + 按钮 + 统计 + 设置）
+- 右键菜单动态切换（按 phase 显示不同菜单项）
+- 专注 5~120min，休息 1~60min，首期不做长休息
+- 设置放在番茄页内部，不放设置页
+- 通知走主进程 Electron Notification
+
+**拆窗方案（全部交付）**：
+| 窗口 | 状态 | 内容 |
+|------|------|------|
+| infra-11 | ✅ | 主进程 pomodoro.js + IPC + 右键菜单 + store + events |
+| infra-11 续 | ✅ | 时长记录 todayFocusMs/totalFocusMs + dailyLog + getPublicStats 隔离 |
+| dash-10 | ✅ | 面板番茄页（SVG 进度环 + 按钮 + 统计 + 设置） |
+| dash-10 续 | ✅ | 统计格式"次数 + 时长" |
+| pet-09 | ✅ | 宠物浮动图标 + 气泡 |
+
+**全模块共修 8 bug**（全部审查阶段发现修复）：
+- infra-11: start 漏推 phase:changed / 右键导航竞态 / 设置无边界校验
+- dash-10: tick handler 泄漏 / break+paused data-action 写错 / progress 无 clamp
+- pet-09: abort→idle 图标不消失
+- infra-11 续: dailyLog 泄漏到渲染进程（getPublicStats 修复）
+
+**新增文件**：`specs/pomodoro.md`
+
+**当前全局状态**：
+- main 分支，与 origin/main 同步
+- 🍅 番茄钟全部交付，8 窗口（含续），0 越界
+- 93 测试通过

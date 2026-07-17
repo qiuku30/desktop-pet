@@ -54,4 +54,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 设置
   setAlwaysOnTop: (val) => ipcRenderer.send('settings:setAlwaysOnTop', val),
+
+  // 番茄钟
+  pomodoro: {
+    getState: () => ipcRenderer.invoke('pomodoro:state:get'),
+    command: (action) => ipcRenderer.send('pomodoro:command', action),
+    updateSettings: (s) => ipcRenderer.send('pomodoro:settings:update', s),
+    onTick: (cb) => {
+      const h = (_, d) => cb(d);
+      ipcRenderer.on('pomodoro:tick', h);
+      return () => ipcRenderer.removeListener('pomodoro:tick', h);
+    },
+    onPhaseChange: (cb) => {
+      const h = (_, d) => cb(d);
+      ipcRenderer.on('pomodoro:phase:changed', h);
+      return () => ipcRenderer.removeListener('pomodoro:phase:changed', h);
+    },
+    onNavigate: (cb) => {
+      const h = () => cb();
+      ipcRenderer.on('pomodoro:navigate', h);
+      return () => ipcRenderer.removeListener('pomodoro:navigate', h);
+    },
+  },
 });

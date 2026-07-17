@@ -37,6 +37,8 @@ let _unsubMenuFeed = null
 let _unsubMenuStatus = null
 let _unsubWanderToggle = null
 let _unsubUserDrag = null
+let _unsubPomodoroTick = null
+let _unsubPomodoroPhase = null
 
 // ── 工具 ──
 function rand(min, max) { return min + Math.random() * (max - min) }
@@ -371,6 +373,8 @@ async function init() {
   if (_unsubWanderToggle) _unsubWanderToggle()
   if (_unsubMenuFeed) _unsubMenuFeed()
   if (_unsubMenuStatus) _unsubMenuStatus()
+  if (_unsubPomodoroTick) { _unsubPomodoroTick(); _unsubPomodoroTick = null }
+  if (_unsubPomodoroPhase) { _unsubPomodoroPhase(); _unsubPomodoroPhase = null }
 
   _unsubUserDrag = window.electronAPI.onUserDrag(onUserDrag)
   _unsubWanderToggle = window.electronAPI.onWanderToggle(onWanderToggle)
@@ -509,6 +513,57 @@ async function init() {
   _unsubMenuStatus = window.electronAPI.onMenuStatus(async () => {
     await PetState.flush()
     window.electronAPI.toggleWindow()
+  })
+
+  // ── 番茄钟浮动图标 + 气泡 ──
+  const indicator = document.getElementById('pomodoro-indicator')
+  let _pomoPhase = 'idle'
+
+  function updateIndicator(phase, remainingS, isPaused) {
+    if (phase === 'idle') {
+      indicator.style.display = 'none'
+      return
+    }
+    const mm = Math.floor(remainingS / 60)
+    const ss = String(remainingS % 60).padStart(2, '0')
+    const timeStr = mm + ':' + ss
+
+    let emoji
+    if (isPaused) {
+      emoji = '⏸'
+    } else if (phase === 'focus') {
+      emoji = '🍅'
+    } else {
+      emoji = '☕'
+    }
+
+    indicator.style.display = ''
+    indicator.textContent = emoji + ' ' + timeStr
+  }
+
+  try {
+    const state = await window.electronAPI.pomodoro.getState()
+    if (state) {
+      _pomoPhase = state.phase
+      updateIndicator(state.phase, state.remainingS, state.isPaused)
+    }
+  } catch (_) {}
+
+  _unsubPomodoroTick = window.electronAPI.pomodoro.onTick(({ phase, remainingS, isPaused }) => {
+    _pomoPhase = phase
+    updateIndicator(phase, remainingS, isPaused)
+  })
+
+  _unsubPomodoroPhase = window.electronAPI.pomodoro.onPhaseChange(({ phase }) => {
+    const prevPhase = _pomoPhase
+    _pomoPhase = phase
+    // abort → idle 不会推 tick，需在此处隐藏图标
+    if (phase === 'idle') {
+      updateIndicator('idle', 0, false)
+    }
+    if (prevPhase === 'break' && phase === 'focus') {
+      showBubble('继续加油！💪')
+    }
   })
 
   scheduleWander()

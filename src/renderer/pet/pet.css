@@ -108,4 +108,17 @@ html, body {
   100% { opacity: 0; transform: translateY(-2vw) scale(0.95); }
 }
 
+#pomodoro-indicator {
+  position: absolute;
+  bottom: 72%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 6vw;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
 /* 喂食 flyout 已迁移至独立 BrowserWindow overlay（infra-03 showOverlay） */

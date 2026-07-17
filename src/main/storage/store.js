@@ -26,9 +26,21 @@ const DEFAULT_STATE = {
   todayMoodDecay: 0,            // 今日已累计心情衰减量
   dailyMoodClicks: 0,           // 今日心情点击次数
   lastMoodClickDate: null,      // 上次心情点击日期（YYYY-MM-DD）
+  pomodoroStats: {
+    todayCount: 0,
+    todayFocusMs: 0,         // 今日累计专注毫秒
+    todayDate: null,          // YYYY-MM-DD
+    totalCount: 0,
+    totalFocusMs: 0,          // 总计专注毫秒
+    streakDays: 0,
+    lastCompletedDate: null,  // YYYY-MM-DD
+    dailyLog: {},             // { 'YYYY-MM-DD': { count, focusMs } }
+  },
   settings: {
     showTooltip: true,
     alwaysOnTop: false,
+    pomodoroFocusMin: 25,
+    pomodoroBreakMin: 5,
   },
   lastSaved: null,
 };

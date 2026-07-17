@@ -632,6 +632,276 @@ function buildShopPage(container) {
   return () => { unsub() }
 }
 
+// ── 番茄钟页面 ──
+
+function buildPomodoroPage(container) {
+  container.className = 'page page--pomodoro'
+
+  // ── SVG 进度环常量 ──
+  const R = 80
+  const CIRC = 2 * Math.PI * R
+
+  // ── 本地状态快照 ──
+  let state = { phase: 'idle', remainingS: 0, isPaused: false, stats: { todayCount: 0, totalCount: 0, streakDays: 0 }, settings: { focusMin: 25, breakMin: 5 } }
+
+  // ── 渲染函数 ──
+
+  function totalSeconds() {
+    return (state.phase === 'break' ? state.settings.breakMin : state.settings.focusMin) * 60
+  }
+
+  function progress() {
+    const total = totalSeconds()
+    if (total <= 0) return 0
+    return Math.max(0, Math.min(1, state.remainingS / total))
+  }
+
+  function ringColor() {
+    if (state.phase === 'break') return '#4caf50'
+    return '#ff6b6b' // focus
+  }
+
+  function formatTime(s) {
+    const m = Math.floor(s / 60)
+    const sec = s % 60
+    return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+  }
+
+  function formatDuration(ms) {
+    if (!ms || ms <= 0) return '0m'
+    if (ms >= 3600000) {
+      return Math.floor(ms / 3600000) + 'h ' + Math.round((ms % 3600000) / 60000) + 'm'
+    }
+    return Math.round(ms / 60000) + 'm'
+  }
+
+  function statusText() {
+    if (state.phase === 'idle') return '准备开始'
+    if (state.isPaused) return '已暂停'
+    if (state.phase === 'focus') return '专注中'
+    if (state.phase === 'break') return '休息中'
+    return ''
+  }
+
+  function updateRing(el) {
+    const p = progress()
+    const offset = CIRC * (1 - p)
+    const circle = el.querySelector('.pom-ring-circle')
+    if (circle) {
+      circle.style.strokeDasharray = CIRC
+      circle.style.strokeDashoffset = offset
+      circle.style.stroke = ringColor()
+    }
+    const timeEl = el.querySelector('.pom-timer-text')
+    if (timeEl) timeEl.textContent = formatTime(state.remainingS)
+  }
+
+  function updateStatus(el) {
+    const statusEl = el.querySelector('.pom-status')
+    if (statusEl) statusEl.textContent = statusText()
+  }
+
+  function updateButtons(el) {
+    const bar = el.querySelector('.pom-btn-bar')
+    if (!bar) return
+
+    const isIdle = state.phase === 'idle'
+    const isPaused = state.isPaused
+    const isBreak = state.phase === 'break'
+
+    if (isIdle) {
+      bar.innerHTML = `<button class="pom-btn pom-btn--start" data-action="start">▶ 开始</button>`
+    } else if (isPaused) {
+      bar.innerHTML = `
+        <button class="pom-btn pom-btn--start" data-action="resume">▶ 继续</button>
+        <button class="pom-btn pom-btn--skip" data-action="skip">⏭ 跳过</button>
+        <button class="pom-btn pom-btn--abort" data-action="${isBreak ? 'end' : 'abort'}">✕ ${isBreak ? '结束' : '放弃'}</button>
+      `
+    } else {
+      // running
+      bar.innerHTML = `
+        <button class="pom-btn pom-btn--pause" data-action="pause">⏸ 暂停</button>
+        <button class="pom-btn pom-btn--skip" data-action="skip">⏭ 跳过</button>
+        <button class="pom-btn pom-btn--abort" data-action="${isBreak ? 'end' : 'abort'}">✕ ${isBreak ? '结束' : '放弃'}</button>
+      `
+    }
+  }
+
+  function updateStats(el) {
+    const s = state.stats
+    const todayVal = el.querySelector('.pom-stat--today .pom-stat-value')
+    const todayDur = el.querySelector('.pom-stat--today .pom-stat-duration')
+    const totalVal = el.querySelector('.pom-stat--total .pom-stat-value')
+    const totalDur = el.querySelector('.pom-stat--total .pom-stat-duration')
+    const streakVal = el.querySelector('.pom-stat--streak .pom-stat-value')
+    if (todayVal) todayVal.textContent = `${s.todayCount} 次`
+    if (todayDur) todayDur.textContent = formatDuration(s.todayFocusMs)
+    if (totalVal) totalVal.textContent = `${s.totalCount} 次`
+    if (totalDur) totalDur.textContent = formatDuration(s.totalFocusMs)
+    if (streakVal) streakVal.textContent = `${s.streakDays} 天`
+  }
+
+  function updateSettingsInputs(el) {
+    const focusInput = el.querySelector('.pom-setting__input--focus')
+    const breakInput = el.querySelector('.pom-setting__input--break')
+    const isIdle = state.phase === 'idle'
+    if (focusInput) {
+      focusInput.value = state.settings.focusMin
+      focusInput.disabled = !isIdle
+    }
+    if (breakInput) {
+      breakInput.value = state.settings.breakMin
+      breakInput.disabled = !isIdle
+    }
+  }
+
+  function renderAll(el) {
+    updateRing(el)
+    updateStatus(el)
+    updateButtons(el)
+    updateStats(el)
+    updateSettingsInputs(el)
+  }
+
+  // ── 初始 HTML ──
+  container.innerHTML = `
+    <div class="pom-ring-wrap">
+      <svg class="pom-ring-svg" viewBox="0 0 180 180">
+        <circle class="pom-ring-bg" cx="90" cy="90" r="${R}"
+                fill="none" stroke="#444" stroke-width="8" />
+        <circle class="pom-ring-circle" cx="90" cy="90" r="${R}"
+                fill="none" stroke="${ringColor()}" stroke-width="8"
+                stroke-linecap="round"
+                stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC}"
+                transform="rotate(-90 90 90)" />
+      </svg>
+      <div class="pom-timer-text">${formatTime(state.remainingS)}</div>
+    </div>
+
+    <div class="pom-status">${statusText()}</div>
+
+    <div class="pom-btn-bar"></div>
+
+    <div class="pom-stats">
+      <div class="pom-stat pom-stat--today">
+        <span class="pom-stat-icon">🍅</span>
+        <span class="pom-stat-label">今日</span>
+        <span class="pom-stat-value">0 次</span>
+        <span class="pom-stat-duration" style="font-size:11px;color:#888">0m</span>
+      </div>
+      <div class="pom-stat pom-stat--total">
+        <span class="pom-stat-icon">📊</span>
+        <span class="pom-stat-label">总计</span>
+        <span class="pom-stat-value">0 次</span>
+        <span class="pom-stat-duration" style="font-size:11px;color:#888">0m</span>
+      </div>
+      <div class="pom-stat pom-stat--streak">
+        <span class="pom-stat-icon">🔥</span>
+        <span class="pom-stat-label">连续天数</span>
+        <span class="pom-stat-value">0 天</span>
+      </div>
+    </div>
+
+    <div class="pom-settings">
+      <label class="pom-setting">
+        <span class="pom-setting__label">专注时长（分钟）</span>
+        <input type="number" class="pom-setting__input pom-setting__input--focus"
+               min="5" max="120" value="${state.settings.focusMin}">
+      </label>
+      <label class="pom-setting">
+        <span class="pom-setting__label">休息时长（分钟）</span>
+        <input type="number" class="pom-setting__input pom-setting__input--break"
+               min="1" max="60" value="${state.settings.breakMin}">
+      </label>
+    </div>
+  `
+
+  // ── 初始化：获取当前状态 ──
+  window.electronAPI.pomodoro.getState().then(s => {
+    state = s
+    renderAll(container)
+  }).catch(err => {
+    console.error('[PomodoroPage] getState failed:', err)
+  })
+
+  // 记录上一次的 phase+isPaused 用于按钮刷新
+  let _lastPhase = state.phase
+  let _lastPaused = state.isPaused
+
+  // ── 每秒 tick ──
+  const unsubTick = window.electronAPI.pomodoro.onTick(data => {
+    const pausedChanged = data.isPaused !== _lastPaused || data.phase !== _lastPhase
+    state.phase = data.phase
+    state.remainingS = data.remainingS
+    state.isPaused = data.isPaused
+
+    _lastPhase = data.phase
+    _lastPaused = data.isPaused
+
+    updateRing(container)
+    updateStatus(container)
+    if (pausedChanged) updateButtons(container)
+  })
+
+  // ── 阶段切换 ──
+  const unsubPhase = window.electronAPI.pomodoro.onPhaseChange(data => {
+    state.phase = data.phase
+    state.stats = data.stats
+    // phase change 意味着 isPaused 一定为 false
+    state.isPaused = false
+
+    const phaseChanged = data.phase !== _lastPhase
+    _lastPhase = data.phase
+    _lastPaused = false
+
+    updateRing(container)
+    updateStatus(container)
+    updateStats(container)
+    updateSettingsInputs(container)
+    if (phaseChanged) updateButtons(container)
+  })
+
+  // ── 按钮点击 ──
+  container.querySelector('.pom-btn-bar').addEventListener('click', (e) => {
+    const btn = e.target.closest('.pom-btn')
+    if (!btn) return
+    const action = btn.dataset.action
+    if (!action) return
+    window.electronAPI.pomodoro.command(action)
+  })
+
+  // ── 设置输入变更 ──
+  const settingsEl = container.querySelector('.pom-settings')
+  settingsEl.addEventListener('change', () => {
+    const focusInput = container.querySelector('.pom-setting__input--focus')
+    const breakInput = container.querySelector('.pom-setting__input--break')
+    const focusMin = Math.max(5, Math.min(120, parseInt(focusInput.value, 10) || 25))
+    const breakMin = Math.max(1, Math.min(60, parseInt(breakInput.value, 10) || 5))
+    // 修正越界值
+    focusInput.value = focusMin
+    breakInput.value = breakMin
+    state.settings.focusMin = focusMin
+    state.settings.breakMin = breakMin
+    window.electronAPI.pomodoro.updateSettings({ focusMin, breakMin })
+    // 如果是 idle 状态，更新倒计时显示
+    if (state.phase === 'idle') {
+      state.remainingS = focusMin * 60
+      updateRing(container)
+    }
+  })
+
+  // ── 初始渲染按钮和统计 ──
+  updateButtons(container)
+  updateStats(container)
+  updateSettingsInputs(container)
+
+  // ── 返回清理函数 ──
+  return () => {
+    unsubTick()
+    unsubPhase()
+  }
+}
+
 // ── 设置页面 ──
 
 function buildSettingsPage(container) {
@@ -1179,6 +1449,12 @@ async function initStatus() {
 
   const settingsItem = NAV_ITEMS.find(n => n.id === 'settings')
   if (settingsItem) settingsItem.render = buildSettingsPage
+
+  const pomodoroItem = NAV_ITEMS.find(n => n.id === 'pomodoro')
+  if (pomodoroItem) pomodoroItem.render = buildPomodoroPage
+
+  // 番茄钟：主进程切番茄页（右键菜单"专注中"/"休息中"点击 → navigate IPC）
+  window.electronAPI.pomodoro.onNavigate(() => switchPage('pomodoro'))
 
   // 渲染导航栏
   buildNavBar()

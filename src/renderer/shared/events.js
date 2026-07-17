@@ -26,4 +26,8 @@ export const EVENTS = {
   // 单词
   GAME_WORD_CORRECT:   'game:word:correct',
   GAME_WORD_STREAK:    'game:word:streak',
+
+  // 番茄钟（主进程 → 渲染进程 IPC 推送，非 EventBus 事件，但常量集中管理）
+  POMODORO_TICK:          'pomodoro:tick',
+  POMODORO_PHASE_CHANGED: 'pomodoro:phase:changed',
 }
