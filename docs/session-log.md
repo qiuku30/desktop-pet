@@ -22,6 +22,7 @@
 | **ARCH-04** | 2026-07-14 | 接替 ARCH-03，委派 9 窗口 + 分支清理 + 文档同步 | `PROJECT_BRIEF.md` `docs/progress.md` `docs/session-log.md` `main/index.js` `src/renderer/dashboard/dashboard.js` `src/renderer/shared/mood-service.test.mjs` | — | **委派**：dash-03 导航栏、dash-04 仓库页、infra-10 mood-service、pet-08 宠物心情、dash-05 心情卡片、dash-06 tooltip 修复、dash-07 仓库交互、dash-08 商店、dash-09 设置；**自己修**：面板态右键菜单屏蔽、handleFeed 补心情/经验/toast、mood 浮点测试 12 用例、PROJECT_BRIEF 全面审计同步；面板四页全部完成；远程残留分支 `origin/feature/pet-movement` `origin/feature/shared-event-bus-pet-state` 待网络恢复后清理 |
 | **ARCH-05** | 2026-07-14~17 | 接替 ARCH-04，零碎修复 + 审计 + 设计讨论 + 委派 dash-11 | `src/renderer/shared/exp-service.js` `src/renderer/shared/exp-service.test.mjs` `src/renderer/shared/event-bus.js` `src/renderer/shared/satiety-service.js` `src/main/overlay-manager.js` `docs/events.md` `src/main/DESIGN.md` `docs/progress.md` `PROJECT_BRIEF.md` `docs/session-log.md` `docs/superpowers/specs/2026-07-15-pet-customization-design.md` `docs/superpowers/specs/2026-07-15-productivity-modules-design.md` | — | ① exp-service 测试日期依赖修复；② event-bus.js DEBUG 开关；③ 删 suggestMood 死代码 + overlay _reject 统一；④ 设计讨论：桌宠形象化 B 方案、皮肤系统 A 方案、番茄钟 & 活动监视，写两份 spec；⑤ 委派 dash-11（自动走动迁移到设置面板）；⑥ dash-11 收尾：清理 wander:toggle 死文档引用；⑦ 接待 ARCH-06 番茄钟交付（pull + 审查） |
 | **ARCH-06** | 2026-07-16~17 | 番茄钟立项 + 拆窗委派 + 时长记录追加 | `specs/pomodoro.md` `PROJECT_BRIEF.md` `docs/progress.md` `docs/session-log.md` | — | 讨论确认番茄钟需求细节（5~120min/1~60min/宠物浮动图标/面板SVG进度环/右键动态菜单/时长统计+每日日志）；拆 5 窗口：infra-11（主进程+共享层）、infra-11续（时长+日志）、dash-10（面板页）、dash-10续（时长显示）、pet-09（浮动图标+气泡）；16 文件改动，8 bug 审查阶段全修；全模块无越界授权，0 冲突 |
+| **ARCH-07** | 2026-07-18 | 2048 游戏立项 + 需求讨论 + 拆窗委派 + 审查交付 | `specs/game-2048.md` `CLAUDE.md` `PROJECT_BRIEF.md` `docs/progress.md` `docs/session-log.md` | — | 逐项讨论 9 个设计决策（计分/余数/日限/导航/持久化/存档/重新开始/2048后/结算按钮）；收益模型从递减改为递增（难度匹配）；拆 2 窗口：infra-12（收益结算共享服务 + store）+ dash-12（游戏本体 + 面板集成）；审查 136 测试全过；CLAUDE.md 新增"动工前先报告"和"交付前自检"两条规则；dash-12 结算返回按钮修复 |
 
 ## infra（共享基础设施）
 
@@ -38,6 +39,7 @@
 | **infra-09** | 2026-07-13 | tooltip 独立 BrowserWindow IPC 通道 | `main/tooltip-manager.js` `main/index.js` `main/preload.js` `docs/progress.md` `docs/session-log.md` | 无 | 新建 tooltip-manager.js（show/hide/close 三个 IPC 通道）；data:URL 直出无 preload；focusable:false 不抢焦点；mouseleave→close 销毁对齐标准 Tooltip 交互范式；dashboard 侧由 dash-01 后续接线 |
 | **infra-10** | 2026-07-14 | 心情系统共享层 mood-service.js | `shared/mood-service.js` `shared/mood-service.test.mjs` `main/storage/store.js` `shared/events.js` `docs/events.md` `docs/progress.md` `docs/session-log.md` | ✅ 越界授权：改 `store.js`（mood 默认值 'neutral'→70）、`events.js`（PET_MOOD_CHANGED 注释更新 payload 类型） | 新建 mood-service.js（纯函数+配置驱动，8 个函数 + MOOD_CONFIG + MOOD_TIERS）；心情从 string 升级为 0-100 数值；自然衰减按自然日零点分段结算 + 单日 50 点上限（对齐 exp-service 每日重置逻辑）；饱腹<30 衰减翻倍（2/15 vs 1/15）；离线跨天逐日 apply 50 点上限；经验倍率三档 + 低心情互动减半；migrateMood 兼容旧 string 存档；44 个测试用例全部通过；后续 pet-08/dash-05 负责接入 |
 | **infra-11** | 2026-07-17 | 番茄钟主进程 + 共享层 + 时长记录 | `main/pomodoro.js` `main/index.js` `main/preload.js` `main/storage/store.js` `shared/events.js` `docs/events.md` `docs/progress.md` `docs/session-log.md` | 无（基础设施任务，有权改 main 和 shared） | 新建 pomodoro.js（纯模块，状态机 idle/focus/break + setInterval 1000ms tick + Electron Notification + 统计 streak + 时长 todayFocusMs/totalFocusMs + dailyLog 按日明细）；store.js 加 pomodoroStats（含时长+日志）+ pomodoroFocusMin/pomodoroBreakMin 设置项；preload.js 加 pomodoro 命名空间 6 个 API；index.js 加 3 个 IPC 通道 + 右键菜单按 phase 动态切换 + initPomodoro 接线；events.js 加 POMODORO_TICK/POMODORO_PHASE_CHANGED；saveStats 自动清理 >365 天 dailyLog；🐛 三轮审查修 3 bug：① handleCommand('start') 漏推 phase:changed ② 右键导航 pomodoro:navigate 时序竞态 ③ store 加载设置值无边界校验；渲染进程番茄页面待后续实现 |
+| **infra-12** | 2026-07-18 | 2048 收益结算服务 + store 数据结构 | `shared/game-reward-service.js`（新建） `shared/game-reward-service.test.mjs`（新建） `main/storage/store.js` `docs/progress.md` `docs/session-log.md` | 无 | 新建 game-reward-service.js（纯函数+配置驱动，5 个函数）：① calcScoreRewards 三段分段兑换（0~1000/1001~3000/3000+，四舍五入）② calcMilestoneRewards 首达阶梯 5 档（128~2048，连带触发，不重复）③ getMoodMultiplier 心情四档（≥80→1.2/<30→0.7/其他→1.0）④ applyMoodMultiplier（乘完四舍五入）⑤ calcTotalRewards 完整汇总（先 base+milestone 再乘倍率）；store.js DEFAULT_STATE 新增 game2048: { highScore:0, milestones:{128~2048:false}, savedGame:null }；43 个测试全部通过
 
 ## pet（宠物模块）
 
@@ -115,3 +117,34 @@
 - `docs/session-log.md`
 **越界授权**：`store.js`（settings 加 wanderEnabled 默认值）、`index.js`（删右键菜单 checkbox + wanderEnabled 变量）、`preload.js`（删 onWanderToggle）、`pet.js`（改从 PetState settings 读取 + EVENTS 订阅）
 **备注**：wander:toggle IPC 已移除，`docs/events.md` L28 的 wander:toggle 条目待后续窗口清理；pet.js 新增 `import { EVENTS }`，onWanderToggle() 函数保留，仅供 PetState 订阅回调驱动
+
+---
+
+## dash-12 — 2026-07-18
+
+**功能**：2048 游戏模块（游戏逻辑 + UI + 面板集成）
+
+**改动文件**：
+- `src/renderer/games/2048/2048-game.js`（新建）
+- `src/renderer/games/2048/2048-ui.js`（新建）
+- `src/renderer/games/2048/2048.css`（新建）
+- `src/renderer/games/2048/DESIGN.md`（新建）
+- `src/renderer/dashboard/nav-config.js`
+- `src/renderer/dashboard/dashboard.js`
+- `src/main/storage/store.js`
+- `docs/progress.md`
+- `docs/session-log.md`
+
+**越界授权**：`store.js`（initStore 中清除 game2048.savedGame，防止 App 重启后恢复旧局）
+
+**备注**：
+- 游戏逻辑 6 个纯函数（createGame/move/isGameOver/maxTileOf/serialize/deserialize），不碰 DOM/PetState
+- 操作方式：键盘方向键 + 鼠标拖拽（≥30px 阈值，水平/垂直主导方向判定）
+- 集成 game-reward-service：分段兑换 + 首达阶梯 + 心情倍率，先汇总再乘
+- 持久化：面板内切页内存保留（_game 模块变量）→ 关面板序列化到 PetState.savedGame → 开面板反序列化 → App 重启 store.js 清除
+- rewardsClaimed 标记防重复发收益
+- 结算弹窗：再来一局（新局+收益到账）或返回（回主页+收益到账）
+- 重新开始：任意时刻可点，二次确认，本局不计收益
+- 样式通过 JS 动态注入 <style> 标签自包含，不依赖 dashboard.css
+- 导航项排在番茄（🍅）下方、设置（⚙️）上方
+- 替换了 game.js/game.css 旧占位文件

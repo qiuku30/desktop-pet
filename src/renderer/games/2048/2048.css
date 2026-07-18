@@ -1,0 +1,368 @@
+/* 2048 游戏样式 — 暗色主题，对齐面板 */
+
+/* ── 页面容器 ── */
+.page--game2048 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  padding: 20px 16px;
+  gap: 16px;
+  position: relative;
+  height: 100%;
+}
+
+/* ── 信息栏 ── */
+.game2048-info-bar {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 360px;
+  user-select: none;
+}
+
+.game2048-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: #2c2c2c;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 8px 16px;
+  min-width: 90px;
+}
+
+.game2048-stat-label {
+  font-size: 11px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.game2048-stat-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.game2048-stat-value--record {
+  color: #ffc107;
+}
+
+/* ── 棋盘 ── */
+.game2048-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 8px;
+  background: #333;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 340px;
+  aspect-ratio: 1;
+  user-select: none;
+  touch-action: none;
+}
+
+.game2048-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-weight: bold;
+  transition: background 0.1s ease, transform 0.1s ease;
+}
+
+/* 空格 */
+.game2048-cell--empty {
+  background: #444;
+}
+
+/* 方块颜色按值 */
+.game2048-cell--2    { background: #eee4da; color: #776e65; }
+.game2048-cell--4    { background: #ede0c8; color: #776e65; }
+.game2048-cell--8    { background: #f2b179; color: #f9f6f2; }
+.game2048-cell--16   { background: #f59563; color: #f9f6f2; }
+.game2048-cell--32   { background: #f67c5f; color: #f9f6f2; }
+.game2048-cell--64   { background: #f65e3b; color: #f9f6f2; }
+.game2048-cell--128  { background: #edcf72; color: #f9f6f2; }
+.game2048-cell--256  { background: #edcc61; color: #f9f6f2; }
+.game2048-cell--512  { background: #edc850; color: #f9f6f2; }
+.game2048-cell--1024 { background: #edc53f; color: #f9f6f2; }
+.game2048-cell--2048 { background: #edc22e; color: #f9f6f2; }
+.game2048-cell--4096 { background: #3c3a32; color: #f9f6f2; }
+.game2048-cell--8192 { background: #3c3a32; color: #f9f6f2; }
+/* 16384+ 兜底 */
+.game2048-cell--super { background: #1a1a1a; color: #f9f6f2; }
+
+/* 字号随位数递减 */
+.game2048-cell--2,
+.game2048-cell--4,
+.game2048-cell--8 { font-size: 28px; }
+
+.game2048-cell--16,
+.game2048-cell--32,
+.game2048-cell--64 { font-size: 26px; }
+
+.game2048-cell--128,
+.game2048-cell--256,
+.game2048-cell--512 { font-size: 22px; }
+
+.game2048-cell--1024,
+.game2048-cell--2048 { font-size: 18px; }
+
+.game2048-cell--4096,
+.game2048-cell--8192,
+.game2048-cell--super { font-size: 16px; }
+
+/* 新方块弹出动画 */
+@keyframes tile-pop {
+  0%   { transform: scale(0); }
+  80%  { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.game2048-cell--new {
+  animation: tile-pop 0.2s ease-out;
+}
+
+/* ── 底部按钮 ── */
+.game2048-footer {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 340px;
+}
+
+.game2048-btn {
+  padding: 8px 24px;
+  border: 1px solid;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  user-select: none;
+}
+
+.game2048-btn--restart {
+  border-color: #555;
+  color: #999;
+}
+
+.game2048-btn--restart:hover {
+  border-color: #e81123;
+  color: #e81123;
+  background: rgba(232, 17, 35, 0.08);
+}
+
+.game2048-btn--primary {
+  border-color: #2196f3;
+  color: #2196f3;
+  min-width: 120px;
+}
+
+.game2048-btn--primary:hover {
+  background: #2196f3;
+  color: #fff;
+}
+
+.game2048-btn--secondary {
+  border-color: #555;
+  color: #999;
+  min-width: 100px;
+}
+
+.game2048-btn--secondary:hover {
+  background: #555;
+  color: #ddd;
+}
+
+.game2048-btn--settle {
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+.game2048-btn--settle:hover {
+  background: #4caf50;
+  color: #fff;
+}
+
+/* ── 弹窗遮罩 ── */
+.game2048-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+/* ── 弹窗卡片 ── */
+.game2048-modal {
+  background: #2c2c2c;
+  border: 1px solid #444;
+  border-radius: 12px;
+  padding: 24px;
+  min-width: 280px;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  user-select: none;
+  animation: modal-in 0.2s ease-out;
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.9) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.game2048-modal-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff;
+  text-align: center;
+}
+
+.game2048-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── 结算分数区 ── */
+.game2048-result-scores {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #444;
+}
+
+.game2048-result-score-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.game2048-result-score-label {
+  font-size: 11px;
+  color: #888;
+}
+
+.game2048-result-score-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.game2048-result-score-value--record {
+  color: #ffc107;
+}
+
+.game2048-result-record-badge {
+  font-size: 12px;
+  color: #ffc107;
+  margin-top: 2px;
+}
+
+/* ── 收益明细 ── */
+.game2048-rewards-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.game2048-rewards-title {
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.game2048-rewards-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #bbb;
+}
+
+.game2048-rewards-row--total {
+  color: #fff;
+  font-weight: bold;
+  font-size: 14px;
+  padding-top: 4px;
+  border-top: 1px solid #444;
+}
+
+/* ── 里程碑提示 ── */
+.game2048-milestones {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: rgba(255, 193, 7, 0.08);
+  border: 1px solid rgba(255, 193, 7, 0.2);
+  border-radius: 6px;
+}
+
+.game2048-milestone-item {
+  font-size: 13px;
+  color: #ffc107;
+}
+
+/* ── 弹窗按钮行 ── */
+.game2048-modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* ── 确认弹窗 ── */
+.game2048-confirm-text {
+  font-size: 14px;
+  color: #bbb;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ── 实时预估收益 ── */
+.game2048-rewards-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  width: 100%;
+  max-width: 360px;
+  padding: 6px 12px;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  user-select: none;
+  font-size: 13px;
+}
+
+.game2048-preview-label {
+  color: #888;
+}
+
+.game2048-preview-item {
+  color: #ccc;
+  font-variant-numeric: tabular-nums;
+}
+
+.game2048-preview-milestone {
+  color: #ffc107;
+  font-size: 12px;
+}

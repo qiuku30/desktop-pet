@@ -43,6 +43,11 @@ const DEFAULT_STATE = {
     pomodoroFocusMin: 25,
     pomodoroBreakMin: 5,
   },
+  game2048: {
+    highScore: 0,
+    milestones: { 128: false, 256: false, 512: false, 1024: false, 2048: false },
+    savedGame: null,
+  },
   lastSaved: null,
 };
 
@@ -52,6 +57,18 @@ async function initStore() {
 
   try {
     await fs.access(dataPath);
+    // App 重启：清除跨会话残留的 2048 存档
+    try {
+      const raw = await fs.readFile(dataPath, 'utf-8');
+      const data = JSON.parse(raw);
+      if (data.game2048 && data.game2048.savedGame) {
+        data.game2048.savedGame = null;
+        await fs.writeFile(dataPath, JSON.stringify(data, null, 2), 'utf-8');
+      }
+    } catch {
+      // 文件损坏，用默认数据覆盖
+      await fs.writeFile(dataPath, JSON.stringify(DEFAULT_STATE, null, 2), 'utf-8');
+    }
   } catch {
     // 文件不存在，创建默认数据
     await fs.writeFile(dataPath, JSON.stringify(DEFAULT_STATE, null, 2), 'utf-8');

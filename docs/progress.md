@@ -12,7 +12,7 @@
 | 🐾 宠物系统 | Phase 1 | ✅ 已完成 |
 | 🍅 番茄钟 | Phase 2 | ✅ 已完成 |
 | 📝 英语单词 | Phase 2+ | ⏳ 待定 |
-| 🎮 2048 | Phase 2+ | ⏳ 待定 |
+| 🎮 2048 | Phase 2 | ✅ 已完成 |
 | 🌾 农场经营 | Phase 2+ | ⏳ 待定 |
 | 🏪 超市经营 | Phase 2+ | ⏳ 待定 |
 
@@ -40,7 +40,7 @@
 |------|------|------|
 | index.js — 窗口创建 + 模式切换 | ✅ | 单窗口双状态 + 右键菜单 + IPC；isAutoMoving 标记区分自动/用户拖拽；move 事件推送 user:drag |
 | preload.js — 安全 IPC 桥接 | ✅ | contextBridge；moveWindow / getWindowPosition / getCursorPos / onUserDrag |
-| store.js — 统一数据存取层 | ✅ | JSON 文件，initStore/getState/setState |
+| store.js — 统一数据存取层 | ✅ | JSON 文件，initStore/getState/setState；新增 game2048 数据结构（highScore/milestones/savedGame） |
 | ipc/pet-ipc.js — 宠物 IPC | ✅ | 导出 registerPetIPC(ipcMain)；整体覆盖写盘 + 空快照保护；已接线 |
 | ipc/storage-ipc.js — 存储 IPC | ⏳ | 占位，待实现 |
 | overlay-manager.js — 通用悬浮面板 | ✅ | showOverlayWindow + initOverlayIPC + Promise Map；同一时间单例 |
@@ -60,6 +60,7 @@
 | exp-service.js | ✅ | 经验计算服务：分段升级公式（新手1-5/成长6-20/成熟21+）、溢出继承、每日互动上限 20 次、maxLevel 30 |
 | satiety-service.js | ✅ | 饱腹值消耗服务：时间戳差值衰减（0.2/min，8h一轮）、离线生效、动态最大饱腹值（每5级+20）、心情建议（<30→hungry）、主动消耗接口 |
 | mood-service.js | ✅ | 心情系统服务（infra-10）：0-100 数值替换旧 string、自然衰减（饱腹<30 翻倍 2/15）、按自然日分段+单日 50 点上限、离线跨天逐日结算、经验倍率三档、低心情互动减半、migrateMood 兼容旧存档、8 函数全部纯函数 |
+| game-reward-service.js | ✅ | 2048 收益结算服务（infra-12）：分数分段递减（0~1000/1001~3000/3000+ 三档兑换率）、首达阶梯奖励（128/256/512/1024/2048 终身一次性）、心情倍率四档（≥80→1.2/<30→0.7/其他→1.0）、先汇总再乘、43 个测试全部通过 |
 
 ### 渲染进程 — Overlay (src/renderer/overlay/)
 
@@ -107,6 +108,18 @@
 | 番茄页面（渲染进程） | ✅ | dash-10：SVG 进度环 + 倒计时 + 操作按钮（开始/暂停/继续/跳过/放弃/结束）+ 统计三列（今日/总计含时长 1h 15m 格式 + 连续天数）+ 设置输入框（仅 idle 可改） |
 | 宠物浮动图标 + 气泡 | ✅ | pet-09：🍅/☕/⏸ + MM:SS 浮动在宠物上方；onTick 每秒更新；onPhaseChange break→focus 弹出"继续加油！💪" |
 
+### 渲染进程 — 游戏模块 (src/renderer/games/2048/)
+
+| 任务 | 状态 | 备注 |
+|------|------|------|
+| 2048-game.js — 纯游戏逻辑 | ✅ | dash-12：createGame/move/isGameOver/maxTileOf/serialize/deserialize，6 个导出纯函数 |
+| 2048-ui.js — DOM + 事件 + 集成 | ✅ | dash-12：mount/unmount/saveBeforeClose；键盘方向键 + 鼠标拖拽双操作；PetState 持久化；结算弹窗（调 game-reward-service）；重新开始确认弹窗 |
+| 2048.css — 游戏样式 | ✅ | dash-12：暗色主题对齐面板，12 级方块颜色，字号递减，弹出动画，结算/确认弹窗样式；运行时由 JS 动态注入 |
+| DESIGN.md | ✅ | dash-12：组件树、数据流、状态机、持久化策略、接口契约 |
+| nav-config.js — 导航项 | ✅ | dash-12：新增 🎮 2048，排在番茄下方 |
+| dashboard.js — 面板集成 | ✅ | dash-12：import + buildGame2048Page + initStatus 注册 + 关闭按钮 saveBeforeClose 钩子 |
+| store.js — 重启清除存档 | ✅ | dash-12：initStore 中清除 game2048.savedGame，防跨会话恢复旧局 |
+
 ---
 
 ## 待实现（按优先级）
@@ -121,7 +134,6 @@
 
 ## 暂缓
 
-- 2048 模块 (Phase 2)
 - 单词模块 (Phase 2)
 - 农场模块 (Phase 2)
 - 超市模块 (待规划)

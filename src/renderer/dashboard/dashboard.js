@@ -9,6 +9,7 @@ const CORNER = 16
 document.getElementById('btn-close').addEventListener('click', async () => {
   window.electronAPI.closeOverlay()      // 关闭可能残留的右键菜单
   hideTooltip()
+  Game2048UI.saveBeforeClose()
   await PetState.flush()
   window.electronAPI.toggleWindow()
 })
@@ -98,6 +99,7 @@ import { getMoodTier, migrateMood, boostMood, getExpMultiplier, MOOD_CONFIG } fr
 import { EVENTS } from '../shared/events.js'
 import { NAV_ITEMS, WAREHOUSE_CATEGORIES } from './nav-config.js'
 import { SETTINGS_TABS } from './settings-config.js'
+import * as Game2048UI from '../games/2048/2048-ui.js'
 
 // tooltip 字段 → 中文标签映射（字段驱动，加新字段只加一行）
 const TOOLTIP_FIELDS = {
@@ -1054,6 +1056,13 @@ function buildSettingsPage(container) {
   return () => {}
 }
 
+// ── 2048 游戏页面 ──
+
+function buildGame2048Page(container) {
+  const cleanup = Game2048UI.mount(container)
+  return () => { if (cleanup) cleanup() }
+}
+
 // ── 页面切换 ──
 function switchPage(pageId) {
   if (currentPageId === pageId) return
@@ -1452,6 +1461,9 @@ async function initStatus() {
 
   const pomodoroItem = NAV_ITEMS.find(n => n.id === 'pomodoro')
   if (pomodoroItem) pomodoroItem.render = buildPomodoroPage
+
+  const g2048Item = NAV_ITEMS.find(n => n.id === 'game2048')
+  if (g2048Item) g2048Item.render = buildGame2048Page
 
   // 番茄钟：主进程切番茄页（右键菜单"专注中"/"休息中"点击 → navigate IPC）
   window.electronAPI.pomodoro.onNavigate(() => switchPage('pomodoro'))
