@@ -22,7 +22,7 @@ let currentMode = 'pet'; // 'pet' | 'dashboard'
 let isAutoMoving = false; // 区分自动走动 vs 用户拖拽
 let currentZoom = 1.0;   // 用户缩放倍率（0.75 / 1.0 / 1.25 / 1.5）
 let savedPetBounds = null; // 切面板前记下宠物位置，切回时恢复
-let wanderEnabled = true;  // 随机走动开关
+
 let currentPetSize = 200;  // 当前宠物窗口的基准尺寸（防 DPI 漂移）
 
 // 动态窗口尺寸：基准 200px × 显示器缩放 × 用户缩放
@@ -155,16 +155,6 @@ function createWindow() {
             { label: '大 (125%)', type: 'radio', checked: currentZoom === 1.25, click: () => applyZoom(1.25) },
             { label: '特大 (150%)', type: 'radio', checked: currentZoom === 1.5,  click: () => applyZoom(1.5) },
           ],
-        },
-        { type: 'separator' },
-        {
-          label: '自动走动',
-          type: 'checkbox',
-          checked: wanderEnabled,
-          click: () => {
-            wanderEnabled = !wanderEnabled
-            mainWindow.webContents.send('wander:toggle', wanderEnabled)
-          },
         },
         { type: 'separator' },
         {

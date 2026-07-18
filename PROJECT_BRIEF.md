@@ -474,44 +474,44 @@ main 分支，67 commits 领先 origin/main（未推送）
 
 **待接**：dash-05（面板心情卡片改版）
 
-## 2026-07-14 — ARCH-05 接替 + 零碎修复
+## 2026-07-14~17 — ARCH-05 审计 + 设计 + 委派
 
-**处理事项**：接替 ARCH-04，修 3 个零碎问题。
+**处理事项**：接替 ARCH-04，审计修复 + 设计讨论 + 委派 dash-11 + 接待 ARCH-06。
 
-**已执行**：
+**审计修复（5 项）**：
 
 1. **exp-service 测试日期依赖修复**（4 fail → 0 fail）
    - `checkDailyInteraction(count, lastDate, _now)` 新增可选 `_now` 参数
-   - 4 个硬编码 `'2026-07-13'` 的测试改为注入 `FIXED_NOW = new Date('2026-07-13T12:00:00')`
-   - 跨天不再影响测试结果
-   - 现有调用方 `pet.js` 只传 2 个参数，向后兼容
+   - 4 个硬编码日期测试改为注入固定日期，跨天不再影响
 
 2. **event-bus.js DEBUG 开关**
-   - `const DEBUG = true` → `let DEBUG = true`
-   - 新增 `setEventBusDebug(enabled)` / `isEventBusDebugEnabled()` 导出
-   - 默认 true（开发模式），生产环境可运行时关闭
-   - 后续 settings 页面可接线
+   - `const DEBUG` → `let DEBUG` + `setEventBusDebug()` / `isEventBusDebugEnabled()` 导出
 
 3. **docs/progress.md pet-motion 测试路径修正**
-   - `node --test 6/6` → `node --test pet-motion.test.mjs 6/6`
 
-4. **审计 — 删除死代码 `suggestMood`**
-   - `satiety-service.js` 的 `suggestMood()` 返回旧 string 心情（'hungry'/'neutral'），infra-10 后无人调用
-   - 三个 import satiety-service 的模块均未引用此函数
+4. **删除死代码 `suggestMood`** — `satiety-service.js`，返回旧 string 心情，无人调用
 
-5. **审计 — overlay `_reject` → `resolve(null)`**
-   - `overlay-manager.js` `did-fail-load` 走 `_reject`，但 `blur`/`closed` 走 `resolve(null)` — 不一致
-   - 3 个调用方全都没 try-catch，加载失败 = 未处理 rejection
-   - 统一为 `resolve(null)` + `console.error`，调用方无需改
+5. **overlay `_reject` → `resolve(null)`** — `did-fail-load` 和其他关闭路径统一
+
+**设计讨论**：
+
+6. 桌宠形象化 B 方案（帧动画）+ 皮肤系统 A 方案（共享进度）→ `pet-customization-design.md`
+7. 番茄钟 + 活动监视 → `productivity-modules-design.md`（ARCH-06 已实现番茄钟）
+
+**委派 + 收尾**：
+
+8. 委派 **dash-11**：自动走动从右键菜单迁移到设置面板
+9. 接待 **ARCH-06**：Mac 番茄钟交付（infra-11 + dash-10 + pet-09），pull + 审查通过
+10. dash-11 收尾：清理 `wander:toggle` 死文档引用（`events.md` + `main/DESIGN.md`）
 
 **测试结果**：93 全绿（56 mood + 6 pet-motion + 31 exp-service）
 
 **当前全局状态**：
-- main 分支，74 commits 领先 origin/main（网络不通）
-- 工作区干净（7 个文件未提交），93 测试通过
+- main 分支，工作区干净，93 测试通过
+- 番茄钟 ✅（ARCH-06）+ 自动走动设置化 ✅（dash-11）
 - 已知 🟡 问题 4 项：躲避光标、写盘风险、loadFile 切换、面板透明度（全部搁置/Phase 2）
-- 新增 spec：桌宠形象化 & 皮肤系统 (`pet-customization-design.md`)、番茄钟 & 活动监视 (`productivity-modules-design.md`)
-- 下一步待用户决定：打磨体验 vs 启动 Phase 2
+- 设计文档就绪：桌宠形象化、皮肤系统、番茄钟、活动监视
+- 下一步待用户决定
 
 ## 2026-07-16~17 — ARCH-06 番茄钟立项 + 拆窗
 

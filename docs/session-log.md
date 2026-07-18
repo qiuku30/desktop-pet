@@ -20,7 +20,7 @@
 | **ARCH-02** | 2026-07-12~13 | 架构决策 + 审查 + 直接修复 | `store.js` `docs/architecture.md` `docs/pet-movement-design.md` `docs/session-log.md` `PROJECT_BRIEF.md` `docs/progress.md` `CLAUDE.md` `docs/conventions.md` `src/renderer/pet/pet.js` `src/renderer/shared/module-registry.js` `src/renderer/shared/events.js` | — | 十大原则写入 architecture.md；审查 pet-02/03（补 zoomLevel、ADR-001/005/007/008、no-drag→✅）；建 session-log.md + 窗口命名规则；events.md 补 wander:toggle；conventions.md/architecture.md 示例 hunger→satiety；直接修：pet.js flyout 饱腹上限、module-registry 死链接、IPC 监听器泄漏；Phase 1 合并 main |
 | **ARCH-03** | 2026-07-13 | 代码审计 + 文档同步 + 委派 infra-06~09、pet-07、dash-01/02 + 多轮审计修复 | `CLAUDE.md` `PROJECT_BRIEF.md` `docs/progress.md` `docs/session-log.md` `pet/pet.html` `dashboard/dashboard.html` `pet/DESIGN.md` `dashboard/DESIGN.md` `main/DESIGN.md` `shared/feed-service.js` `main/index.js` `main/tooltip-manager.js` | — | **委派**：infra-06 feed-service、infra-07 exp-service、infra-08 satiety-service、infra-09 tooltip IPC、dash-02 RPG布局、pet-07 经验接入、dash-01 多次续修（exp条/饱腹上限/tooltip）；**自己修**：冗余script标签、3份DESIGN同步、progress分支引用、FEED_CONFIG抽出硬编码、session-log按分类重组、CLAUDE.md模板加"先讨论再行动"+收尾检查清单；**三轮审计**（main/renderer/docs）发现并修6项：dashboard硬编码事件字符串→EVENTS常量、main/DESIGN缺tooltip通道、pet/DESIGN状态字段不全、index.js未用dialog import、tooltip窗口复用闪烁、pet:state:set委托描述不准 |
 | **ARCH-04** | 2026-07-14 | 接替 ARCH-03，委派 9 窗口 + 分支清理 + 文档同步 | `PROJECT_BRIEF.md` `docs/progress.md` `docs/session-log.md` `main/index.js` `src/renderer/dashboard/dashboard.js` `src/renderer/shared/mood-service.test.mjs` | — | **委派**：dash-03 导航栏、dash-04 仓库页、infra-10 mood-service、pet-08 宠物心情、dash-05 心情卡片、dash-06 tooltip 修复、dash-07 仓库交互、dash-08 商店、dash-09 设置；**自己修**：面板态右键菜单屏蔽、handleFeed 补心情/经验/toast、mood 浮点测试 12 用例、PROJECT_BRIEF 全面审计同步；面板四页全部完成；远程残留分支 `origin/feature/pet-movement` `origin/feature/shared-event-bus-pet-state` 待网络恢复后清理 |
-| **ARCH-05** | 2026-07-14~15 | 接替 ARCH-04，零碎修复 + 审计 | `src/renderer/shared/exp-service.js` `src/renderer/shared/exp-service.test.mjs` `src/renderer/shared/event-bus.js` `src/renderer/shared/satiety-service.js` `src/main/overlay-manager.js` `docs/progress.md` `PROJECT_BRIEF.md` `docs/session-log.md` | — | ① exp-service 测试日期依赖：`checkDailyInteraction` 加可选 `_now` 参数；② event-bus.js DEBUG 开关：`setEventBusDebug()`/`isEventBusDebugEnabled()` 导出；③ progress.md 测试路径补 `.test`；④ 审计发现：删 `suggestMood` 死代码（旧 string 心情，无人调用）；修 overlay `did-fail-load` 用 `_reject` 不一致→统一 `resolve(null)` |
+| **ARCH-05** | 2026-07-14~17 | 接替 ARCH-04，零碎修复 + 审计 + 设计讨论 + 委派 dash-11 | `src/renderer/shared/exp-service.js` `src/renderer/shared/exp-service.test.mjs` `src/renderer/shared/event-bus.js` `src/renderer/shared/satiety-service.js` `src/main/overlay-manager.js` `docs/events.md` `src/main/DESIGN.md` `docs/progress.md` `PROJECT_BRIEF.md` `docs/session-log.md` `docs/superpowers/specs/2026-07-15-pet-customization-design.md` `docs/superpowers/specs/2026-07-15-productivity-modules-design.md` | — | ① exp-service 测试日期依赖修复；② event-bus.js DEBUG 开关；③ 删 suggestMood 死代码 + overlay _reject 统一；④ 设计讨论：桌宠形象化 B 方案、皮肤系统 A 方案、番茄钟 & 活动监视，写两份 spec；⑤ 委派 dash-11（自动走动迁移到设置面板）；⑥ dash-11 收尾：清理 wander:toggle 死文档引用；⑦ 接待 ARCH-06 番茄钟交付（pull + 审查） |
 | **ARCH-06** | 2026-07-16~17 | 番茄钟立项 + 拆窗委派 + 时长记录追加 | `specs/pomodoro.md` `PROJECT_BRIEF.md` `docs/progress.md` `docs/session-log.md` | — | 讨论确认番茄钟需求细节（5~120min/1~60min/宠物浮动图标/面板SVG进度环/右键动态菜单/时长统计+每日日志）；拆 5 窗口：infra-11（主进程+共享层）、infra-11续（时长+日志）、dash-10（面板页）、dash-10续（时长显示）、pet-09（浮动图标+气泡）；16 文件改动，8 bug 审查阶段全修；全模块无越界授权，0 冲突 |
 
 ## infra（共享基础设施）
@@ -99,3 +99,19 @@
 **越界授权**：无
 **备注**：SVG 进度环（circle stroke-dashoffset）+ 倒计时 MM:SS 居中叠加；操作按钮按状态切换（idle→开始 / running→暂停+跳过+放弃/结束 / paused→继续+跳过+放弃/结束）；统计三列 grid（今日/总计含时长 1h 15m 格式 + 连续天数）；设置输入框仅 idle 可改（5~120 / 1~60）；tick 检测 isPaused 变化触发按钮刷新；phaseChange 更新统计和设置输入 disabled 状态；onNavigate 注册在 initStatus 常驻；清理函数取消 tick+phaseChange 订阅；🐛 自审修 3 bug：① tick handler 重复注册泄漏 ② break+paused 状态 data-action 写死 "abort" 而非 "end"→静默无响应 ③ progress() 无 clamp→phase 切换后 dashoffset 负数环溢出
 **续（同日）**：统计行今日/总计加专注时长显示（formatDuration ms→"1h 15m"/"35m"），依赖 infra-11 续新增 todayFocusMs/totalFocusMs 字段；连续天数加"天"后缀；改动 dashboard.js + docs×2，无越界授权
+
+---
+
+## dash-11 — 2026-07-17
+
+**功能**：将「自动走动」开关从右键菜单移到设置面板
+**改动文件**：
+- `src/renderer/dashboard/settings-config.js`
+- `src/main/storage/store.js`
+- `src/main/index.js`
+- `src/main/preload.js`
+- `src/renderer/pet/pet.js`
+- `docs/progress.md`
+- `docs/session-log.md`
+**越界授权**：`store.js`（settings 加 wanderEnabled 默认值）、`index.js`（删右键菜单 checkbox + wanderEnabled 变量）、`preload.js`（删 onWanderToggle）、`pet.js`（改从 PetState settings 读取 + EVENTS 订阅）
+**备注**：wander:toggle IPC 已移除，`docs/events.md` L28 的 wander:toggle 条目待后续窗口清理；pet.js 新增 `import { EVENTS }`，onWanderToggle() 函数保留，仅供 PetState 订阅回调驱动

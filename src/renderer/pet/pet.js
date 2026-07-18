@@ -12,6 +12,7 @@ import { FOODS, consumeFood, applyFeed, emitFed } from '../shared/feed-service.j
 import { checkDailyInteraction, addExp, getFoodExp, EXP_CONFIG } from '../shared/exp-service.js'
 import { SATIETY_CONFIG, calcMaxSatiety, calcDecay, reduceSatiety } from '../shared/satiety-service.js'
 import { MOOD_CONFIG, getMoodTier, calcMoodDecay, reduceMood, boostMood, getExpMultiplier, getClickBoost, migrateMood, clampMood } from '../shared/mood-service.js'
+import { EVENTS } from '../shared/events.js'
 
 // 动态窗口尺寸（配合 scaleFactor 自适应 + 用户缩放）
 function getWinSize() {
@@ -35,7 +36,6 @@ let satietyTickTimer = null
 let overlayActive = false
 let _unsubMenuFeed = null
 let _unsubMenuStatus = null
-let _unsubWanderToggle = null
 let _unsubUserDrag = null
 let _unsubPomodoroTick = null
 let _unsubPomodoroPhase = null
@@ -370,14 +370,24 @@ async function init() {
 
   // 清理旧监听器（防止 loadFile 切换页面后累积）
   if (_unsubUserDrag) _unsubUserDrag()
-  if (_unsubWanderToggle) _unsubWanderToggle()
   if (_unsubMenuFeed) _unsubMenuFeed()
   if (_unsubMenuStatus) _unsubMenuStatus()
   if (_unsubPomodoroTick) { _unsubPomodoroTick(); _unsubPomodoroTick = null }
   if (_unsubPomodoroPhase) { _unsubPomodoroPhase(); _unsubPomodoroPhase = null }
 
   _unsubUserDrag = window.electronAPI.onUserDrag(onUserDrag)
-  _unsubWanderToggle = window.electronAPI.onWanderToggle(onWanderToggle)
+
+  // 从 PetState settings 读取走动开关（替代旧 IPC wander:toggle）
+  const settings = PetState.get('settings') || {}
+  if (settings.wanderEnabled != null) wanderEnabled = settings.wanderEnabled
+  PetState.subscribe(EVENTS.PET_STATE_CHANGED, ({ key }) => {
+    if (key === 'settings') {
+      const s = PetState.get('settings') || {}
+      if (s.wanderEnabled != null && s.wanderEnabled !== wanderEnabled) {
+        onWanderToggle(s.wanderEnabled)
+      }
+    }
+  })
 
   // 右键菜单 — 喂食
   _unsubMenuFeed = window.electronAPI.onMenuFeed(async () => {
