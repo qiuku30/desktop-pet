@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ---
 
@@ -42,7 +42,7 @@ npm run make           # 生成安装包
 
 ```
 desktop-pet/
-├── CLAUDE.md                    # 本文件 — 项目总纲
+├── AGENTS.md                    # 本文件 — 项目总纲
 ├── package.json
 ├── forge.config.js
 ├── .gitignore
@@ -127,8 +127,8 @@ desktop-pet/
 ### 🏛️ 架构决策窗口
 
 - 讨论需求、做架构决策
-- 启动必读：`CLAUDE.md` → `PROJECT_BRIEF.md`（总览全局状态）→ `docs/architecture.md`（十大原则 + ADR）
-- 唯一有权修改：`CLAUDE.md`、`PROJECT_BRIEF.md`、`docs/architecture.md`、`docs/conventions.md`、`docs/session-log.md`、`specs/*`
+- 启动必读：`AGENTS.md` → `PROJECT_BRIEF.md`（总览全局状态）→ `docs/architecture.md`（十大原则 + ADR）
+- 唯一有权修改：`AGENTS.md`、`PROJECT_BRIEF.md`、`docs/architecture.md`、`docs/conventions.md`、`docs/session-log.md`、`specs/*`
 - 每次会话结束必须更新 `PROJECT_BRIEF.md` 和 `docs/progress.md`
 - 每开一个新窗口或做完一次改动，提醒用户并同步更新 `PROJECT_BRIEF.md`、`docs/progress.md`、`docs/session-log.md`
 
@@ -138,7 +138,7 @@ desktop-pet/
 
 | 顺序 | 文件 | 目的 |
 |------|------|------|
-| 1 | `CLAUDE.md` | 了解项目全貌、规则、架构 |
+| 1 | `AGENTS.md` | 了解项目全貌、规则、架构 |
 | 2 | `docs/architecture.md` | 了解十大架构原则 + 8 条 ADR |
 | 3 | `specs/<模块名>.md` | 理解这个模块"要做什么" |
 | 4 | `src/<模块路径>/DESIGN.md` | 理解"怎么实现的" |
@@ -155,7 +155,7 @@ desktop-pet/
 
 #### 绝对不能改的文件 🚫
 
-- `CLAUDE.md` — 架构窗口专属
+- `AGENTS.md` — 架构窗口专属
 - `docs/architecture.md` — 架构窗口专属
 - `docs/conventions.md` — 架构窗口专属
 - **其他模块的目录** — 只碰自己的
@@ -235,27 +235,27 @@ desktop-pet/
 
 ### 新窗口启动模板
 
-开新 Claude Code 窗口时，粘贴以下模板，填上具体任务即可：
+开新 Codex 窗口时，粘贴以下模板，填上具体任务即可：
 
 ```
-先读 CLAUDE.md 了解项目全貌和规则。
+先读 AGENTS.md 了解项目全貌和规则。
 
 你的任务是：[在此填写具体任务]
 
 只能改 [在此填写允许的目录]，改完更新 docs/progress.md 和 docs/session-log.md。
-不确定的地方必须问用户，不要猜。
+不确定的地方必须问我，不要猜。
 先讨论，商量出结果后再行动，总体设计可能会与局部详细设计有偏差。
 ```
 
 **示例 — 实现窗口写宠物气泡**：
 
 ```
-先读 CLAUDE.md。
+先读 AGENTS.md。
 
 任务是实现 src/renderer/pet/ 下的宠物点击气泡：单击弹出气泡、根据心情选台词、叠加显示、2 秒消失。
 
 只能改 src/renderer/pet/* 和 docs/progress.md。
-不确定就问用户。
+不确定就问我。
 先讨论，商量出结果后再行动，总体设计可能会与局部详细设计有偏差。
 ```
 
