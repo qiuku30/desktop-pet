@@ -32,7 +32,7 @@ EventBus.on(EVENTS.PET_LEVEL_UP, (data) => { ... })
 **允许的 import**：
 - 本模块自己的文件
 - `src/renderer/shared/` 下的公共基础设施（event-bus.js、events.js、module-registry.js）
-- `src/renderer/shared/pet-state.js` — 但**只能读**，禁止直接修改内部状态
+- `src/renderer/shared/pet-state.js` — 读写都走 `get()`/`set()`/`subscribe()`，**禁止直接访问 `_data`**
 
 **代码审查检查点**：每次 review 检查是否有跨模块 import，发现即打回。
 

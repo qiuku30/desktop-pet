@@ -10,7 +10,7 @@
 
 ## 状态
 
-- 心情（happy / neutral / hungry / sad）
+- 心情（0-100 数值，四档 tier：happy/good/neutral/low）
 - 等级（Lv.1 → Lv.30），含经验值（exp）与升级曲线
 - 饱腹值（satiety，0-动态上限，随时间衰减）
 - 亲密度（intimacy，喂食 +5）
@@ -69,7 +69,7 @@
 
 > ✅ 已实现（2026-07-12）
 
-- **台词库**：28 条，按 `心情(happy/neutral/hungry/sad)` × `等级(low 1-3 / mid 4-6 / high 7+)` 分层
+- **台词库**：28 条，按 `心情四档(happy/good/neutral/low)` × `等级(low 1-3 / mid 4-6 / high 7+)` 分层
 - **交互**：单击 `#pet-body` → 300ms 延迟（为双击预留）→ 弹出气泡；双击 → `toggleWindow()` 切换面板；拖拽移动 > 3px 不出气泡
 - **气泡**：`#speech-bubbles` 内绝对定位，`flex-direction: column-reverse` 垂直堆叠，最新气泡离宠物最近
 - **动画**：`@keyframes bubble-pop`，2s ease-out（弹入 10% → 保持 → 淡出上飘），`animationend` 移除 DOM
