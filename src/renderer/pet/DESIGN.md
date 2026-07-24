@@ -74,3 +74,23 @@
 - **气泡**：`#speech-bubbles` 内绝对定位，`flex-direction: column-reverse` 垂直堆叠，最新气泡离宠物最近
 - **动画**：`@keyframes bubble-pop`，2s ease-out（弹入 10% → 保持 → 淡出上飘），`animationend` 移除 DOM
 - **`no-drag`**：`#pet-body` 加 `-webkit-app-region: no-drag` 让点击事件穿透 drag 拦截；父级 `#pet-container` 的 15px padding 保留拖拽区域
+
+## 帧动画基础设施（pet-10）
+
+> 基础设施已实现但尚未接入 `pet.js`；当前 Emoji 表现保持不变。
+
+目录：`src/renderer/pet/animation/`
+
+| 文件 | 职责 |
+|------|------|
+| `skin-manifest.mjs` | 版本 1 皮肤清单校验、安全相对路径、等级形态选择、动作回退 |
+| `frame-timing.mjs` | 时间驱动帧索引、高 DPI backing size、锚点绘制矩形 |
+| `frame-renderer.mjs` | 帧预加载、Canvas 绘制、水平翻转、播放生命周期 |
+| `animation-controller.mjs` | 基础动作、一次性动作优先级、打断与恢复 |
+
+接口边界：
+
+- `pet.js` 后续只调用语义动作，不直接计算帧序号；
+- `AnimationController` 只依赖 renderer 的 `hasAnimation/play/setFacing/stop`；
+- `FrameRenderer` 通过构造参数注入图片加载、RAF 和时钟，Node 测试不依赖 DOM；
+- 本阶段不含皮肤素材、PetState 字段、面板立绘或 UI 接入。
