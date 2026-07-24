@@ -140,10 +140,9 @@ desktop-pet/
 |------|------|------|
 | 1 | `CLAUDE.md` | 了解项目全貌、规则、架构 |
 | 2 | `docs/architecture.md` | 了解十大架构原则 + 8 条 ADR |
-| 3 | `docs/file-index.md` | 快速定位任何文件 |
-| 4 | `specs/<模块名>.md` | 理解这个模块"要做什么" |
-| 5 | `src/<模块路径>/DESIGN.md` | 理解"怎么实现的" |
-| 6 | `docs/progress.md` | 了解当前进度 |
+| 3 | `specs/<模块名>.md` | 理解这个模块"要做什么" |
+| 4 | `src/<模块路径>/DESIGN.md` | 理解"怎么实现的" |
+| 5 | `docs/progress.md` | 了解当前进度 |
 
 #### 可以改的文件 ✅
 
