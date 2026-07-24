@@ -94,3 +94,19 @@
 - `AnimationController` 只依赖 renderer 的 `hasAnimation/play/setFacing/stop`；
 - `FrameRenderer` 通过构造参数注入图片加载、RAF 和时钟，Node 测试不依赖 DOM；
 - 本阶段不含皮肤素材、PetState 字段、面板立绘或 UI 接入。
+
+## 奶油星团正式素材包（pet-11）
+
+> 2026-07-24：已产出角色视觉基准、七类动作关键姿态、portrait 和 52 张动画帧；
+> schema v1 清单校验及 ARCH-08 多背景肉眼验收通过，尚未接入 UI。
+
+素材位于 `src/renderer/assets/pet/cream-star/`：
+
+- `reference/character-anchor.webp`：正面、侧面、三分之四视角基准；
+- `reference/action-key-poses.webp`：七类动作关键姿态；
+- `portrait.webp`：正式立绘；
+- `forms/base/`：512×512 无损透明 WebP 动画帧；
+- `pet.json`：schema v1 清单，包含七类标准动作、帧率、循环方式、锚点和回退。
+
+`review/` 保留完整 alpha 审计和黑/白/棋盘格联系表作为验收记录。素材制作窗口
+未修改 `pet.html` / `pet.js`；UI 接入由后续 `pet-12` 窗口负责。

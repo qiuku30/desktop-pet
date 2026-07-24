@@ -1,0 +1,227 @@
+forms/base/idle/001.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=93946 large=1 small_pixels=283 boxes=[(54, 119, 458, 470)]
+  alpha>8: occupied=92696 large=1 small_pixels=50 boxes=[(54, 119, 457, 470)]
+  alpha>32: occupied=92414 large=1 small_pixels=0 boxes=[(54, 120, 457, 470)]
+forms/base/idle/002.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=95931 large=1 small_pixels=288 boxes=[(51, 117, 461, 470)]
+  alpha>8: occupied=94637 large=1 small_pixels=49 boxes=[(51, 117, 461, 470)]
+  alpha>32: occupied=94333 large=1 small_pixels=0 boxes=[(52, 117, 460, 470)]
+forms/base/idle/003.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=95913 large=1 small_pixels=247 boxes=[(52, 116, 461, 470)]
+  alpha>8: occupied=94656 large=1 small_pixels=53 boxes=[(52, 116, 461, 470)]
+  alpha>32: occupied=94349 large=1 small_pixels=0 boxes=[(52, 116, 461, 470)]
+forms/base/idle/004.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=91775 large=1 small_pixels=301 boxes=[(56, 123, 455, 470)]
+  alpha>8: occupied=90510 large=1 small_pixels=37 boxes=[(56, 123, 455, 470)]
+  alpha>32: occupied=90254 large=1 small_pixels=0 boxes=[(56, 124, 455, 470)]
+forms/base/idle/005.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=92447 large=1 small_pixels=307 boxes=[(54, 123, 458, 470)]
+  alpha>8: occupied=91170 large=1 small_pixels=48 boxes=[(55, 124, 458, 470)]
+  alpha>32: occupied=90915 large=1 small_pixels=0 boxes=[(55, 124, 457, 470)]
+forms/base/idle/006.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=92032 large=1 small_pixels=292 boxes=[(55, 123, 457, 470)]
+  alpha>8: occupied=90736 large=1 small_pixels=47 boxes=[(55, 124, 457, 470)]
+  alpha>32: occupied=90463 large=1 small_pixels=0 boxes=[(55, 124, 456, 470)]
+forms/base/walk/001.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=95313 large=1 small_pixels=561 boxes=[(51, 96, 461, 470)]
+  alpha>8: occupied=93680 large=1 small_pixels=54 boxes=[(51, 96, 461, 470)]
+  alpha>32: occupied=93310 large=1 small_pixels=0 boxes=[(52, 96, 461, 470)]
+forms/base/walk/002.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=90174 large=1 small_pixels=553 boxes=[(55, 106, 457, 470)]
+  alpha>8: occupied=88591 large=1 small_pixels=41 boxes=[(55, 106, 456, 470)]
+  alpha>32: occupied=88271 large=1 small_pixels=0 boxes=[(56, 106, 456, 470)]
+forms/base/walk/003.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=87726 large=1 small_pixels=427 boxes=[(64, 109, 448, 470)]
+  alpha>8: occupied=86155 large=1 small_pixels=38 boxes=[(64, 109, 448, 470)]
+  alpha>32: occupied=85798 large=1 small_pixels=0 boxes=[(64, 109, 448, 470)]
+forms/base/walk/004.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=89083 large=1 small_pixels=447 boxes=[(63, 103, 449, 470)]
+  alpha>8: occupied=87497 large=1 small_pixels=37 boxes=[(63, 103, 449, 470)]
+  alpha>32: occupied=87181 large=1 small_pixels=0 boxes=[(64, 103, 449, 470)]
+forms/base/walk/005.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=89629 large=1 small_pixels=519 boxes=[(56, 105, 455, 470)]
+  alpha>8: occupied=88073 large=1 small_pixels=46 boxes=[(56, 105, 455, 470)]
+  alpha>32: occupied=87721 large=1 small_pixels=0 boxes=[(57, 105, 455, 470)]
+forms/base/walk/006.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=89897 large=1 small_pixels=547 boxes=[(58, 103, 455, 470)]
+  alpha>8: occupied=88231 large=1 small_pixels=32 boxes=[(58, 103, 455, 469)]
+  alpha>32: occupied=87905 large=1 small_pixels=0 boxes=[(58, 103, 455, 469)]
+forms/base/walk/007.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=85994 large=1 small_pixels=451 boxes=[(58, 109, 455, 470)]
+  alpha>8: occupied=84451 large=1 small_pixels=45 boxes=[(59, 109, 455, 470)]
+  alpha>32: occupied=84119 large=1 small_pixels=0 boxes=[(59, 109, 454, 470)]
+forms/base/walk/008.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=86338 large=1 small_pixels=520 boxes=[(67, 103, 445, 470)]
+  alpha>8: occupied=84780 large=1 small_pixels=38 boxes=[(68, 103, 444, 470)]
+  alpha>32: occupied=84461 large=1 small_pixels=0 boxes=[(68, 103, 444, 470)]
+forms/base/eat/001.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=97286 large=1 small_pixels=508 boxes=[(51, 105, 461, 470)]
+  alpha>8: occupied=95765 large=1 small_pixels=58 boxes=[(51, 105, 461, 470)]
+  alpha>32: occupied=95370 large=1 small_pixels=0 boxes=[(51, 105, 461, 470)]
+forms/base/eat/002.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=94260 large=1 small_pixels=488 boxes=[(58, 105, 455, 470)]
+  alpha>8: occupied=92679 large=1 small_pixels=50 boxes=[(58, 105, 454, 470)]
+  alpha>32: occupied=92353 large=1 small_pixels=0 boxes=[(59, 105, 454, 469)]
+forms/base/eat/003.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=93297 large=1 small_pixels=464 boxes=[(61, 107, 451, 470)]
+  alpha>8: occupied=91801 large=1 small_pixels=48 boxes=[(62, 107, 451, 470)]
+  alpha>32: occupied=91473 large=1 small_pixels=0 boxes=[(62, 107, 451, 470)]
+forms/base/eat/004.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=92187 large=1 small_pixels=500 boxes=[(60, 111, 453, 470)]
+  alpha>8: occupied=90632 large=1 small_pixels=47 boxes=[(61, 111, 453, 469)]
+  alpha>32: occupied=90294 large=1 small_pixels=0 boxes=[(61, 111, 453, 469)]
+forms/base/eat/005.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=95304 large=1 small_pixels=521 boxes=[(58, 105, 455, 470)]
+  alpha>8: occupied=93740 large=1 small_pixels=47 boxes=[(59, 105, 455, 470)]
+  alpha>32: occupied=93394 large=1 small_pixels=0 boxes=[(59, 105, 455, 470)]
+forms/base/eat/006.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=94509 large=1 small_pixels=492 boxes=[(56, 107, 455, 470)]
+  alpha>8: occupied=92972 large=1 small_pixels=44 boxes=[(57, 107, 455, 470)]
+  alpha>32: occupied=92615 large=1 small_pixels=0 boxes=[(57, 107, 454, 470)]
+forms/base/eat/007.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=89406 large=1 small_pixels=359 boxes=[(95, 104, 417, 470)]
+  alpha>8: occupied=88168 large=1 small_pixels=58 boxes=[(96, 104, 417, 470)]
+  alpha>32: occupied=87890 large=1 small_pixels=0 boxes=[(96, 104, 417, 470)]
+forms/base/eat/008.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=94824 large=1 small_pixels=341 boxes=[(54, 108, 457, 470)]
+  alpha>8: occupied=93260 large=1 small_pixels=49 boxes=[(55, 108, 457, 470)]
+  alpha>32: occupied=92912 large=1 small_pixels=0 boxes=[(55, 108, 456, 470)]
+forms/base/happy/001.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=90769 large=1 small_pixels=428 boxes=[(60, 123, 453, 470)]
+  alpha>8: occupied=89306 large=1 small_pixels=46 boxes=[(60, 123, 453, 470)]
+  alpha>32: occupied=88947 large=1 small_pixels=0 boxes=[(60, 123, 453, 469)]
+forms/base/happy/002.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=76768 large=1 small_pixels=499 boxes=[(60, 170, 453, 470)]
+  alpha>8: occupied=75409 large=1 small_pixels=54 boxes=[(61, 170, 453, 470)]
+  alpha>32: occupied=75037 large=1 small_pixels=0 boxes=[(61, 170, 452, 470)]
+forms/base/happy/003.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=83746 large=1 small_pixels=435 boxes=[(67, 102, 445, 460)]
+  alpha>8: occupied=82162 large=1 small_pixels=47 boxes=[(68, 102, 445, 460)]
+  alpha>32: occupied=81810 large=1 small_pixels=0 boxes=[(68, 102, 444, 460)]
+forms/base/happy/004.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=90124 large=1 small_pixels=494 boxes=[(51, 82, 461, 445)]
+  alpha>8: occupied=88533 large=1 small_pixels=48 boxes=[(51, 82, 461, 445)]
+  alpha>32: occupied=88172 large=1 small_pixels=0 boxes=[(51, 82, 460, 445)]
+forms/base/happy/005.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=83094 large=1 small_pixels=342 boxes=[(58, 88, 453, 435)]
+  alpha>8: occupied=81579 large=1 small_pixels=44 boxes=[(58, 88, 452, 435)]
+  alpha>32: occupied=81192 large=1 small_pixels=0 boxes=[(58, 88, 452, 435)]
+forms/base/happy/006.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=69427 large=1 small_pixels=399 boxes=[(54, 196, 459, 450)]
+  alpha>8: occupied=68143 large=1 small_pixels=43 boxes=[(55, 197, 459, 450)]
+  alpha>32: occupied=67857 large=1 small_pixels=0 boxes=[(55, 197, 458, 450)]
+forms/base/happy/007.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=84518 large=1 small_pixels=313 boxes=[(67, 134, 445, 470)]
+  alpha>8: occupied=83132 large=1 small_pixels=45 boxes=[(67, 134, 444, 470)]
+  alpha>32: occupied=82808 large=1 small_pixels=0 boxes=[(67, 134, 444, 470)]
+forms/base/happy/008.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=84685 large=1 small_pixels=373 boxes=[(67, 134, 445, 470)]
+  alpha>8: occupied=83317 large=1 small_pixels=42 boxes=[(67, 134, 445, 470)]
+  alpha>32: occupied=82996 large=1 small_pixels=0 boxes=[(67, 134, 445, 470)]
+forms/base/sad/001.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=97986 large=1 small_pixels=337 boxes=[(51, 109, 461, 470)]
+  alpha>8: occupied=96494 large=1 small_pixels=43 boxes=[(51, 109, 461, 470)]
+  alpha>32: occupied=96180 large=1 small_pixels=0 boxes=[(51, 109, 460, 470)]
+forms/base/sad/002.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=96800 large=1 small_pixels=475 boxes=[(54, 109, 459, 470)]
+  alpha>8: occupied=95290 large=1 small_pixels=49 boxes=[(54, 109, 458, 470)]
+  alpha>32: occupied=94954 large=1 small_pixels=0 boxes=[(55, 109, 458, 470)]
+forms/base/sad/003.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=91620 large=1 small_pixels=418 boxes=[(58, 131, 453, 470)]
+  alpha>8: occupied=90290 large=1 small_pixels=48 boxes=[(58, 131, 453, 470)]
+  alpha>32: occupied=89977 large=1 small_pixels=0 boxes=[(58, 131, 453, 470)]
+forms/base/sad/004.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=91631 large=1 small_pixels=287 boxes=[(58, 131, 453, 470)]
+  alpha>8: occupied=90242 large=1 small_pixels=38 boxes=[(58, 131, 453, 470)]
+  alpha>32: occupied=89869 large=1 small_pixels=0 boxes=[(58, 131, 453, 470)]
+forms/base/sad/005.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=87980 large=1 small_pixels=485 boxes=[(60, 148, 452, 470)]
+  alpha>8: occupied=86591 large=1 small_pixels=40 boxes=[(60, 148, 452, 469)]
+  alpha>32: occupied=86208 large=1 small_pixels=0 boxes=[(60, 148, 452, 469)]
+forms/base/sad/006.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=90927 large=1 small_pixels=544 boxes=[(59, 130, 453, 470)]
+  alpha>8: occupied=89473 large=1 small_pixels=48 boxes=[(59, 130, 453, 469)]
+  alpha>32: occupied=89147 large=1 small_pixels=0 boxes=[(59, 130, 453, 469)]
+forms/base/sad/007.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=94940 large=1 small_pixels=424 boxes=[(58, 109, 453, 470)]
+  alpha>8: occupied=93437 large=1 small_pixels=41 boxes=[(59, 109, 453, 470)]
+  alpha>32: occupied=93138 large=1 small_pixels=0 boxes=[(59, 109, 452, 469)]
+forms/base/sad/008.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=94678 large=1 small_pixels=340 boxes=[(56, 112, 456, 470)]
+  alpha>8: occupied=93156 large=1 small_pixels=48 boxes=[(56, 112, 455, 469)]
+  alpha>32: occupied=92853 large=1 small_pixels=0 boxes=[(57, 112, 455, 469)]
+forms/base/interact/001.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=96760 large=1 small_pixels=279 boxes=[(51, 115, 461, 470)]
+  alpha>8: occupied=95448 large=1 small_pixels=42 boxes=[(51, 115, 461, 470)]
+  alpha>32: occupied=95119 large=1 small_pixels=0 boxes=[(52, 115, 461, 470)]
+forms/base/interact/002.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=93559 large=1 small_pixels=261 boxes=[(58, 117, 455, 470)]
+  alpha>8: occupied=92218 large=1 small_pixels=41 boxes=[(58, 117, 455, 470)]
+  alpha>32: occupied=91913 large=1 small_pixels=0 boxes=[(58, 117, 455, 469)]
+forms/base/interact/003.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=90594 large=1 small_pixels=419 boxes=[(60, 112, 451, 470)]
+  alpha>8: occupied=89214 large=1 small_pixels=36 boxes=[(60, 112, 451, 470)]
+  alpha>32: occupied=88911 large=1 small_pixels=0 boxes=[(61, 112, 450, 469)]
+forms/base/interact/004.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=90374 large=1 small_pixels=385 boxes=[(59, 114, 453, 470)]
+  alpha>8: occupied=89030 large=1 small_pixels=44 boxes=[(59, 114, 453, 470)]
+  alpha>32: occupied=88712 large=1 small_pixels=0 boxes=[(59, 114, 453, 470)]
+forms/base/interact/005.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=90083 large=1 small_pixels=340 boxes=[(62, 114, 451, 470)]
+  alpha>8: occupied=88736 large=1 small_pixels=34 boxes=[(62, 114, 451, 470)]
+  alpha>32: occupied=88444 large=1 small_pixels=0 boxes=[(62, 114, 451, 470)]
+forms/base/interact/006.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=94950 large=1 small_pixels=240 boxes=[(56, 115, 457, 470)]
+  alpha>8: occupied=93575 large=1 small_pixels=45 boxes=[(56, 115, 457, 470)]
+  alpha>32: occupied=93242 large=1 small_pixels=0 boxes=[(57, 115, 457, 469)]
+forms/base/sleep/001.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=70256 large=1 small_pixels=405 boxes=[(52, 225, 461, 470)]
+  alpha>8: occupied=69036 large=1 small_pixels=23 boxes=[(52, 225, 460, 470)]
+  alpha>32: occupied=68780 large=1 small_pixels=0 boxes=[(52, 225, 460, 470)]
+forms/base/sleep/002.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=69683 large=1 small_pixels=501 boxes=[(53, 225, 459, 470)]
+  alpha>8: occupied=68452 large=1 small_pixels=23 boxes=[(53, 225, 459, 470)]
+  alpha>32: occupied=68198 large=1 small_pixels=0 boxes=[(54, 225, 458, 470)]
+forms/base/sleep/003.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=70059 large=1 small_pixels=450 boxes=[(52, 225, 460, 470)]
+  alpha>8: occupied=68875 large=1 small_pixels=24 boxes=[(52, 225, 459, 470)]
+  alpha>32: occupied=68529 large=1 small_pixels=0 boxes=[(52, 225, 459, 470)]
+forms/base/sleep/004.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=69730 large=1 small_pixels=417 boxes=[(52, 225, 460, 470)]
+  alpha>8: occupied=68516 large=1 small_pixels=25 boxes=[(53, 225, 460, 470)]
+  alpha>32: occupied=68255 large=1 small_pixels=0 boxes=[(53, 225, 459, 470)]
+forms/base/sleep/005.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=70612 large=1 small_pixels=431 boxes=[(51, 223, 461, 470)]
+  alpha>8: occupied=69423 large=1 small_pixels=24 boxes=[(51, 223, 461, 469)]
+  alpha>32: occupied=69135 large=1 small_pixels=0 boxes=[(52, 223, 460, 469)]
+  WARNING: alpha>0: horizontal-band rows=[389]
+forms/base/sleep/006.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=70560 large=1 small_pixels=400 boxes=[(52, 222, 460, 470)]
+  alpha>8: occupied=69319 large=1 small_pixels=30 boxes=[(52, 222, 460, 470)]
+  alpha>32: occupied=69036 large=1 small_pixels=0 boxes=[(53, 222, 460, 469)]
+forms/base/sleep/007.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=70187 large=1 small_pixels=492 boxes=[(53, 222, 459, 470)]
+  alpha>8: occupied=68973 large=1 small_pixels=32 boxes=[(53, 222, 459, 470)]
+  alpha>32: occupied=68670 large=1 small_pixels=0 boxes=[(54, 222, 458, 470)]
+forms/base/sleep/008.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=70788 large=1 small_pixels=425 boxes=[(52, 223, 461, 470)]
+  alpha>8: occupied=69565 large=1 small_pixels=25 boxes=[(52, 223, 461, 470)]
+  alpha>32: occupied=69304 large=1 small_pixels=0 boxes=[(53, 223, 460, 470)]
+portrait.webp size=(512, 512) alpha=(0, 255)
+  alpha>0: occupied=109324 large=1 small_pixels=493 boxes=[(36, 79, 476, 470)]
+  alpha>8: occupied=107776 large=1 small_pixels=2 boxes=[(36, 79, 476, 470)]
+  alpha>32: occupied=107497 large=1 small_pixels=0 boxes=[(36, 79, 476, 470)]
+  WARNING: alpha>0: horizontal-band rows=[322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333]
+  WARNING: alpha>8: horizontal-band rows=[325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336]
+  WARNING: alpha>32: horizontal-band rows=[326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337]
+reference/character-anchor.webp size=(1774, 887) alpha=(0, 255)
+  alpha>0: occupied=473795 large=3 small_pixels=0 boxes=[(80, 209, 627, 680), (1208, 218, 1742, 692), (673, 214, 1178, 682)]
+  alpha>8: occupied=473795 large=3 small_pixels=0 boxes=[(80, 209, 627, 680), (1208, 218, 1742, 692), (673, 214, 1178, 682)]
+  alpha>32: occupied=471507 large=3 small_pixels=0 boxes=[(80, 210, 626, 680), (1209, 218, 1742, 691), (673, 215, 1177, 682)]
+  WARNING: alpha>0: horizontal-band rows=[504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515]
+  WARNING: alpha>8: horizontal-band rows=[504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515]
+  WARNING: alpha>32: horizontal-band rows=[505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516]
+reference/action-key-poses.webp size=(1536, 1024) alpha=(0, 255)
+  alpha>0: occupied=421568 large=7 small_pixels=0 boxes=[(64, 153, 398, 445), (1129, 132, 1472, 442), (575, 563, 844, 877), (167, 605, 494, 880), (802, 160, 1068, 452), (1001, 662, 1385, 883), (454, 156, 768, 455)]
+  alpha>8: occupied=421568 large=7 small_pixels=0 boxes=[(64, 153, 398, 445), (1129, 132, 1472, 442), (575, 563, 844, 877), (167, 605, 494, 880), (802, 160, 1068, 452), (1001, 662, 1385, 883), (454, 156, 768, 455)]
+  alpha>32: occupied=419434 large=7 small_pixels=0 boxes=[(64, 153, 397, 445), (1129, 132, 1471, 441), (575, 563, 844, 877), (167, 606, 493, 880), (803, 160, 1068, 452), (1002, 662, 1384, 883), (455, 156, 767, 454)]

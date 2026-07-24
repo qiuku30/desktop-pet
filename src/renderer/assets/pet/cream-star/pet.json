@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "id": "cream-star",
+  "name": "奶油星团",
+  "author": "Desktop Pet Team (AI-assisted)",
+  "version": "1.0.0",
+  "portrait": "portrait.webp",
+  "defaultFormId": "base",
+  "forms": {
+    "base": {
+      "unlockLevel": 1,
+      "scale": 1,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.92
+      },
+      "flipX": true,
+      "fallbacks": {
+        "walk": "idle",
+        "eat": "idle",
+        "happy": "idle",
+        "sad": "idle",
+        "interact": "idle",
+        "sleep": "idle"
+      },
+      "animations": {
+        "idle": {
+          "fps": 8,
+          "loop": true,
+          "frames": [
+            "forms/base/idle/001.webp",
+            "forms/base/idle/002.webp",
+            "forms/base/idle/003.webp",
+            "forms/base/idle/004.webp",
+            "forms/base/idle/005.webp",
+            "forms/base/idle/006.webp"
+          ]
+        },
+        "walk": {
+          "fps": 8,
+          "loop": true,
+          "frames": [
+            "forms/base/walk/001.webp",
+            "forms/base/walk/002.webp",
+            "forms/base/walk/003.webp",
+            "forms/base/walk/004.webp",
+            "forms/base/walk/005.webp",
+            "forms/base/walk/006.webp",
+            "forms/base/walk/007.webp",
+            "forms/base/walk/008.webp"
+          ]
+        },
+        "eat": {
+          "fps": 10,
+          "loop": false,
+          "frames": [
+            "forms/base/eat/001.webp",
+            "forms/base/eat/002.webp",
+            "forms/base/eat/003.webp",
+            "forms/base/eat/004.webp",
+            "forms/base/eat/005.webp",
+            "forms/base/eat/006.webp",
+            "forms/base/eat/007.webp",
+            "forms/base/eat/008.webp"
+          ]
+        },
+        "happy": {
+          "fps": 10,
+          "loop": false,
+          "frames": [
+            "forms/base/happy/001.webp",
+            "forms/base/happy/002.webp",
+            "forms/base/happy/003.webp",
+            "forms/base/happy/004.webp",
+            "forms/base/happy/005.webp",
+            "forms/base/happy/006.webp",
+            "forms/base/happy/007.webp",
+            "forms/base/happy/008.webp"
+          ]
+        },
+        "sad": {
+          "fps": 10,
+          "loop": false,
+          "frames": [
+            "forms/base/sad/001.webp",
+            "forms/base/sad/002.webp",
+            "forms/base/sad/003.webp",
+            "forms/base/sad/004.webp",
+            "forms/base/sad/005.webp",
+            "forms/base/sad/006.webp",
+            "forms/base/sad/007.webp",
+            "forms/base/sad/008.webp"
+          ]
+        },
+        "interact": {
+          "fps": 10,
+          "loop": false,
+          "frames": [
+            "forms/base/interact/001.webp",
+            "forms/base/interact/002.webp",
+            "forms/base/interact/003.webp",
+            "forms/base/interact/004.webp",
+            "forms/base/interact/005.webp",
+            "forms/base/interact/006.webp"
+          ]
+        },
+        "sleep": {
+          "fps": 8,
+          "loop": true,
+          "frames": [
+            "forms/base/sleep/001.webp",
+            "forms/base/sleep/002.webp",
+            "forms/base/sleep/003.webp",
+            "forms/base/sleep/004.webp",
+            "forms/base/sleep/005.webp",
+            "forms/base/sleep/006.webp",
+            "forms/base/sleep/007.webp",
+            "forms/base/sleep/008.webp"
+          ]
+        }
+      }
+    }
+  }
+}
