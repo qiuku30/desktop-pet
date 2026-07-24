@@ -41,6 +41,7 @@ GitHub：https://github.com/qiuku30/desktop-pet
 | `docs/events.md` | EventBus 事件清单 + 主进程推送事件 |
 | `docs/pet-movement-design.md` | 宠物移动系统详细设计 |
 | `docs/superpowers/specs/2026-07-24-pet-visualization-design.md` | ARCH-08 桌宠形象化、动画引擎、皮肤协议与长期扩展设计 |
+| `docs/superpowers/plans/2026-07-24-pet-animation-foundation.md` | pet-10 动画基础设施 TDD 实施计划 |
 | `docs/session-log.md` | 窗口会话日志（编号、改动文件、越界授权、追溯 bug） |
 | `specs/pet-system.md` | 宠物 Phase 1 + Phase 2 形象化需求与验收标准 |
 
@@ -612,4 +613,6 @@ main 分支，67 commits 领先 origin/main（未推送）
 
 **当前状态**：
 - ARCH-08 架构设计完成，尚未修改实现代码。
-- 下一步须先形成实施计划，再分配实现窗口。
+- 第一阶段拆为 `pet-10` 动画基础设施：只新增清单校验、帧时间、Canvas FrameRenderer 和 AnimationController，不接 UI/PetState/正式素材。
+- TDD 实施计划：`docs/superpowers/plans/2026-07-24-pet-animation-foundation.md`。
+- 下一步由用户选择执行方式后启动 pet-10。

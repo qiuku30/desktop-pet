@@ -134,12 +134,14 @@
 | 素材协议 | ✅ 设计确认 | 独立透明 PNG/WebP 帧 + 版本化 JSON 清单 |
 | 动画架构 | ✅ 设计确认 | pet.js 业务映射 → AnimationController → Canvas FrameRenderer |
 | 形态与皮肤 | ✅ 设计确认 | 首期单形态，预留进化；养成进度共享 |
+| pet-10 实施计划 | ✅ ARCH-08 | 只做可单测动画基础设施，不接 UI/PetState/正式素材 |
 | 角色概念定稿 | ⏳ | 已选暖色奶油方向，需产出正式设定和七类动作关键帧 |
-| 动画引擎实现 | ⏳ | 需先写实施计划并拆分窗口 |
+| 动画引擎实现 | ⏳ | pet-10 计划已就绪，待执行 |
 | 面板立绘接入 | ⏳ | 使用当前皮肤 portrait |
 | 用户照片生成 | ⏸ 长期 | 本期不做，只预留标准皮肤包协议 |
 
 设计文档：`docs/superpowers/specs/2026-07-24-pet-visualization-design.md`
+实施计划：`docs/superpowers/plans/2026-07-24-pet-animation-foundation.md`
 
 ---
 
