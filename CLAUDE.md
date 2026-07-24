@@ -127,7 +127,7 @@ desktop-pet/
 ### 🏛️ 架构决策窗口
 
 - 讨论需求、做架构决策
-- 启动必读：`CLAUDE.md` → `PROJECT_BRIEF.md`（总览全局状态）→ `docs/architecture.md`（十大原则 + ADR）
+- 启动必读：`CLAUDE.md` → `PROJECT_BRIEF.md`（总览全局状态）→ `docs/architecture.md`（十大原则 + ADR）→ `docs/file-index.md`（快速定位文件）
 - 唯一有权修改：`CLAUDE.md`、`PROJECT_BRIEF.md`、`docs/architecture.md`、`docs/conventions.md`、`docs/session-log.md`、`specs/*`
 - 每次会话结束必须更新 `PROJECT_BRIEF.md` 和 `docs/progress.md`
 - 每开一个新窗口或做完一次改动，提醒用户并同步更新 `PROJECT_BRIEF.md`、`docs/progress.md`、`docs/session-log.md`
@@ -140,9 +140,10 @@ desktop-pet/
 |------|------|------|
 | 1 | `CLAUDE.md` | 了解项目全貌、规则、架构 |
 | 2 | `docs/architecture.md` | 了解十大架构原则 + 8 条 ADR |
-| 3 | `specs/<模块名>.md` | 理解这个模块"要做什么" |
-| 4 | `src/<模块路径>/DESIGN.md` | 理解"怎么实现的" |
-| 5 | `docs/progress.md` | 了解当前进度 |
+| 3 | `docs/file-index.md` | 快速定位任何文件 |
+| 4 | `specs/<模块名>.md` | 理解这个模块"要做什么" |
+| 5 | `src/<模块路径>/DESIGN.md` | 理解"怎么实现的" |
+| 6 | `docs/progress.md` | 了解当前进度 |
 
 #### 可以改的文件 ✅
 
