@@ -5,8 +5,11 @@
 ## 组件结构
 
 - `#pet-container` — 根容器（透明背景，`-webkit-app-region: drag` 整窗可拖）
-- `#pet-body` — 宠物本体（emoji，居中显示）
+- `#pet-body` — 宠物交互区域（`no-drag`，承接点击/双击）
+  - `#pet-canvas` — 奶油星团透明帧动画；素材全部就绪后显示
+  - `#pet-fallback` — Emoji 回退；Canvas 加载失败或未就绪时保留
 - `#speech-bubbles` — 气泡容器
+- `#pomodoro-indicator` — 番茄钟浮标；与气泡同为 Canvas 上方 DOM 层
 
 ## 状态
 
@@ -21,10 +24,65 @@
 
 ## 动画
 
-- 闲置：呼吸（scale 1↔1.05，2.5s）+ 轻晃（rotate ±5°，6s 循环）
-- 走动：`.moving` class → squash & stretch（waddle 0.5s）
-- 赶跑：滑出屏幕边缘（Phase 2）
-- 回来：从边缘滑入（Phase 2）
+> ✅ pet-12 已将 pet-10 基础设施和 pet-11 奶油星团素材接入桌宠态。
+
+- 正常路径：`pet.js` 语义行为 → `PetAnimationRuntime` → `AnimationController`
+  → `FrameRenderer` → Canvas。
+- 回退路径：清单、Canvas 或任一正式帧预加载失败时不隐藏 Emoji，原点击、拖拽、
+  菜单和窗口切换继续可用。
+- CSS `breathe/sway/waddle` 只作用于 Emoji 回退；Canvas 不叠加 CSS 形变，避免双重动画。
+- 高 DPI：Canvas CSS 尺寸跟随窗口，backing size 使用 `CSS px × devicePixelRatio`。
+- 四档缩放触发 resize；当前语义动作通过控制器重新播放，接入层不计算帧时间。
+- 赶跑/回来仍属于后续阶段。
+
+### 动画接入运行时（pet-12）
+
+| 文件 | 职责 |
+|------|------|
+| `pet-animation-runtime.mjs` | 加载/校验清单、选择等级形态、解析并预加载七类动作、用户闲置与 sad 调度、移动朝向、resize、销毁 |
+| `pet-animation-runtime.test.mjs` | 加载失败、顺序预加载、fallback 播放语义、自动移动守卫、feed/level-up 队列、sleep/wake、移动/一次性动作延迟、sad 条件、翻转、resize 和计时器清理 |
+
+运行时不读取或写入持久化状态；`level`、`mood` 由 `pet.js` 通过窄接口传入。
+当前动作、朝向、用户最后活动时间和调度计时器均为页面内状态。
+
+### 七类动作映射
+
+| 语义 | 触发 |
+|------|------|
+| `idle` | 默认静止 |
+| `walk` | 自动走动期间；横向位移决定 left/right facing |
+| `eat` | 成功消耗食物并更新养成状态后 |
+| `happy` | 点击或其他非喂食升级时请求；若被更高优先级 `eat` 阻挡则去重排队；喂食同时升级时排为 `eat → happy` |
+| `sad` | `mood < 30`、静止且无一次性动作时，每 2–5 分钟随机检查 |
+| `interact` | 300ms 单双击判定后的有效单击 |
+| `sleep` | 连续 10 分钟无有效用户互动，且移动/一次性动作已经结束 |
+
+用户闲置计时只由有效单击、成功喂食、用户拖拽重置。自动走动及
+`happy/sad/eat/interact` 不重置。到期时若正在移动或播放一次性动作，运行时用短间隔
+重新检查，不复制动作帧时长；条件满足后进入 `sleep`。睡眠会暂停自动走动，自动走动
+不能自行唤醒；任意上述有效用户互动立即唤醒并重新计时。
+
+喂食升级使用运行时的一次性去重队列：成功喂食先播放 `eat`，完成后播放一次
+`happy`，再由控制器恢复最新基础动作。队列中的 `happy` 与当前 transient 一样会延后
+sleep；页面销毁会清空队列和轮询计时器。`pet.js` 在喂食内部写入 level 时标记来源，
+避免同步 `PET_STATE_CHANGED` 订阅重复直播放 happy；点击/外部升级仍由订阅触发，
+若此时正在播放 `eat`，则复用或新增唯一一个 queued happy，避免丢失或重复。
+队列不改变 `eat > happy/interact > walk > sad/sleep > idle` 的既定优先级。
+
+### 生命周期
+
+- 七个动作按语义顺序预加载，避免某动作失败后其他动作晚到写回已销毁渲染器；
+- 完整预加载成功后原子添加 `pet-body--ready`，隐藏 Emoji；
+- 清单/帧失败时销毁半初始化渲染器并保持 Emoji；
+- 缺失一次性动作回退到循环基础动作时，接入层只把该回退副本改为单次播放，
+  避免 transient 永不结束；不修改清单或基础设施；
+- 自动走动在异步窗口模式查询前后各检查一次实时状态，sleep/拖拽/overlay/关闭走动
+  均可阻止晚到的移动；
+- 素材加载结束后使用当前 DOM 尺寸再次同步 Canvas，覆盖加载期间发生的缩放；
+- `pagehide` 清理 wander/resume/click/satiety/sad/sleep 计时器、RAF、IPC/PetState/
+  番茄钟监听器、待播一次性动作队列，并销毁控制器和渲染器；
+- 异步加载使用 token，忽略页面卸载后的旧结果；
+- `AnimationController` 自有 token 继续负责一次性动作 stale completion。
 
 ## 移动系统（已实现）
 
@@ -77,7 +135,7 @@
 
 ## 帧动画基础设施（pet-10）
 
-> 基础设施已实现但尚未接入 `pet.js`；当前 Emoji 表现保持不变。
+> 基础设施由 pet-10 实现，pet-12 已完成 UI 接入；基础设施文件本窗口未修改。
 
 目录：`src/renderer/pet/animation/`
 
@@ -109,4 +167,4 @@
 - `pet.json`：schema v1 清单，包含七类标准动作、帧率、循环方式、锚点和回退。
 
 `review/` 保留完整 alpha 审计和黑/白/棋盘格联系表作为验收记录。素材制作窗口
-未修改 `pet.html` / `pet.js`；UI 接入由后续 `pet-12` 窗口负责。
+pet-11 未修改 `pet.html` / `pet.js`；正式素材现已由 pet-12 接入桌宠态。

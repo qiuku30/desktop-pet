@@ -10,7 +10,7 @@
 | 模块 | Phase | 状态 |
 |------|-------|------|
 | 🐾 宠物系统 | Phase 1 | ✅ 已完成 |
-| 🎨 桌宠形象化 | Phase 2 | 🔨 动画基础设施与正式素材包已完成，待 pet-12 UI 接入 |
+| 🎨 桌宠形象化 | Phase 2 | 🔨 pet-12 已完成桌宠态 Canvas 动画接入；面板 portrait 待后续窗口 |
 | 🍅 番茄钟 | Phase 2 | ✅ 已完成 |
 | 📝 英语单词 | Phase 2+ | ⏳ 待定 |
 | 🎮 2048 | Phase 2 | ✅ 已完成 |
@@ -75,11 +75,12 @@
 
 | 任务 | 状态 | 备注 |
 |------|------|------|
-| pet.html — 宠物窗口结构 | ✅ | emoji + 气泡容器 |
-| pet.js — 宠物逻辑 | ✅ | 状态机：原生拖拽 / 随机走动 / 对话气泡（新心情四档 happy/good/neutral/low）/ 双击面板 / PetState.init() / 喂食 flyout（原则5：FOODS 配置 + foodInventory 数据分离）/ 互动经验接入 + 心情加成 / 喂食经验结算 + 心情加成 + 升级气泡 / 心情衰减结算（每日50点上限）+ 点击/喂食心情加成 |
+| pet.html — 宠物窗口结构 | ✅ | pet-12：透明 Canvas + Emoji 加载失败回退 + 气泡/番茄钟 DOM 覆盖层 |
+| pet.js — 宠物逻辑 | ✅ | 状态机：原生拖拽 / 随机走动 / 对话气泡 / 双击面板 / PetState / 喂食；pet-12 新增七类语义动作、方向翻转、用户闲置 sleep/wake、低心情 sad、喂食升级 eat→happy、resize/DPR 与页面销毁清理 |
 | pet-motion.mjs — 纯几何计算 | ✅ | distance/isCursorNear/fleeCenter/wanderTarget/中心↔左上角换算；node --test pet-motion.test.mjs 6/6 |
-| pet.css — 宠物样式 | ✅ | 透明背景 + padding 拖拽手柄 + no-drag 点击穿透 + 闲置/走动动画 + 气泡样式 |
-| DESIGN.md | ✅ | 已细化：状态机、pet-motion 清单、坐标契约、class 钩子 |
+| pet.css — 宠物样式 | ✅ | 透明背景 + padding 拖拽手柄 + no-drag；Canvas 不叠加 CSS 动画，breathe/sway/waddle 仅用于 Emoji 回退 |
+| pet-animation-runtime.mjs + test | ✅ | pet-12：清单加载/形态选择/七动作预加载、fallback 单次语义、自动移动竞态守卫、level-up 感知的去重一次性动作队列、sleep/sad 调度、朝向、resize、失败销毁；20 项接入测试 |
+| DESIGN.md | ✅ | 已细化：移动状态机、动画运行时、七动作映射、用户闲置语义、Canvas 回退与生命周期 |
 
 ### 渲染进程 — 面板 (src/renderer/dashboard/)
 
@@ -138,7 +139,7 @@
 | 角色概念定稿 | ✅ pet-11 | 正/侧面视觉基准、配色、禁止漂移项和七类动作关键姿态 |
 | 正式角色素材包 | ✅ pet-11 / ARCH-08 | portrait + 52 张 512×512 透明 WebP + schema v1 pet.json；完整 alpha 审计、三背景联系表和 ARCH-08 独立肉眼验收通过 |
 | 动画基础设施 | ✅ pet-10 | 清单校验 + 帧时间 + Canvas FrameRenderer + AnimationController；尚未接 UI |
-| 动画引擎接入 | ⏳ | 后续窗口接入 pet.js、Canvas DOM 和正式素材 |
+| 动画引擎接入 | ✅ pet-12 | Canvas + Emoji 回退；七类动作、喂食升级 eat→happy、方向翻转、用户闲置 sleep、低心情 sad、高 DPI/四档缩放及销毁清理 |
 | 面板立绘接入 | ⏳ | 使用当前皮肤 portrait |
 | 用户照片生成 | ⏸ 长期 | 本期不做，只预留标准皮肤包协议 |
 
@@ -149,7 +150,7 @@
 
 ## 待实现（按优先级）
 
-0. 桌宠形象化 Phase 2 — pet-10 基础设施与 pet-11 正式素材包已完成；下一步由独立 pet-12 窗口接入 UI
+0. 桌宠形象化 Phase 2 — pet-12 已完成桌宠态 UI 接入；下一步由独立窗口接入 dashboard portrait
 1. ~~`pet.js` + `pet.css` — 宠物外观、动画、交互~~ ✅ 已完成（移动系统：拖拽/走动/躲鼠标/闲置）
 4. ~~`dashboard.js` + `dashboard.css` — 面板切换和模块加载~~ ✅ 已完成（双击切换 + loadFile + 顶部栏 + 返回按钮）
 5. ~~对话气泡系统~~ ✅ 已完成（mood×level 台词库 16 条、300ms 延迟 + 拖拽检测、2s 气泡动画、窗口动态缩放、右键缩放菜单）

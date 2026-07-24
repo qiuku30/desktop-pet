@@ -13,6 +13,11 @@ import { checkDailyInteraction, addExp, getFoodExp, EXP_CONFIG } from '../shared
 import { SATIETY_CONFIG, calcMaxSatiety, calcDecay, reduceSatiety } from '../shared/satiety-service.js'
 import { MOOD_CONFIG, getMoodTier, calcMoodDecay, reduceMood, boostMood, getExpMultiplier, getClickBoost, migrateMood, clampMood } from '../shared/mood-service.js'
 import { EVENTS } from '../shared/events.js'
+import {
+  canStartAutoMove,
+  loadPetAnimation,
+  syncPetAnimationViewport,
+} from './pet-animation-runtime.mjs'
 
 // 动态窗口尺寸（配合 scaleFactor 自适应 + 用户缩放）
 function getWinSize() {
@@ -24,13 +29,21 @@ const WANDER_RADIUS = 200
 const WANDER_MS = 1200
 
 const body = document.getElementById('pet-body')
+const canvas = document.getElementById('pet-canvas')
 let winPos = { x: 0, y: 0 }
 let autoPaused = false
 let resumeTimer = null
 let glideToken = 0
+let glideRafId = null
+let movingDeltaX = 0
 let wanderTimer = null
 let wanderEnabled = true
 let satietyTickTimer = null
+let animationRuntime = null
+let animationLoadToken = 0
+let resizeRafId = null
+let destroyed = false
+let levelChangeSource = null
 
 // ── overlay 状态 ──
 let overlayActive = false
@@ -39,9 +52,94 @@ let _unsubMenuStatus = null
 let _unsubUserDrag = null
 let _unsubPomodoroTick = null
 let _unsubPomodoroPhase = null
+let _unsubPetState = null
 
 // ── 工具 ──
 function rand(min, max) { return min + Math.random() * (max - min) }
+
+function cancelGlide() {
+  glideToken++
+  if (glideRafId !== null) {
+    cancelAnimationFrame(glideRafId)
+    glideRafId = null
+  }
+  body.classList.remove('moving')
+  movingDeltaX = 0
+  animationRuntime?.setMoving(false)
+}
+
+function resizePetAnimation() {
+  syncPetAnimationViewport(
+    animationRuntime,
+    body,
+    window.devicePixelRatio || 1,
+  )
+}
+
+function canWanderNow() {
+  return canStartAutoMove({
+    destroyed,
+    wanderEnabled,
+    sleeping: animationRuntime?.isSleeping() || false,
+    autoPaused,
+    overlayActive,
+  })
+}
+
+async function initPetAnimation() {
+  const token = ++animationLoadToken
+  const rect = body.getBoundingClientRect()
+  try {
+    const runtime = await loadPetAnimation({
+      canvas,
+      manifestUrl: new URL('../assets/pet/cream-star/pet.json', import.meta.url).href,
+      level: PetState.get('level') || 1,
+      viewport: {
+        width: rect.width,
+        height: rect.height,
+        dpr: window.devicePixelRatio || 1,
+      },
+      runtimeOptions: {
+        getMood: () => PetState.get('mood') ?? MOOD_CONFIG.initialMood,
+        onSleepChange: (sleeping) => {
+          if (sleeping) {
+            if (wanderTimer) {
+              clearTimeout(wanderTimer)
+              wanderTimer = null
+            }
+            cancelGlide()
+          } else if (wanderEnabled && !autoPaused && !overlayActive) {
+            scheduleWander()
+          }
+        },
+      },
+    })
+
+    if (destroyed || token !== animationLoadToken) {
+      runtime.destroy()
+      return
+    }
+    animationRuntime = runtime
+    resizePetAnimation()
+    if (body.classList.contains('moving')) {
+      animationRuntime.setMoving(true, movingDeltaX)
+    }
+    body.classList.add('pet-body--ready')
+  } catch (error) {
+    if (!destroyed && token === animationLoadToken) {
+      console.error('[pet-animation] falling back to Emoji:', error)
+      body.classList.remove('pet-body--ready')
+    }
+  }
+}
+
+function onWindowResize() {
+  if (resizeRafId !== null) cancelAnimationFrame(resizeRafId)
+  resizeRafId = requestAnimationFrame(() => {
+    resizeRafId = null
+    resizePetAnimation()
+  })
+}
 
 // ── 自动移窗（fire-and-forget）──
 function commitMove(pos) {
@@ -54,7 +152,14 @@ function glideTo(target, durationMs, { moving, onDone } = {}) {
   const token = ++glideToken
   const start = { ...winPos }
   const t0 = performance.now()
-  if (moving) body.classList.add('moving')
+  if (moving) {
+    movingDeltaX = target.x - start.x
+    if (animationRuntime && !animationRuntime.setMoving(true, movingDeltaX)) {
+      movingDeltaX = 0
+      return false
+    }
+    body.classList.add('moving')
+  }
 
   function frame(now) {
     if (token !== glideToken) return
@@ -65,31 +170,45 @@ function glideTo(target, durationMs, { moving, onDone } = {}) {
       y: Math.round(start.y + (target.y - start.y) * e),
     })
     if (t < 1) {
-      requestAnimationFrame(frame)
+      glideRafId = requestAnimationFrame(frame)
     } else {
-      if (moving) body.classList.remove('moving')
+      glideRafId = null
+      if (moving) {
+        body.classList.remove('moving')
+        movingDeltaX = 0
+        animationRuntime?.setMoving(false)
+      }
       if (onDone) onDone()
     }
   }
-  requestAnimationFrame(frame)
+  glideRafId = requestAnimationFrame(frame)
+  return true
 }
 
 // ── 随机走动 ──
 function scheduleWander() {
   if (wanderTimer) clearTimeout(wanderTimer)
+  if (destroyed || animationRuntime?.isSleeping()) return
   wanderTimer = setTimeout(doWander, rand(WANDER_MIN_MS, WANDER_MAX_MS))
 }
 
 async function doWander() {
   wanderTimer = null
-  if (!wanderEnabled) return
-  if (autoPaused) { scheduleWander(); return }
-  if (overlayActive) { scheduleWander(); return }
+  if (!canWanderNow()) {
+    if (!destroyed && wanderEnabled && !animationRuntime?.isSleeping()) scheduleWander()
+    return
+  }
 
   try {
     const mode = await window.electronAPI.getWindowMode()
     if (mode === 'dashboard') { scheduleWander(); return }
   } catch (_) {}
+
+  // IPC 等待期间可能进入 sleep、开始拖拽、打开 overlay 或关闭走动。
+  if (!canWanderNow()) {
+    if (!destroyed && wanderEnabled && !animationRuntime?.isSleeping()) scheduleWander()
+    return
+  }
 
   const sz = getWinSize()
   const center = topLeftToCenter(winPos, sz)
@@ -107,8 +226,7 @@ function onWanderToggle(enabled) {
   if (!enabled) {
     // 关闭：取消当前走动
     if (wanderTimer) { clearTimeout(wanderTimer); wanderTimer = null }
-    glideToken++
-    body.classList.remove('moving')
+    cancelGlide()
   } else {
     // 开启：恢复走动
     scheduleWander()
@@ -117,10 +235,10 @@ function onWanderToggle(enabled) {
 
 // ── 用户拖拽：暂停走动，松手 300ms 后恢复 ──
 function onUserDrag() {
+  animationRuntime?.noteUserActivity()
   if (!autoPaused) {
     autoPaused = true
-    glideToken++ // 取消当前滑行
-    body.classList.remove('moving')
+    cancelGlide()
   }
   if (wanderTimer) { clearTimeout(wanderTimer); wanderTimer = null }
   if (resumeTimer) clearTimeout(resumeTimer)
@@ -271,6 +389,8 @@ body.addEventListener('click', async (e) => {
   }
   clickTimer = setTimeout(() => {
     clickTimer = null
+    animationRuntime?.noteUserActivity()
+    animationRuntime?.playOneShot('interact')
     showBubble()
     grantInteractionExp()
     grantClickMoodBoost()
@@ -367,6 +487,7 @@ async function init() {
 
   const pos = await window.electronAPI.getWindowPosition()
   winPos = pos
+  initPetAnimation()
 
   // 清理旧监听器（防止 loadFile 切换页面后累积）
   if (_unsubUserDrag) _unsubUserDrag()
@@ -374,17 +495,23 @@ async function init() {
   if (_unsubMenuStatus) _unsubMenuStatus()
   if (_unsubPomodoroTick) { _unsubPomodoroTick(); _unsubPomodoroTick = null }
   if (_unsubPomodoroPhase) { _unsubPomodoroPhase(); _unsubPomodoroPhase = null }
+  if (_unsubPetState) { _unsubPetState(); _unsubPetState = null }
 
   _unsubUserDrag = window.electronAPI.onUserDrag(onUserDrag)
 
   // 从 PetState settings 读取走动开关（替代旧 IPC wander:toggle）
   const settings = PetState.get('settings') || {}
   if (settings.wanderEnabled != null) wanderEnabled = settings.wanderEnabled
-  PetState.subscribe(EVENTS.PET_STATE_CHANGED, ({ key }) => {
+  _unsubPetState = PetState.subscribe(EVENTS.PET_STATE_CHANGED, ({ key }) => {
     if (key === 'settings') {
       const s = PetState.get('settings') || {}
       if (s.wanderEnabled != null && s.wanderEnabled !== wanderEnabled) {
         onWanderToggle(s.wanderEnabled)
+      }
+    }
+    if (key === 'level') {
+      if (levelChangeSource !== 'feed') {
+        animationRuntime?.playLevelUp()
       }
     }
   })
@@ -451,8 +578,7 @@ async function init() {
     // 暂停走动
     overlayActive = true
     if (wanderTimer) { clearTimeout(wanderTimer); wanderTimer = null }
-    glideToken++
-    body.classList.remove('moving')
+    cancelGlide()
 
     const result = await window.electronAPI.showOverlay({
       html,
@@ -504,6 +630,7 @@ async function init() {
     emitFed(result)
 
     // 喂食经验结算（心情加成 + 复用外层 level，避免重复取值）
+    let feedLeveledUp = false
     const foodExp = getFoodExp(food)
     if (foodExp > 0) {
       const exp = PetState.get('exp') || 0
@@ -511,11 +638,19 @@ async function init() {
       const addResult = addExp(exp, level, adjustedExp)
       PetState.set('exp', addResult.newExp)
       if (addResult.leveledUp) {
-        PetState.set('level', addResult.newLevel)
+        feedLeveledUp = true
+        levelChangeSource = 'feed'
+        try {
+          PetState.set('level', addResult.newLevel)
+        } finally {
+          levelChangeSource = null
+        }
         showBubble(`🎉 升级了！Lv.${addResult.newLevel}！`)
       }
     }
 
+    // 成功喂食重置用户闲置；若同时升级，运行时保证 eat → happy。
+    animationRuntime?.playFeedResult({ leveledUp: feedLeveledUp })
     showBubble(`投喂了${food.name}！`)
   })
 
@@ -578,5 +713,44 @@ async function init() {
 
   scheduleWander()
 }
+
+function destroyPetPage() {
+  if (destroyed) return
+  destroyed = true
+  animationLoadToken++
+
+  if (clickTimer) clearTimeout(clickTimer)
+  if (resumeTimer) clearTimeout(resumeTimer)
+  if (wanderTimer) clearTimeout(wanderTimer)
+  if (satietyTickTimer) clearInterval(satietyTickTimer)
+  if (resizeRafId !== null) cancelAnimationFrame(resizeRafId)
+  clickTimer = null
+  resumeTimer = null
+  wanderTimer = null
+  satietyTickTimer = null
+  resizeRafId = null
+  cancelGlide()
+
+  if (_unsubUserDrag) _unsubUserDrag()
+  if (_unsubMenuFeed) _unsubMenuFeed()
+  if (_unsubMenuStatus) _unsubMenuStatus()
+  if (_unsubPomodoroTick) _unsubPomodoroTick()
+  if (_unsubPomodoroPhase) _unsubPomodoroPhase()
+  if (_unsubPetState) _unsubPetState()
+  _unsubUserDrag = null
+  _unsubMenuFeed = null
+  _unsubMenuStatus = null
+  _unsubPomodoroTick = null
+  _unsubPomodoroPhase = null
+  _unsubPetState = null
+
+  animationRuntime?.destroy()
+  animationRuntime = null
+  body.classList.remove('pet-body--ready')
+  window.removeEventListener('resize', onWindowResize)
+}
+
+window.addEventListener('resize', onWindowResize)
+window.addEventListener('pagehide', destroyPetPage, { once: true })
 
 init()

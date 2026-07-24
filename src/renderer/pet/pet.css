@@ -1,4 +1,4 @@
-/* 宠物窗口样式 —— 透明背景、居中 emoji、呼吸/轻晃闲置动画 */
+/* 宠物窗口样式 —— 透明 Canvas；Emoji 仅作为加载失败回退 */
 
 * {
   margin: 0;
@@ -30,19 +30,47 @@ html, body {
 }
 
 #pet-body {
-  font-size: 28vw;   /* 56px / 200px */
-  line-height: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
   /* no-drag：让 click 事件生效；OS 会把拖拽冒泡给父级 drag 区域 */
   -webkit-app-region: no-drag;
   cursor: pointer;
-  /* 闲置：呼吸 + 偶尔轻晃 */
+}
+
+#pet-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#pet-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28vw;   /* 56px / 200px */
+  line-height: 1;
+  pointer-events: none;
+  /* 回退 Emoji 保留原闲置表现；Canvas 不叠加 CSS 形变动画 */
   transform-origin: 50% 90%;
   animation: breathe 2.5s ease-in-out infinite, sway 6s ease-in-out infinite;
   will-change: transform;
 }
 
-/* 走动：轻微 squash & stretch，让滑行有生气 */
-#pet-body.moving {
+#pet-body.pet-body--ready #pet-canvas {
+  visibility: visible;
+}
+
+#pet-body.pet-body--ready #pet-fallback {
+  display: none;
+}
+
+/* 资源失败时，回退 Emoji 继续使用走动 squash & stretch */
+#pet-body.moving #pet-fallback {
   animation: breathe 2.5s ease-in-out infinite, waddle 0.5s ease-in-out infinite;
 }
 
