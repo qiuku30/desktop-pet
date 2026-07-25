@@ -79,6 +79,7 @@
 | 编号 | 日期 | 功能 | 改动文件 | 越界授权 | 备注 |
 |------|------|------|----------|----------|------|
 | **ui-fix-01** | 2026-07-25 | 修复 pet-11 角色比例与 dash-13 portrait flex 回归 | `src/renderer/assets/pet/cream-star/pet.json` `src/renderer/pet/DESIGN.md` `src/renderer/dashboard/dashboard.css` `src/renderer/dashboard/portrait-test.html` `src/renderer/dashboard/DESIGN.md` `docs/progress.md` `docs/session-log.md` | 用户与 ARCH-08 明确授权跨 pet 素材、pet/dashboard 设计及项目记录文件 | base form 比例按锁定值改为 `0.6`；直接纵向 flex 子项 `.portrait-layer` 增加 `min-height:0`，中央区 `align-self:stretch`，保持 `object-fit:contain` 与 Emoji onerror。TDD 先复现 scale/flex/小尺寸溢出及立绘裁切，最终图片加载后 53/53 断言通过；Electron 复验 800×600、600×400、拖大/拖小、信息区滚动和宠物 75/100/125/150% 缩放。未修改业务 JS、动画基础设施或图片帧。 |
+| **pet-fix-02** | 2026-07-25 | 消除启动时猫 Emoji → 奶油星团物种闪变 | `src/renderer/pet/pet.html` `pet.css` `pet.js` `pet-startup-visual.mjs` `pet-startup-visual.test.mjs` `DESIGN.md` `docs/progress.md` `docs/session-log.md` | 无 | 启动链路锁定为静态 `idle/001.webp` → 完整预加载 Canvas，只有静态/manifest/任一帧失败才显示 Emoji；集中 loading/ready/error 三态，复用 anchoredDrawRect 的 scale 0.6 + anchor (0.5,0.92)，resize 与 destroy/迟到回调均有守卫。TDD 10 项、宠物回归 64 项通过；Electron 冷/二次启动、页面往返、四档缩放及 DevTools 静态失败注入通过；未改素材、manifest、动画基础设施、shared/main 或持久化。 |
 
 ---
 

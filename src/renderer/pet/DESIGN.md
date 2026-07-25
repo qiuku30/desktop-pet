@@ -6,8 +6,9 @@
 
 - `#pet-container` — 根容器（透明背景，`-webkit-app-region: drag` 整窗可拖）
 - `#pet-body` — 宠物交互区域（`no-drag`，承接点击/双击）
+  - `#pet-static-frame` — 奶油星团 `idle/001.webp` 静态首帧；动画加载期间显示
   - `#pet-canvas` — 奶油星团透明帧动画；素材全部就绪后显示
-  - `#pet-fallback` — Emoji 回退；Canvas 加载失败或未就绪时保留
+  - `#pet-fallback` — Emoji 回退；静态首帧或动画资源加载失败时显示
 - `#speech-bubbles` — 气泡容器
 - `#pomodoro-indicator` — 番茄钟浮标；与气泡同为 Canvas 上方 DOM 层
 
@@ -28,8 +29,9 @@
 
 - 正常路径：`pet.js` 语义行为 → `PetAnimationRuntime` → `AnimationController`
   → `FrameRenderer` → Canvas。
-- 回退路径：清单、Canvas 或任一正式帧预加载失败时不隐藏 Emoji，原点击、拖拽、
-  菜单和窗口切换继续可用。
+- 启动路径：静态 `idle/001.webp` → 完整预加载后的 Canvas；初始 DOM 不显示 Emoji。
+- 回退路径：静态首帧、清单、Canvas 或任一正式帧预加载失败时切换 Emoji，原点击、
+  拖拽、菜单和窗口切换继续可用。
 - CSS `breathe/sway/waddle` 只作用于 Emoji 回退；Canvas 不叠加 CSS 形变，避免双重动画。
 - 高 DPI：Canvas CSS 尺寸跟随窗口，backing size 使用 `CSS px × devicePixelRatio`。
 - 四档缩放触发 resize；当前语义动作通过控制器重新播放，接入层不计算帧时间。
@@ -73,9 +75,14 @@ sleep；页面销毁会清空队列和轮询计时器。`pet.js` 在喂食内部
 
 ### 生命周期
 
+- `pet-startup-visual.mjs` 集中管理互斥的 `loading` / `ready` / `error` 三态；
+- `loading` 只在静态首帧加载成功后显示它；`ready` 只显示 Canvas；`error` 只显示 Emoji；
+- 静态层与 Canvas 共用 `anchoredDrawRect` 几何语义、`scale: 0.6` 和
+  `anchor: (0.5, 0.92)`，resize 时按当前 viewport 重算，避免原子切换跳位；
 - 七个动作按语义顺序预加载，避免某动作失败后其他动作晚到写回已销毁渲染器；
-- 完整预加载成功后原子添加 `pet-body--ready`，隐藏 Emoji；
-- 清单/帧失败时销毁半初始化渲染器并保持 Emoji；
+- 完整预加载成功并同步当前 viewport 后原子切换 `ready`；
+- 静态图、清单或帧失败时切换 `error`；动画失败不会永久停在静态图；
+- `ready` 后迟到的静态 error，以及 pagehide/destroy 后所有静态回调均无效；
 - 缺失一次性动作回退到循环基础动作时，接入层只把该回退副本改为单次播放，
   避免 transient 永不结束；不修改清单或基础设施；
 - 自动走动在异步窗口模式查询前后各检查一次实时状态，sleep/拖拽/overlay/关闭走动

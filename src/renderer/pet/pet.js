@@ -18,6 +18,9 @@ import {
   loadPetAnimation,
   syncPetAnimationViewport,
 } from './pet-animation-runtime.mjs'
+import {
+  createPetStartupVisual,
+} from './pet-startup-visual.mjs'
 
 // 动态窗口尺寸（配合 scaleFactor 自适应 + 用户缩放）
 function getWinSize() {
@@ -30,6 +33,18 @@ const WANDER_MS = 1200
 
 const body = document.getElementById('pet-body')
 const canvas = document.getElementById('pet-canvas')
+const staticFrame = document.getElementById('pet-static-frame')
+const fallback = document.getElementById('pet-fallback')
+const startupVisual = createPetStartupVisual({
+  body,
+  staticFrame,
+  canvas,
+  fallback,
+  getViewport: () => {
+    const rect = body.getBoundingClientRect()
+    return { width: rect.width, height: rect.height }
+  },
+})
 let winPos = { x: 0, y: 0 }
 let autoPaused = false
 let resumeTimer = null
@@ -69,6 +84,7 @@ function cancelGlide() {
 }
 
 function resizePetAnimation() {
+  startupVisual.resize()
   syncPetAnimationViewport(
     animationRuntime,
     body,
@@ -124,11 +140,11 @@ async function initPetAnimation() {
     if (body.classList.contains('moving')) {
       animationRuntime.setMoving(true, movingDeltaX)
     }
-    body.classList.add('pet-body--ready')
+    startupVisual.markAnimationReady()
   } catch (error) {
     if (!destroyed && token === animationLoadToken) {
       console.error('[pet-animation] falling back to Emoji:', error)
-      body.classList.remove('pet-body--ready')
+      startupVisual.markAnimationError()
     }
   }
 }
@@ -746,7 +762,7 @@ function destroyPetPage() {
 
   animationRuntime?.destroy()
   animationRuntime = null
-  body.classList.remove('pet-body--ready')
+  startupVisual.destroy()
   window.removeEventListener('resize', onWindowResize)
 }
 

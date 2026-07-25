@@ -30,6 +30,9 @@ html, body {
 }
 
 #pet-body {
+  --pet-visual-scale: 0.6;
+  --pet-anchor-x: 0.5;
+  --pet-anchor-y: 0.92;
   position: relative;
   width: 100%;
   height: 100%;
@@ -38,11 +41,23 @@ html, body {
   cursor: pointer;
 }
 
+#pet-static-frame,
+#pet-canvas,
+#pet-fallback {
+  visibility: hidden;
+}
+
+#pet-static-frame {
+  position: absolute;
+  display: block;
+  object-fit: fill;
+  pointer-events: none;
+}
+
 #pet-canvas {
   width: 100%;
   height: 100%;
   display: block;
-  visibility: hidden;
   pointer-events: none;
 }
 
@@ -61,12 +76,20 @@ html, body {
   will-change: transform;
 }
 
-#pet-body.pet-body--ready #pet-canvas {
+#pet-fallback::before {
+  content: '🐱';
+}
+
+#pet-body[data-visual-state="loading"][data-static-frame="loaded"] #pet-static-frame {
   visibility: visible;
 }
 
-#pet-body.pet-body--ready #pet-fallback {
-  display: none;
+#pet-body[data-visual-state="ready"] #pet-canvas {
+  visibility: visible;
+}
+
+#pet-body[data-visual-state="error"] #pet-fallback {
+  visibility: visible;
 }
 
 /* 资源失败时，回退 Emoji 继续使用走动 squash & stretch */

@@ -7,9 +7,15 @@
 <body>
   <!-- 宠物容器 -->
   <div id="pet-container">
-    <div id="pet-body">
+    <div id="pet-body" data-visual-state="loading" data-static-frame="pending">
+      <img
+        id="pet-static-frame"
+        src="../assets/pet/cream-star/forms/base/idle/001.webp"
+        alt=""
+        draggable="false"
+      >
       <canvas id="pet-canvas" aria-label="奶油星团"></canvas>
-      <div id="pet-fallback" aria-label="宠物">🐱</div>
+      <div id="pet-fallback" aria-label="宠物"></div>
     </div>
     <div id="speech-bubbles"></div>
     <div id="pomodoro-indicator"></div>

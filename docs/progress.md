@@ -10,7 +10,7 @@
 | 模块 | Phase | 状态 |
 |------|-------|------|
 | 🐾 宠物系统 | Phase 1 | ✅ 已完成 |
-| 🎨 桌宠形象化 | Phase 2 | ✅ pet-12 Canvas 动画 + dash-13 portrait；ui-fix-01 已修复比例与 flex 回归 |
+| 🎨 桌宠形象化 | Phase 2 | ✅ pet-12 Canvas 动画 + dash-13 portrait；ui-fix-01 比例/flex、pet-fix-02 启动物种闪变已修复 |
 | 🍅 番茄钟 | Phase 2 | ✅ 已完成 |
 | 📝 英语单词 | Phase 2+ | ⏳ 待定 |
 | 🎮 2048 | Phase 2 | ✅ 已完成 |
@@ -75,11 +75,12 @@
 
 | 任务 | 状态 | 备注 |
 |------|------|------|
-| pet.html — 宠物窗口结构 | ✅ | pet-12：透明 Canvas + Emoji 加载失败回退 + 气泡/番茄钟 DOM 覆盖层 |
-| pet.js — 宠物逻辑 | ✅ | 状态机：原生拖拽 / 随机走动 / 对话气泡 / 双击面板 / PetState / 喂食；pet-12 新增七类语义动作、方向翻转、用户闲置 sleep/wake、低心情 sad、喂食升级 eat→happy、resize/DPR 与页面销毁清理 |
+| pet.html — 宠物窗口结构 | ✅ | pet-12：透明 Canvas + Emoji 失败回退；pet-fix-02：静态 idle 首帧启动层，初始 DOM 不显示 Emoji |
+| pet.js — 宠物逻辑 | ✅ | 状态机：原生拖拽 / 随机走动 / 对话气泡 / 双击面板 / PetState / 喂食；pet-12 七类语义动作；pet-fix-02 接入 loading/ready/error 启动视觉与销毁防迟到回调 |
 | pet-motion.mjs — 纯几何计算 | ✅ | distance/isCursorNear/fleeCenter/wanderTarget/中心↔左上角换算；node --test pet-motion.test.mjs 6/6 |
 | pet.css — 宠物样式 | ✅ | 透明背景 + padding 拖拽手柄 + no-drag；Canvas 不叠加 CSS 动画，breathe/sway/waddle 仅用于 Emoji 回退 |
 | pet-animation-runtime.mjs + test | ✅ | pet-12：清单加载/形态选择/七动作预加载、fallback 单次语义、自动移动竞态守卫、level-up 感知的去重一次性动作队列、sleep/sad 调度、朝向、resize、失败销毁；20 项接入测试 |
+| pet-startup-visual.mjs + test | ✅ | pet-fix-02：静态首帧→Canvas→Emoji 三态、0.6/anchor 同源几何、resize、失败与 destroy 竞态；10 项测试 |
 | DESIGN.md | ✅ | 已细化：移动状态机、动画运行时、七动作映射、用户闲置语义、Canvas 回退与生命周期 |
 
 ### 渲染进程 — 面板 (src/renderer/dashboard/)
@@ -171,6 +172,12 @@
 ---
 
 ## 已知问题
+
+- [x] 🔴 **已修复（pet-fix-02）**：桌宠启动先显示猫 Emoji，再切换奶油星团。
+      根因是旧 DOM 默认显示 fallback，Canvas 需等待 manifest 与 52 帧完成后才隐藏它。
+      修复为 `idle/001.webp` 静态首帧 → Canvas；仅静态图或动画加载失败时显示 Emoji。
+      静态图与 Canvas 共用 `scale: 0.6` / anchor `(0.5, 0.92)` 的锚点矩形公式，
+      并用集中三态和 destroy 守卫处理缩放、页面往返及迟到回调。
 
 - [x] 🔴 **已修复（ui-fix-01）**：pet-11 清单 `scale: 1` 使 Canvas 角色视觉过大；
       dash-13 仅在内部 `.portrait-area` 设置 `min-height: 0`，直接纵向 flex 子项
