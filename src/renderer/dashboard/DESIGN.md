@@ -14,8 +14,10 @@
 
 ## 上半区 — 形象展示层
 
-- **容器** `.portrait-layer`：flex row，`flex: 1`
-- **中央** `.portrait-area`：`overflow: hidden; min-height: 0` 防小窗口挤压
+- **容器** `.portrait-layer`：flex row，`flex: 1; min-height: 0`，允许其作为
+  `#content-area` 的直接纵向 flex 子项收缩，避免图片固有高度挤压信息区
+- **中央** `.portrait-area`：`align-self: stretch; overflow: hidden; min-height: 0`，
+  高度受形象层可用空间约束
   - `<img class="portrait-img">` 加载 `../assets/pet/cream-star/portrait.webp`，`max-width/max-height: 100%` + `object-fit: contain` 保持透明背景和原始宽高比
   - `<span class="portrait-fallback">` 默认 `display: none`，图片加载失败时 `onerror` 显示 🐱 emoji（`font-size: min(18vw, 140px)`）
   - 不加载动画帧，不创建 Canvas，不复用宠物窗口运行时

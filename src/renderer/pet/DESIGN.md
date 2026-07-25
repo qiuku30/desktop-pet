@@ -33,6 +33,8 @@
 - CSS `breathe/sway/waddle` 只作用于 Emoji 回退；Canvas 不叠加 CSS 形变，避免双重动画。
 - 高 DPI：Canvas CSS 尺寸跟随窗口，backing size 使用 `CSS px × devicePixelRatio`。
 - 四档缩放触发 resize；当前语义动作通过控制器重新播放，接入层不计算帧时间。
+- 奶油星团 `base` 形态显示比例锁定为 `scale: 0.6`；四档窗口缩放只改变窗口与
+  Canvas 尺寸，角色相对窗口占比保持一致。
 - 赶跑/回来仍属于后续阶段。
 
 ### 动画接入运行时（pet-12）

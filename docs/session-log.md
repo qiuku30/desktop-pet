@@ -74,6 +74,12 @@
 | **dash-08** | 2026-07-14 | 商店页面：食物购买 | `dashboard/dashboard.js` `dashboard/dashboard.css` `dashboard/nav-config.js` `shared/feed-service.js` `main/storage/store.js` `docs/progress.md` `docs/session-log.md` | ✅ 越界授权：改 `shared/feed-service.js`（FOODS 加 buyPrice）+ `main/storage/store.js`（coins 默认 0→100）+ `nav-config.js`（shop enabled: true） | 商店页面落地：金币余额栏（#252525 暗色背景）+ 分类 Tab（完全复用仓库 wh-tabs 组件/样式/交互）+ 商品网格（shop-grid, minmax(100px,1fr)）+ 商品卡片（emoji + 名称 + 持有数量弱显示 #666 + 购买价金黄色 #ffc107 + 购买按钮绿色边框）；排序按 buyPrice 从低到高；购买按钮金币不足置灰 disabled；悬停 tooltip 复用主页 mouseenter/mouseleave 捕获模式，动态替换 tooltipFields（sellPrice→buyPrice）；右键菜单 SHOP_MENU_ACTIONS 配置驱动，首期仅「💰 购买」一项；状态订阅 PET_STATE_CHANGED（coins/foodInventory）自动刷新；_pageCleanup 防订阅泄漏；buildTooltipHTML 前缀逻辑扩展（buyPrice 同 sellPrice 不加 +） |
 | **dash-13** | 2026-07-25 | 面板角色卡 Emoji → portrait.webp 立绘替换 | `dashboard/dashboard.css` `dashboard/dashboard.js` `dashboard/DESIGN.md` `docs/progress.md` `docs/session-log.md` | 无 | 使用 `cream-star/portrait.webp` 替换 `.portrait-area` 中的 🐱 emoji；`<img>` + `object-fit: contain` 保持透明背景和原始宽高比；`onerror` 回退到隐藏 emoji fallback `.portrait-fallback`（原 font-size）；不加载动画帧、不创建 Canvas、不复用宠物窗口运行时；不新增持久化字段；保留所有现有交互（经验/心情/饱腹/金币/投喂/导航）。CSS `.portrait-area` 加 `overflow: hidden; min-height: 0` 防小窗口挤压
 
+## 专项修复
+
+| 编号 | 日期 | 功能 | 改动文件 | 越界授权 | 备注 |
+|------|------|------|----------|----------|------|
+| **ui-fix-01** | 2026-07-25 | 修复 pet-11 角色比例与 dash-13 portrait flex 回归 | `src/renderer/assets/pet/cream-star/pet.json` `src/renderer/pet/DESIGN.md` `src/renderer/dashboard/dashboard.css` `src/renderer/dashboard/portrait-test.html` `src/renderer/dashboard/DESIGN.md` `docs/progress.md` `docs/session-log.md` | 用户与 ARCH-08 明确授权跨 pet 素材、pet/dashboard 设计及项目记录文件 | base form 比例按锁定值改为 `0.6`；直接纵向 flex 子项 `.portrait-layer` 增加 `min-height:0`，中央区 `align-self:stretch`，保持 `object-fit:contain` 与 Emoji onerror。TDD 先复现 scale/flex/小尺寸溢出及立绘裁切，最终图片加载后 53/53 断言通过；Electron 复验 800×600、600×400、拖大/拖小、信息区滚动和宠物 75/100/125/150% 缩放。未修改业务 JS、动画基础设施或图片帧。 |
+
 ---
 
 ## dash-09 — 2026-07-14

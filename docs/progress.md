@@ -10,7 +10,7 @@
 | 模块 | Phase | 状态 |
 |------|-------|------|
 | 🐾 宠物系统 | Phase 1 | ✅ 已完成 |
-| 🎨 桌宠形象化 | Phase 2 | 🔨 pet-12 已完成桌宠态 Canvas 动画接入；面板 portrait 待后续窗口 |
+| 🎨 桌宠形象化 | Phase 2 | ✅ pet-12 Canvas 动画 + dash-13 portrait；ui-fix-01 已修复比例与 flex 回归 |
 | 🍅 番茄钟 | Phase 2 | ✅ 已完成 |
 | 📝 英语单词 | Phase 2+ | ⏳ 待定 |
 | 🎮 2048 | Phase 2 | ✅ 已完成 |
@@ -140,7 +140,7 @@
 | 正式角色素材包 | ✅ pet-11 / ARCH-08 | portrait + 52 张 512×512 透明 WebP + schema v1 pet.json；完整 alpha 审计、三背景联系表和 ARCH-08 独立肉眼验收通过 |
 | 动画基础设施 | ✅ pet-10 | 清单校验 + 帧时间 + Canvas FrameRenderer + AnimationController；尚未接 UI |
 | 动画引擎接入 | ✅ pet-12 | Canvas + Emoji 回退；七类动作、喂食升级 eat→happy、方向翻转、用户闲置 sleep、低心情 sad、高 DPI/四档缩放及销毁清理 |
-| 面板立绘接入 | ✅ dash-13 | 使用 cream-star/portrait.webp 替换 Emoji，`object-fit: contain` + `onerror` 回退 |
+| 面板立绘接入 | ✅ dash-13 / ui-fix-01 | 使用 cream-star/portrait.webp 替换 Emoji；专项修复正确 flex 层收缩、完整 contain 与 `onerror` 回退 |
 | 用户照片生成 | ⏸ 长期 | 本期不做，只预留标准皮肤包协议 |
 
 设计文档：`docs/superpowers/specs/2026-07-24-pet-visualization-design.md`
@@ -171,6 +171,13 @@
 ---
 
 ## 已知问题
+
+- [x] 🔴 **已修复（ui-fix-01）**：pet-11 清单 `scale: 1` 使 Canvas 角色视觉过大；
+      dash-13 仅在内部 `.portrait-area` 设置 `min-height: 0`，直接纵向 flex 子项
+      `.portrait-layer` 仍被 512×512 图片固有高度撑开，且中央区未拉伸导致立绘裁切。
+      修复：base form 精确改为 `scale: 0.6`；`.portrait-layer` 增加 `min-height: 0`，
+      `.portrait-area` 增加 `align-self: stretch`。53 条 portrait/布局断言及
+      Electron 800×600、600×400、拖大/拖小、四档宠物缩放复验通过。
 
 - [x] 🔴 **关键（已修复）**: JS 拖拽持续偏移。根因：IPC（renderer → setPosition）每帧有延迟，无法追上用户拖拽速度。
       解决方案：CSS `-webkit-app-region: drag`（OS 原生拖拽，零延迟零偏移）+ 主进程 `isAutoMoving` 标记区分自动/用户移动。

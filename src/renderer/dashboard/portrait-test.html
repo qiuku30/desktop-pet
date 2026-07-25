@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="dashboard.css?revision=ui-fix-01-crop">
   <style>
     body { background: #1e1e1e; min-height: 100vh; margin: 0; padding: 0; }
     .test-header { color:#ccc; padding:16px; font-family:sans-serif; border-bottom:1px solid #333; }
@@ -122,6 +122,9 @@
     const portraitLayer = document.querySelector('.portrait-layer');
     const infoLayer = document.querySelector('.info-layer');
     if (portraitLayer && infoLayer) {
+      const portraitLayerStyle = getComputedStyle(portraitLayer);
+      log('20a. portrait-layer min-height:0', portraitLayerStyle.minHeight === '0px');
+
       const pRect = portraitLayer.getBoundingClientRect();
       const iRect = infoLayer.getBoundingClientRect();
       log('20. portrait layer and info layer do not overlap', pRect.bottom <= iRect.top + 1);
@@ -145,7 +148,43 @@
       results.appendChild(summaryEl);
     }
 
-    function runImageChecks() {
+    function runLayoutChecks(label, width, height) {
+      const dashboard = document.getElementById('dashboard');
+      dashboard.style.flex = 'none';
+      dashboard.style.width = `${width}px`;
+      dashboard.style.height = `${height}px`;
+
+      const contentRect = area.getBoundingClientRect();
+      const portraitRect = portraitLayer.getBoundingClientRect();
+      const portraitAreaRect = pArea.getBoundingClientRect();
+      const imageRect = img.getBoundingClientRect();
+      const infoRect = infoLayer.getBoundingClientRect();
+      const infoStyle = getComputedStyle(infoLayer);
+
+      log(`${label}: portrait remains visible`, portraitRect.width > 0 && portraitRect.height > 0);
+      log(`${label}: info remains visible`, infoRect.width > 0 && infoRect.height > 0);
+      log(`${label}: layers do not overlap`, portraitRect.bottom <= infoRect.top + 1);
+      log(
+        `${label}: layers stay inside content area`,
+        portraitRect.top >= contentRect.top - 1
+          && infoRect.bottom <= contentRect.bottom + 1,
+      );
+      log(
+        `${label}: portrait area stays inside portrait layer`,
+        portraitAreaRect.top >= portraitRect.top - 1
+          && portraitAreaRect.bottom <= portraitRect.bottom + 1,
+      );
+      log(
+        `${label}: image stays fully contained`,
+        imageRect.top >= portraitAreaRect.top - 1
+          && imageRect.bottom <= portraitAreaRect.bottom + 1
+          && imageRect.left >= portraitAreaRect.left - 1
+          && imageRect.right <= portraitAreaRect.right + 1,
+      );
+      log(`${label}: info keeps vertical scrolling`, infoStyle.overflowY === 'auto');
+    }
+
+    async function runImageChecks() {
       if (!img) { finalSummary(); return; }
 
       const loaded = img.complete && img.naturalWidth > 0;
@@ -159,6 +198,20 @@
         log(`18. naturalWidth === 512`, false);
         log(`18b. naturalHeight === 512`, false);
       }
+
+      try {
+        const response = await fetch('../assets/pet/cream-star/pet.json?revision=ui-fix-01');
+        const manifest = await response.json();
+        log('23. base form scale is exactly 0.6', manifest.forms?.base?.scale === 0.6);
+      } catch (error) {
+        info(`Manifest load failed: ${error.message}`);
+        log('23. base form scale is exactly 0.6', false);
+      }
+
+      runLayoutChecks('24. default 800x600', 800, 600);
+      runLayoutChecks('25. minimum 600x400', 600, 400);
+      runLayoutChecks('26. dragged larger 960x700', 960, 700);
+      runLayoutChecks('27. dragged smaller 700x480', 700, 480);
 
       finalSummary();
     }
