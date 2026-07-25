@@ -191,8 +191,19 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: min(18vw, 140px);
   user-select: none;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.portrait-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.portrait-fallback {
+  font-size: min(18vw, 140px);
 }
 
 /* ── 快捷槽位 ── */

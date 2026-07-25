@@ -140,7 +140,7 @@
 | 正式角色素材包 | ✅ pet-11 / ARCH-08 | portrait + 52 张 512×512 透明 WebP + schema v1 pet.json；完整 alpha 审计、三背景联系表和 ARCH-08 独立肉眼验收通过 |
 | 动画基础设施 | ✅ pet-10 | 清单校验 + 帧时间 + Canvas FrameRenderer + AnimationController；尚未接 UI |
 | 动画引擎接入 | ✅ pet-12 | Canvas + Emoji 回退；七类动作、喂食升级 eat→happy、方向翻转、用户闲置 sleep、低心情 sad、高 DPI/四档缩放及销毁清理 |
-| 面板立绘接入 | ⏳ | 使用当前皮肤 portrait |
+| 面板立绘接入 | ✅ dash-13 | 使用 cream-star/portrait.webp 替换 Emoji，`object-fit: contain` + `onerror` 回退 |
 | 用户照片生成 | ⏸ 长期 | 本期不做，只预留标准皮肤包协议 |
 
 设计文档：`docs/superpowers/specs/2026-07-24-pet-visualization-design.md`
@@ -150,7 +150,7 @@
 
 ## 待实现（按优先级）
 
-0. 桌宠形象化 Phase 2 — pet-12 已完成桌宠态 UI 接入；下一步由独立窗口接入 dashboard portrait
+0. 桌宠形象化 Phase 2 — pet-12 已完成桌宠态 UI 接入，dash-13 已完成面板 portrait 接入
 1. ~~`pet.js` + `pet.css` — 宠物外观、动画、交互~~ ✅ 已完成（移动系统：拖拽/走动/躲鼠标/闲置）
 4. ~~`dashboard.js` + `dashboard.css` — 面板切换和模块加载~~ ✅ 已完成（双击切换 + loadFile + 顶部栏 + 返回按钮）
 5. ~~对话气泡系统~~ ✅ 已完成（mood×level 台词库 16 条、300ms 延迟 + 拖拽检测、2s 气泡动画、窗口动态缩放、右键缩放菜单）

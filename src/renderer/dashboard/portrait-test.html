@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="dashboard.css">
+  <style>
+    body { background: #1e1e1e; min-height: 100vh; margin: 0; padding: 0; }
+    .test-header { color:#ccc; padding:16px; font-family:sans-serif; border-bottom:1px solid #333; }
+    .result { font-family: monospace; padding: 8px 16px; font-size: 12px; }
+    .pass { color: #4caf50; }
+    .fail { color: #e81123; }
+    .info { color: #2196f3; }
+    #dashboard { display: flex; flex: 1; }
+    #content-area { flex: 1; display: flex; flex-direction: column; }
+    .page--home { flex: 1; display: flex; flex-direction: column; }
+  </style>
+</head>
+<body>
+  <div class="test-header">🧪 Portrait Test — Verifying dash-13 changes</div>
+  <div id="results"></div>
+  <div id="dashboard">
+    <main id="content-area"></main>
+  </div>
+
+  <script type="module">
+    const results = document.getElementById('results');
+    let pass = 0, fail = 0;
+    const summaryEl = document.createElement('div');
+
+    function log(msg, ok) {
+      const div = document.createElement('div');
+      div.className = 'result ' + (ok ? 'pass' : 'fail');
+      div.textContent = (ok ? '✅ ' : '❌ ') + msg;
+      results.appendChild(div);
+      if (ok) pass++; else fail++;
+    }
+
+    function info(msg) {
+      const div = document.createElement('div');
+      div.className = 'result info';
+      div.textContent = 'ℹ️ ' + msg;
+      results.appendChild(div);
+    }
+
+    // ── Build DOM (mirrors buildHomePage) ──
+    const area = document.getElementById('content-area');
+    area.className = 'page page--home';
+    area.innerHTML = `
+      <section class="portrait-layer">
+        <div class="slot-list" id="slots-left">
+          <div class="slot-item"></div>
+          <div class="slot-item"></div>
+          <div class="slot-item"></div>
+        </div>
+        <div class="portrait-area" id="portrait-area">
+          <img src="../assets/pet/cream-star/portrait.webp"
+               alt="宠物立绘"
+               class="portrait-img"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='';">
+          <span class="portrait-fallback" style="display:none">🐱</span>
+        </div>
+        <div class="slot-list" id="slots-right">
+          <div class="slot-item"></div>
+          <div class="slot-item"></div>
+          <div class="slot-item"></div>
+        </div>
+      </section>
+      <section class="info-layer">
+        <div class="card"><span>Test card — info layer below portrait</span></div>
+      </section>
+    `;
+
+    // ── Synchronous tests (run immediately, before image settles) ──
+
+    const pArea = document.getElementById('portrait-area');
+    log('1. #portrait-area exists', !!pArea);
+
+    const img = pArea?.querySelector('.portrait-img');
+    log('2. .portrait-img exists', !!img);
+
+    const fallback = pArea?.querySelector('.portrait-fallback');
+    log('3. .portrait-fallback exists', !!fallback);
+
+    const pStyle = getComputedStyle(pArea);
+    log('4. portrait-area display:flex', pStyle.display === 'flex');
+    log('5. portrait-area overflow:hidden', pStyle.overflow === 'hidden');
+    log('6. portrait-area min-height:0', pStyle.minHeight === '0px');
+
+    if (img) {
+      const iStyle = getComputedStyle(img);
+      log('7. .portrait-img max-width:100%', iStyle.maxWidth === '100%');
+      log('8. .portrait-img max-height:100%', iStyle.maxHeight === '100%');
+      log('9. .portrait-img object-fit:contain', iStyle.objectFit === 'contain');
+      log('10. img has alt text', img.alt === '宠物立绘');
+      log('11. img src ends with portrait.webp', img.src.endsWith('portrait.webp'));
+      info(`Image src: ${img.src}`);
+    }
+
+    if (fallback) {
+      const fStyle = getComputedStyle(fallback);
+      log('12. fallback starts hidden (inline display:none)', fallback.style.display === 'none');
+      info(`Fallback font-size: ${fStyle.fontSize}`);
+      log('13. fallback has font-size set', fStyle.fontSize !== '0px');
+      log('14. fallback text is 🐱', fallback.textContent === '🐱');
+    }
+
+    // onerror fallback simulation (always check, independent of real load)
+    if (img && fallback) {
+      img.style.display = 'none';
+      fallback.style.display = '';
+      log('15. onerror: img hidden', getComputedStyle(img).display === 'none');
+      log('16. onerror: fallback visible', getComputedStyle(fallback).display !== 'none');
+      img.style.display = '';
+      fallback.style.display = 'none';
+      info('Fallback mechanism verified (onerror simulation)');
+    }
+
+    if (img) {
+      log('19. img.nextElementSibling is the fallback span', img.nextElementSibling === fallback);
+    }
+
+    const portraitLayer = document.querySelector('.portrait-layer');
+    const infoLayer = document.querySelector('.info-layer');
+    if (portraitLayer && infoLayer) {
+      const pRect = portraitLayer.getBoundingClientRect();
+      const iRect = infoLayer.getBoundingClientRect();
+      log('20. portrait layer and info layer do not overlap', pRect.bottom <= iRect.top + 1);
+      info(`Portrait layer: top=${pRect.top} bottom=${pRect.bottom}, Info layer: top=${iRect.top}`);
+    }
+
+    const leftSlots = document.querySelectorAll('#slots-left .slot-item');
+    const rightSlots = document.querySelectorAll('#slots-right .slot-item');
+    log('21. Left slot list has 3 items', leftSlots.length === 3);
+    log('22. Right slot list has 3 items', rightSlots.length === 3);
+
+    // ── Async: wait for image to settle (load or error), then run 17-18 + final summary ──
+
+    function finalSummary() {
+      info(`\n📊 Results: ${pass} passed, ${fail} failed, ${pass+fail} total`);
+      summaryEl.className = 'result ' + (fail === 0 ? 'pass' : 'fail');
+      summaryEl.style.cssText = 'font-size:16px;font-weight:bold;padding:12px 16px;';
+      summaryEl.textContent = fail === 0
+        ? `🎉 ALL TESTS PASSED (${pass}/${pass})`
+        : `❌ ${fail} TEST(S) FAILED (${pass}/${pass+fail} passed)`;
+      results.appendChild(summaryEl);
+    }
+
+    function runImageChecks() {
+      if (!img) { finalSummary(); return; }
+
+      const loaded = img.complete && img.naturalWidth > 0;
+      log(`17. img loaded successfully`, loaded);
+      info(`Natural size: ${img.naturalWidth}x${img.naturalHeight} (expected 512x512)`);
+
+      if (loaded) {
+        log(`18. naturalWidth === 512`, img.naturalWidth === 512);
+        log(`18b. naturalHeight === 512`, img.naturalHeight === 512);
+      } else {
+        log(`18. naturalWidth === 512`, false);
+        log(`18b. naturalHeight === 512`, false);
+      }
+
+      finalSummary();
+    }
+
+    if (img) {
+      if (img.complete) {
+        // Already settled (cached or errored)
+        runImageChecks();
+      } else {
+        // Still loading — wait for either load or error
+        info('Waiting for image to settle...');
+        let settled = false;
+        img.addEventListener('load', () => { if (!settled) { settled = true; runImageChecks(); } });
+        img.addEventListener('error', () => { if (!settled) { settled = true; runImageChecks(); } });
+        // Safety timeout (5s) — in case neither event fires
+        setTimeout(() => { if (!settled) { settled = true; info('Timed out waiting for image'); runImageChecks(); } }, 5000);
+      }
+    } else {
+      finalSummary();
+    }
+  </script>
+</body>
+</html>

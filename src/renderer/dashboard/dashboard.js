@@ -125,7 +125,13 @@ function buildHomePage() {
         <div class="slot-item"></div>
         <div class="slot-item"></div>
       </div>
-      <div class="portrait-area" id="portrait-area">🐱</div>
+      <div class="portrait-area" id="portrait-area">
+        <img src="../assets/pet/cream-star/portrait.webp"
+             alt="宠物立绘"
+             class="portrait-img"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='';">
+        <span class="portrait-fallback" style="display:none">🐱</span>
+      </div>
       <div class="slot-list" id="slots-right">
         <div class="slot-item"></div>
         <div class="slot-item"></div>

@@ -15,7 +15,10 @@
 ## 上半区 — 形象展示层
 
 - **容器** `.portrait-layer`：flex row，`flex: 1`
-- **中央** `.portrait-area`：emoji 占位 🐱，`font-size: min(18vw, 140px)`，独立容器包裹，未来替换为 `<img>` / `<canvas>`
+- **中央** `.portrait-area`：`overflow: hidden; min-height: 0` 防小窗口挤压
+  - `<img class="portrait-img">` 加载 `../assets/pet/cream-star/portrait.webp`，`max-width/max-height: 100%` + `object-fit: contain` 保持透明背景和原始宽高比
+  - `<span class="portrait-fallback">` 默认 `display: none`，图片加载失败时 `onerror` 显示 🐱 emoji（`font-size: min(18vw, 140px)`）
+  - 不加载动画帧，不创建 Canvas，不复用宠物窗口运行时
 - **左右槽位** `.slot-list` > `.slot-item` × 3：56px 宽，纵向排列，`border: 1px dashed #555` 占位
 
 ## 下半区 — 信息数据层
