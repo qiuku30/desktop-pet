@@ -227,7 +227,7 @@ git commit -m "feat: add farm processing and order rules"
 
 - [ ] **Step 1: Write failing atomic transaction tests**
 
-Use fake PetState that records `setMany` calls. Assert initialization grants four wheat and four carrot seeds exactly once; quick-buy plant changes coins/inventory/farm in one call; insufficient coins produces no call; repeated harvest yields one reward; order completion emits only after commit; two concurrent commands are serialized; time settlement and a successful command share one commit; a failed command with settlement changes commits only settlement; and a no-op makes no commit.
+Use fake PetState that records `setMany` calls. Assert initialization grants four wheat and four carrot seeds exactly once; quick-buy plant changes coins/inventory/farm in one call; insufficient coins produces no call; repeated harvest yields one reward; `claimBird({ birdId })` rejects duplicate/invalid IDs and resets its bounded ID set across local dates; order completion emits only after commit; two concurrent commands are serialized; time settlement and a successful command share one commit; a failed command with settlement changes commits only settlement; command-produced inventory can mark an order ready in the same commit; and a no-op makes no commit.
 
 - [ ] **Step 2: Verify RED**
 

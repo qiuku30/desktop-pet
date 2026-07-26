@@ -50,6 +50,7 @@ const DEFAULT_STATE = {
     milestones: { 128: false, 256: false, 512: false, 1024: false, 2048: false },
     savedGame: null,
   },
+  farm: null,
   lastSaved: null,
 };
 
