@@ -17,6 +17,8 @@ const DEFAULT_STATE = {
   intimacy: 0,         // 亲密度
   coins: 100,
   foodInventory: [],   // 食物库存
+  inventory: {},       // 通用库存（稳定命名空间 itemId → count）
+  inventoryMigrationVersion: 0,
   zoomLevel: 1.0,      // 窗口缩放倍率（0.75 / 1.0 / 1.25 / 1.5）
   dailyInteractionCount: 0,    // 今日互动次数
   lastInteractionDate: null,   // 上次互动日期（YYYY-MM-DD）

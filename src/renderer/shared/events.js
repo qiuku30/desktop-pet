@@ -20,8 +20,12 @@ export const EVENTS = {
   GAME_2048_SCORE:     'game:2048:score',
 
   // 农场
-  GAME_FARM_HARVEST:   'game:farm:harvest',
-  GAME_FARM_FOOD_SYNTHESIZED: 'game:farm:food:synthesized',
+  FARM_STATE_CHANGED:        'farm:state:changed',
+  FARM_CROP_HARVESTED:       'farm:crop:harvested',
+  FARM_PROCESSING_COMPLETED: 'farm:processing:completed',
+  FARM_ORDER_COMPLETED:      'farm:order:completed',
+  FARM_ORDER_READY:          'farm:order:ready',
+  FARM_BIRD_REWARDED:        'farm:bird:rewarded',
 
   // 单词
   GAME_WORD_CORRECT:   'game:word:correct',

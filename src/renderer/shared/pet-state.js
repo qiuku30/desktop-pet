@@ -4,6 +4,7 @@
 
 import { EventBus } from './event-bus.js'
 import { EVENTS } from './events.js'
+import { migrateLegacyFoodInventory } from './inventory-service.js'
 
 // key → 事件映射。这些 key 在 set 时会额外发一个语义明确的专用事件。
 // payloadKey 对齐 docs/events.md 各事件的参数字段名（satiety→value / mood→mood / level→level）。
@@ -34,7 +35,10 @@ class PetStateCore {
       console.warn('[PetState] electronAPI 不可用，退回空状态')
       this._data = {}
     }
+    const { state, migrated } = migrateLegacyFoodInventory(this._data)
+    this._data = state
     this._ready = true
+    if (migrated) this._scheduleSave()
   }
 
   // 读取。对象/数组返回副本，防止外部绕过 set() 直接篡改内部状态（ADR-005）。
@@ -42,15 +46,38 @@ class PetStateCore {
     return this._clone(this._data[key])
   }
 
-  // 写入：改内存 → 按映射发事件 → 防抖存盘。
+  // 单字段写入保持兼容，统一走原子多字段提交。
   set(key, value) {
-    this._data[key] = value
-    const mapping = KEY_EVENT_MAP[key]
-    if (mapping) {
-      EventBus.emit(mapping.event, { [mapping.payloadKey]: value })
+    this.setMany({ [key]: value })
+  }
+
+  // 原子多字段写入：先让全部字段可见，再按输入字段顺序发事件，只安排一次保存。
+  setMany(updates) {
+    if (!updates || Array.isArray(updates) || typeof updates !== 'object'
+        || Object.keys(updates).length === 0) {
+      throw new TypeError('updates must be a non-empty object')
     }
-    // 通用状态变更事件：所有 key 都发，监听方自行按 key 过滤
-    EventBus.emit(EVENTS.PET_STATE_CHANGED, { key, value })
+
+    const entries = Object.entries(updates)
+      .map(([key, value]) => [key, this._clone(value)])
+
+    for (const [key, value] of entries) {
+      this._data[key] = value
+    }
+
+    for (const [key, value] of entries) {
+      const mapping = KEY_EVENT_MAP[key]
+      if (mapping) {
+        EventBus.emit(mapping.event, {
+          [mapping.payloadKey]: this._clone(value),
+        })
+      }
+      EventBus.emit(EVENTS.PET_STATE_CHANGED, {
+        key,
+        value: this._clone(value),
+      })
+    }
+
     this._scheduleSave()
   }
 

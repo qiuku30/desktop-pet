@@ -23,7 +23,8 @@
 | **ARCH-05** | 2026-07-14~17 | 接替 ARCH-04，零碎修复 + 审计 + 设计讨论 + 委派 dash-11 | `src/renderer/shared/exp-service.js` `src/renderer/shared/exp-service.test.mjs` `src/renderer/shared/event-bus.js` `src/renderer/shared/satiety-service.js` `src/main/overlay-manager.js` `docs/events.md` `src/main/DESIGN.md` `docs/progress.md` `PROJECT_BRIEF.md` `docs/session-log.md` `docs/superpowers/specs/2026-07-15-pet-customization-design.md` `docs/superpowers/specs/2026-07-15-productivity-modules-design.md` | — | ① exp-service 测试日期依赖修复；② event-bus.js DEBUG 开关；③ 删 suggestMood 死代码 + overlay _reject 统一；④ 设计讨论：桌宠形象化 B 方案、皮肤系统 A 方案、番茄钟 & 活动监视，写两份 spec；⑤ 委派 dash-11（自动走动迁移到设置面板）；⑥ dash-11 收尾：清理 wander:toggle 死文档引用；⑦ 接待 ARCH-06 番茄钟交付（pull + 审查） |
 | **ARCH-06** | 2026-07-16~17 | 番茄钟立项 + 拆窗委派 + 时长记录追加 | `specs/pomodoro.md` `PROJECT_BRIEF.md` `docs/progress.md` `docs/session-log.md` | — | 讨论确认番茄钟需求细节（5~120min/1~60min/宠物浮动图标/面板SVG进度环/右键动态菜单/时长统计+每日日志）；拆 5 窗口：infra-11（主进程+共享层）、infra-11续（时长+日志）、dash-10（面板页）、dash-10续（时长显示）、pet-09（浮动图标+气泡）；16 文件改动，8 bug 审查阶段全修；全模块无越界授权，0 冲突 |
 | **ARCH-07** | 2026-07-18 | 2048 游戏立项 + 需求讨论 + 拆窗委派 + 审查交付 | `specs/game-2048.md` `CLAUDE.md` `PROJECT_BRIEF.md` `docs/progress.md` `docs/session-log.md` | — | 逐项讨论 9 个设计决策（计分/余数/日限/导航/持久化/存档/重新开始/2048后/结算按钮）；收益模型从递减改为递增（难度匹配）；拆 2 窗口：infra-12（收益结算共享服务 + store）+ dash-12（游戏本体 + 面板集成）；审查 136 测试全过；CLAUDE.md 新增"动工前先报告"和"交付前自检"两条规则；dash-12 结算返回按钮修复 |
-| **ARCH-08** | 2026-07-24 | 桌宠形象化需求讨论 + 技术调研 + 架构设计 + pet-10 计划 | `docs/superpowers/specs/2026-07-24-pet-visualization-design.md` `docs/superpowers/plans/2026-07-24-pet-animation-foundation.md` `specs/pet-system.md` `PROJECT_BRIEF.md` `docs/progress.md` `docs/session-log.md` | — | 主流路线对比后确认：原创高清手绘 Q 版“奶油星团”；首期单形态、7 类动画；独立透明帧 + JSON 清单 + Canvas；业务/控制器/渲染器分层；养成进度共享；预留进化、外部皮肤包、用户照片生成和 Live2D/3D；第一阶段拆为 pet-10，只做可单测基础设施，不接 UI/PetState/正式素材 |
+| **ARCH-08** | 2026-07-24~25 | 桌宠形象化需求、架构设计、分窗协调与最终验收 | `docs/superpowers/specs/2026-07-24-pet-visualization-design.md` `docs/superpowers/plans/2026-07-24-pet-animation-foundation.md` `specs/pet-system.md` `PROJECT_BRIEF.md` `docs/progress.md` `docs/session-log.md` | — | 确认原创高清手绘 Q 版“奶油星团”、首期单形态与 7 类动画、独立透明帧 + JSON 清单 + Canvas 分层路线；协调并验收 pet-10 基础设施、pet-11 正式素材、pet-12 桌宠态接入、dash-13 面板立绘、ui-fix-01 比例/flex 修复及 pet-fix-02 启动闪变修复。关键语义锁定：用户互动重置 10 分钟闲置计时，自动走动/一次性动作只延迟入睡；喂食升级 `eat → happy → 最新基础动作`；角色 scale 0.6；启动静态 idle 首帧 → 完整预加载 Canvas，异常才回退 Emoji。最终全仓 194/194，Electron 冷启动、页面往返、四档缩放通过；预留进化、外部皮肤包和用户照片生成长期方向。 |
+| **ARCH-10** | 2026-07-26 | 农场首发需求、架构设计、六阶段实施计划与 farm-01 独立验收 | `specs/farm-system.md` `docs/superpowers/specs/2026-07-26-farm-system-design.md` `docs/superpowers/plans/2026-07-26-farm-01-inventory-state-foundation.md` `farm-02-domain-engine.md` `farm-03-field-ui.md` `farm-04-processing-orders-ui.md` `farm-05-unified-inventory-integration.md` `farm-06-reminders-final-integration.md` `docs/architecture.md` `docs/events.md` `PROJECT_BRIEF.md` `docs/progress.md` `docs/session-log.md` | — | 确认 A+C 混合布局、4×4 首块农田、统一库存、种植/建筑/加工/订单闭环、双等级成长、桌宠弱提醒与小鸟彩蛋；采用纯规则引擎＋协调器＋页面层，新增 ADR-009 `PetState.setMany()`。设计 commit `5da6956`、计划 commit `2f6dd8a`，均未 push；创建 farm-01 并两轮独立复验，退回修复库存溢出和 malformed ID 后全仓 211/211 通过；farm-01 实现尚未 commit。 |
 
 ## infra（共享基础设施）
 
@@ -160,3 +161,11 @@
 - 样式通过 JS 动态注入 <style> 标签自包含，不依赖 dashboard.css
 - 导航项排在番茄（🍅）下方、设置（⚙️）上方
 - 替换了 game.js/game.css 旧占位文件
+
+---
+
+## farm（农场模块）
+
+| 编号 | 日期 | 功能 | 改动文件 | 越界授权 | 备注 |
+|------|------|------|----------|----------|------|
+| **farm-01** | 2026-07-26 | 通用库存、旧食物库存幂等迁移、`PetState.setMany()` 与存储默认值 | `src/renderer/shared/inventory-service.js` `src/renderer/shared/inventory-service.test.mjs` `src/renderer/shared/pet-state.js` `src/renderer/shared/pet-state.test.mjs` `src/renderer/shared/events.js` `src/main/storage/store.js` `docs/progress.md` `docs/session-log.md` | ARCH-10 任务明确授权上述 shared、store 与 tracker 文件；无范围外改动 | 五个旧食物映射到 `food:*`，合法未知字符串 ID 以 `legacy:*` 保留并警告，malformed ID 静默跳过；迁移版本 1 防重复累加，旧 `foodInventory` 暂留；库存加法合计非正安全整数时抛 `RangeError` 并原子失败；`setMany` 全字段先可见、按字段发事件、一次保存；旧农场占位事件经全仓检索确认无消费者后替换为六个正式常量；返修后全仓 211/211；未实现农场规则/UI，未 commit/merge/push/建分支。 |

@@ -1,7 +1,7 @@
 # 架构窗口交接文档
 
-> 最后更新：2026-07-24（ARCH-08 验收 pet-10）
-> Phase 1、番茄钟和 2048 已交付；桌宠形象化的动画基础设施已完成，待正式素材与 UI 接入。
+> 最后更新：2026-07-26（ARCH-10 验收 farm-01 库存与状态基础）
+> Phase 1、番茄钟、2048 和桌宠形象化 Phase 2 均已交付；农场六阶段计划已提交，farm-01 已完成并通过独立复验。
 
 ---
 
@@ -42,6 +42,13 @@ GitHub：https://github.com/qiuku30/desktop-pet
 | `docs/pet-movement-design.md` | 宠物移动系统详细设计 |
 | `docs/superpowers/specs/2026-07-24-pet-visualization-design.md` | ARCH-08 桌宠形象化、动画引擎、皮肤协议与长期扩展设计 |
 | `docs/superpowers/plans/2026-07-24-pet-animation-foundation.md` | pet-10 动画基础设施 TDD 实施计划 |
+| `docs/superpowers/specs/2026-07-26-farm-system-design.md` | ARCH-10 农场首发玩法、状态、事务、统一库存与长期扩展设计 |
+| `docs/superpowers/plans/2026-07-26-farm-01-inventory-state-foundation.md` | 农场阶段 1：统一库存、迁移与 PetState 原子更新 |
+| `docs/superpowers/plans/2026-07-26-farm-02-domain-engine.md` | 农场阶段 2：配置、状态、纯规则和事务协调器 |
+| `docs/superpowers/plans/2026-07-26-farm-03-field-ui.md` | 农场阶段 3：4×4 农田、土地与建筑 UI |
+| `docs/superpowers/plans/2026-07-26-farm-04-processing-orders-ui.md` | 农场阶段 4：加工、订单与跨页摘要 |
+| `docs/superpowers/plans/2026-07-26-farm-05-unified-inventory-integration.md` | 农场阶段 5：仓库、商店和喂食统一库存接入 |
+| `docs/superpowers/plans/2026-07-26-farm-06-reminders-final-integration.md` | 农场阶段 6：弱提醒、小鸟与最终集成验收 |
 | `docs/session-log.md` | 窗口会话日志（编号、改动文件、越界授权、追溯 bug） |
 | `specs/pet-system.md` | 宠物 Phase 1 + Phase 2 形象化需求与验收标准 |
 
@@ -73,11 +80,15 @@ GitHub：https://github.com/qiuku30/desktop-pet
 | **仓库页面** | **dash-04** | 分类 Tab（全部/食物/道具）、物品网格、`_pageCleanup` 生命周期 |
 | 🍅 番茄钟 | **infra-11 + dash-10 + pet-09** | 主进程状态机 + 面板 SVG 进度环 + 宠物浮动图标 |
 | 🎮 2048 | **infra-12 + dash-12** | 收益结算服务（分段+里程碑+心情加成）+ 4×4 游戏（键盘/拖拽/持久化/结算弹窗） |
-| 🎨 桌宠动画基础设施 | **pet-10** | 皮肤清单校验、帧时间与布局、Canvas FrameRenderer、AnimationController；164 项全项目测试通过，尚未接 UI |
+| 🎨 桌宠动画基础设施 | **pet-10** | 皮肤清单校验、帧时间与布局、Canvas FrameRenderer、AnimationController |
+| 🎨 奶油星团正式素材 | **pet-11** | portrait + 52 张 512×512 透明 WebP + schema v1 清单；ARCH-08 完成 alpha 与三背景肉眼验收 |
+| 🎨 桌宠态 Canvas 接入 | **pet-12** | 七类语义动作、方向翻转、闲置 sleep、低心情 sad、加载失败 Emoji 回退 |
+| 🎨 面板立绘接入 | **dash-13** | portrait.webp 替换角色卡 Emoji，保持 contain 与失败回退 |
+| 🛠️ 形象化专项修复 | **ui-fix-01 / pet-fix-02** | scale 锁定 0.6、修复面板 flex 裁切，并消除启动时 Emoji 物种闪变 |
 
 ### ✅ 已完成
 
-Phase 1 宠物核心系统 + 番茄钟 + 2048 全部完成。面板五页（主页/仓库/商店/设置/2048）全部可用。
+Phase 1 宠物核心系统 + 番茄钟 + 2048 + 桌宠形象化 Phase 2 全部完成。面板五页（主页/仓库/商店/设置/2048）全部可用。
 
 ### 🔨 进行中
 
@@ -88,8 +99,7 @@ Phase 1 宠物核心系统 + 番茄钟 + 2048 全部完成。面板五页（主�
 | 任务 | 说明 |
 |------|------|
 | 📝 英语单词 | spec 占位，待细化需求 |
-| 🌾 农场经营 | spec 占位，待细化需求 |
-| 桌宠形象化 + 皮肤系统 | 动画基础设施已完成；待奶油星团正式素材、Canvas DOM / pet.js 接入和面板立绘接入 |
+| 🌾 农场经营 | ARCH-10 已确认首发需求与架构设计；六阶段计划已提交，farm-01 库存与状态基础已验收 |
 | 活动监视 | 设计文档已完成，隐私敏感 |
 | 躲避光标 | 搁置，需主进程侧方案 |
 | 面板透明度设置 | 搁置，CSS 变量无法穿透 transparent:false 窗口 |
@@ -97,7 +107,7 @@ Phase 1 宠物核心系统 + 番茄钟 + 2048 全部完成。面板五页（主�
 
 ### ⏳ 未来模块
 
-桌宠形象化（基础设施已完成，待素材与接入）、单词（Phase 2）、农场（Phase 2）、超市（待规划）
+单词（Phase 2）、农场（首发设计已确认，待实现）、超市（待规划）；桌宠形象化的多形态、外部皮肤包和用户照片生成属于长期扩展。
 
 ---
 
@@ -133,7 +143,7 @@ Phase 1 宠物核心系统 + 番茄钟 + 2048 全部完成。面板五页（主�
 
 | 分支 | 状态 | 说明 |
 |------|------|------|
-| `main` | ✅ 稳定 | Phase 1 + 番茄钟 + 2048 完成，已推送 origin/main |
+| `main` | ✅ 稳定，待同步 | Phase 1 + 番茄钟 + 2048 + 桌宠形象化 Phase 2 完成；当前领先 origin/main 12 个提交，另有本轮文档同步尚未提交 |
 
 ---
 
@@ -589,7 +599,7 @@ main 分支，67 commits 领先 origin/main（未推送）
 - 136 测试通过（43 game-reward + 56 mood + 31 exp + 6 pet-motion）
 - 🎮 2048 全部交付
 - 面板五页全部可用（主页/仓库/商店/设置/2048）
-- 下一步待用户决定：单词 / 农场 / 桌宠形象化？
+- 下一步待用户决定：单词 / 农场 / 其他新模块。
 
 **规则变更**：
 - CLAUDE.md "动工前先报告"：每个实现窗口动手前必须先向架构窗口报告功能点、界面布局、涉及数据，确认对齐后再动手
@@ -613,8 +623,31 @@ main 分支，67 commits 领先 origin/main（未推送）
 - `specs/pet-system.md` 新增 Phase 2 需求与验收标准
 
 **当前状态**：
-- ARCH-08 架构设计完成，尚未修改实现代码。
-- 第一阶段拆为 `pet-10` 动画基础设施：只新增清单校验、帧时间、Canvas FrameRenderer 和 AnimationController，不接 UI/PetState/正式素材。
+- ARCH-08 架构设计已完成；实现工作按 `pet-10` → `pet-11` → `pet-12` → `dash-13` 分窗交付。
+- 第一阶段 `pet-10` 只新增清单校验、帧时间、Canvas FrameRenderer 和 AnimationController，不接 UI/PetState/正式素材。
 - TDD 实施计划：`docs/superpowers/plans/2026-07-24-pet-animation-foundation.md`。
 - `pet-10` 已完成并经 ARCH-08 独立验收：4 个实现模块、4 个测试文件，全项目 164 项测试通过；未接 UI/PetState/正式素材。
-- 下一步先完成角色正式素材与皮肤清单，再开接入窗口替换 Emoji。
+- `pet-11` 正式素材包已完成并经 ARCH-08 肉眼验收：portrait、52 张透明 WebP 动画帧、schema v1 清单和 review 审计资料。
+- `pet-12` 已将七类 Canvas 动画接入桌宠态；`dash-13` 已将 portrait 接入面板角色卡。
+- `ui-fix-01` 将角色比例锁定为 `0.6` 并修复面板 flex 裁切；`pet-fix-02` 使用静态 idle 首帧承接完整预加载，消除启动时 Emoji 闪现。
+- 最终自动验证为全仓 194/194，通过 Electron 冷启动、页面往返和 75/100/125/150% 缩放复验；全部实现均已 commit，当前尚未 push。
+
+## 2026-07-26 — ARCH-10 农场首发设计确认
+
+**处理事项**：接替架构窗口后，与用户逐项讨论并确认农场首发范围、核心循环和技术边界。
+
+**用户确认**：
+1. 首发采用 A+C 混合：`4×4` 网格种植与邻接建筑，加工和订单使用独立区域。
+2. 统一库存承载种子、作物、原料、现有食物和加工品；旧 `foodInventory` 幂等迁移。
+3. 六种首发作物采用 15 分钟至 12 小时的分层放置节奏，成熟后不枯萎。
+4. 洒水器、稻草人、堆肥箱可升级；同类取最高，不同类型叠加，工作中不可移动。
+5. 首发包含三批串行加工队列、三槽无期限订单、低价直售和高价订单混合经济。
+6. 宠物等级控制经营规模购买资格，农场等级控制内容解锁；心情只提供正向生长加速。
+7. 桌宠使用去重弱提醒；农场页包含低干扰动画和每日最多 10 次的小鸟金币彩蛋。
+8. 架构采用纯规则引擎、农场协调器和页面层；新增 `PetState.setMany()` 支持多字段原子事务。
+
+**设计文档**：
+- `specs/farm-system.md`
+- `docs/superpowers/specs/2026-07-26-farm-system-design.md`
+
+**当前状态**：设计已审核并以 `5da6956` 提交，六阶段实施计划以 `2f6dd8a` 提交；`farm-01` 已完成通用库存、旧 `foodInventory` 幂等迁移、`PetState.setMany()` 和存储默认值，并经 ARCH-10 两轮独立复验（含溢出与 malformed ID 返修），全仓 211/211 通过。实现尚未 commit，所有提交均未 push；下一阶段 `farm-02` 尚未立项。
