@@ -95,6 +95,11 @@ test('default state has four central fields, three orders and starter grant mark
   assert.equal(farm.farms['basic-farm'].tiles.filter(t => t.occupancy === 'field').length, 4)
   assert.equal(farm.orders.slots.length, 3)
   assert.equal(farm.starterGranted, false)
+  assert.deepEqual(farm.nextIds, { order: 1, processingTask: 1, building: 1 })
+  assert.deepEqual(farm.notificationState, {
+    notifiedReadyOrderIds: [],
+    lastCompletedProcessingTaskId: null,
+  })
 })
 
 test('migration is idempotent and repairs one invalid order without clearing fields', () => {
@@ -111,6 +116,8 @@ Run: `node --test src/renderer/games/farm/farm-state.test.mjs`
 - [ ] **Step 3: Implement schema v1**
 
 Use explicit state factories. Never put `Date.now()` or `Math.random()` inside the module. Add `farm: null` to store defaults; the renderer migration creates schema v1 on first access.
+
+Migration repairs records locally: remove unknown tiles and invalid building/task records; restore invalid open occupancy to an empty field and invalid closed occupancy to locked; preserve/clamp land level; clear only the invalid crop; re-chain remaining processing tasks from `now` if the active task was removed; turn an invalid order slot into `null` with `regenerateAt = now`; repair `nextIds` above every valid persisted numeric suffix; and clean notification references. The second migration of repaired state must be byte-for-byte deep-equal.
 
 - [ ] **Step 4: Verify GREEN**
 
@@ -188,7 +195,7 @@ Test three-task capacity, immediate ingredient deduction, running-task cancellat
 
 - [ ] **Step 2: Write failing order tests**
 
-Test level bands, one/two-line 70/30 selection, no duplicate slot signature, raw and processed reward multipliers, seed reward 15%, full-order atomic removal, and 30-minute abandoned-slot regeneration.
+Test level bands, stable feasible-candidate enumeration, one/two-line 70/30 selection, per-line quantity cap 20, no duplicate slot signature, two-line fallback to one line, nearest-lower-bound fallback, no-candidate null slot, raw and processed reward multipliers, exact `{ coins, farmExp, seedReward }` snapshot, 15% seed reward with stable unlocked-seed selection, full-order atomic removal, and 30-minute abandoned-slot regeneration.
 
 - [ ] **Step 3: Verify RED**
 
@@ -196,7 +203,7 @@ Run: `node --test src/renderer/games/farm/farm-processing.test.mjs src/renderer/
 
 - [ ] **Step 4: Implement from configuration**
 
-Every function returns `{ ok, ...nextValues, error? }`; never mutates input or calls PetState. Persist requirement/reward/input/output snapshots on created records.
+Every function returns `{ ok, ...nextValues, error? }`; never mutates input or calls PetState. Persist requirement/reward/input/output snapshots on created records. IDs come from persisted `nextIds` counters (`order:<n>`, `processing-task:<n>`, `building:<n>`), never from gameplay randomness.
 
 - [ ] **Step 5: Verify GREEN and commit**
 
@@ -220,7 +227,7 @@ git commit -m "feat: add farm processing and order rules"
 
 - [ ] **Step 1: Write failing atomic transaction tests**
 
-Use fake PetState that records `setMany` calls. Assert initialization grants four wheat and four carrot seeds exactly once; quick-buy plant changes coins/inventory/farm in one call; insufficient coins produces no call; repeated harvest yields one reward; order completion emits only after commit.
+Use fake PetState that records `setMany` calls. Assert initialization grants four wheat and four carrot seeds exactly once; quick-buy plant changes coins/inventory/farm in one call; insufficient coins produces no call; repeated harvest yields one reward; order completion emits only after commit; two concurrent commands are serialized; time settlement and a successful command share one commit; a failed command with settlement changes commits only settlement; and a no-op makes no commit.
 
 - [ ] **Step 2: Verify RED**
 
@@ -228,7 +235,7 @@ Run: `node --test src/renderer/games/farm/farm-service.test.mjs`
 
 - [ ] **Step 3: Implement coordinator**
 
-Each command begins with `await service.settle()` only where time-dependent, computes all next values first, then makes exactly one `petState.setMany({...})`, then emits approved `FARM_*` events.
+Serialize all commands through one internal promise queue. For time-dependent commands, calculate settlement in memory and merge it with the command result before at most one `petState.setMany({...})`. Emit settlement events, then command events, then one `FARM_STATE_CHANGED` with the approved minimal summary. Do not add a transaction ledger: persisted occupancy/order/task/bird transitions are the equivalent idempotency condition.
 
 - [ ] **Step 4: Verify full domain suite**
 

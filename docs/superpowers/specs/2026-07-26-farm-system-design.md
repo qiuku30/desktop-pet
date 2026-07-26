@@ -110,7 +110,15 @@ farm = {
     birdRewardDate: null,
     birdRewardCount: 0
   },
-  notificationState: {}
+  notificationState: {
+    notifiedReadyOrderIds: [],
+    lastCompletedProcessingTaskId: null
+  },
+  nextIds: {
+    order: 1,
+    processingTask: 1,
+    building: 1
+  }
 }
 ```
 
@@ -129,6 +137,26 @@ farm = {
 ### 4.3 订单
 
 每个槽保存订单 ID、需求快照、奖励快照、创建时间和放弃后的下次生成时间。订单创建后不随配置或市场变化，且没有截止时间。
+
+订单需求从稳定排序的可行候选池中抽取。单项枚举所有价值落入等级预算区间的数量组合；双项要求两个不同物品、每项至少 1 且最多 20 个。Lv.4 起先按 70/30 选择单项或双项；双项池为空时降级为单项。排除其他槽的完整需求签名后仍无区间内候选时，确定性选择最接近区间下限且不重复的单项；完全无候选时保留空槽并在下次结算重试，禁止无界随机重试。
+
+奖励快照固定为：
+
+```js
+{
+  coins: 0,
+  farmExp: 0,
+  seedReward: null // 或 { itemId: 'seed:wheat', count: 1 }
+}
+```
+
+金币和农场经验按需求创建时的材料直售价值计算。每单独立以 15% 概率附赠 1 粒种子；命中后从当前已解锁种子按稳定 ID 排序的候选中等概率选择。种子候选为空只令 `seedReward` 为 `null`。
+
+### 4.4 实例 ID 与提醒去重
+
+订单、加工任务和建筑使用持久化递增序号生成稳定 ID：`order:<n>`、`processing-task:<n>`、`building:<n>`。创建记录与递增 `nextIds` 必须属于同一事务；迁移按合法记录的最大序号向前修复，计数器永不回退。玩法随机源不得参与实例 ID 生成。
+
+`notificationState.notifiedReadyOrderIds` 记录已经首次变为可交付的订单。第一次满足完整需求时与业务状态同事务写入，提交成功后才发 `farm:order:ready`；订单完成、放弃或替换后移除旧 ID。`lastCompletedProcessingTaskId` 记录最近一次队列全部完成时的末尾任务 ID，为后续聚合弱提醒提供跨重启去重键。
 
 ## 5. 配置模型
 
@@ -184,6 +212,29 @@ PetState.setMany(updates)
 ```
 
 典型原子事务包括快捷补购并播种、收获、订单提交、加工入队/取消、建筑拆除和小鸟奖励。
+
+农场协调器串行执行所有命令，首发不保存额外 transaction ledger。已收获格清空、已完成订单替换、加工任务移出队列、小鸟状态清空并递增日计数等状态变化作为等价去重条件。
+
+时间相关命令不得先独立提交 `settle()`。协调器先在内存中完成结算，再基于结算结果执行用户命令，最后最多调用一次 `setMany()`。提交后按“结算语义事件 → 用户命令事件 → 一次 `farm:state:changed`”发送。若用户命令失败但结算有变化，只提交结算结果并只发结算事件；结算和命令都无变化时不提交、不发状态事件。
+
+`farm:state:changed` 的最小摘要由提交后的状态即时推导，不持久化：
+
+```js
+{
+  farmLevel,
+  farmExp,
+  matureFieldCount,
+  processing: {
+    queuedCount,
+    activeTaskId,
+    nextCompletionAt
+  },
+  orders: {
+    readyCount,
+    coolingDownCount
+  }
+}
+```
 
 ## 7. 时间与离线结算
 
@@ -262,6 +313,15 @@ PetState.setMany(updates)
 - 所有奖励操作要求唯一事务 ID 或等价去重条件。
 - 任何失败都不得产生负库存、负金币或半完成状态。
 - 重复点击收获、订单和小鸟必须幂等或在首次提交后同步锁定。
+
+schema v1 迁移采用逐记录局部修复：
+
+- 未知格子删除，缺失标准格补回；非法占用在开放格恢复为空田、未开放格恢复锁定，土地等级裁剪到 1～3。
+- 非法作物只清除该格作物；非法建筑实例删除，其占用格恢复为空田并保留合法土地等级。
+- 单个非法加工任务删除；剩余任务保持顺序。运行任务被删除时，首个合法排队任务从迁移时刻开始，并依次重建后续时间。
+- 单个非法订单槽改为空并令 `regenerateAt = now`；补足三个槽，但随机再生留给随后一次结算。
+- `nextIds` 根据合法记录最大序号向前修复；提醒状态删除非法、重复和已不存在的订单 ID。
+- 修复必须幂等，第二次迁移不得继续改变状态。
 
 ## 13. 测试
 

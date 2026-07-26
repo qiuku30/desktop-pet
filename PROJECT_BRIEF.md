@@ -650,4 +650,4 @@ main 分支，67 commits 领先 origin/main（未推送）
 - `specs/farm-system.md`
 - `docs/superpowers/specs/2026-07-26-farm-system-design.md`
 
-**当前状态**：设计已审核并以 `5da6956` 提交，六阶段实施计划以 `2f6dd8a` 提交；`farm-01` 已完成通用库存、旧 `foodInventory` 幂等迁移、`PetState.setMany()` 和存储默认值，并经 ARCH-10 两轮独立复验（含溢出与 malformed ID 返修），全仓 211/211 通过。实现尚未 commit，所有提交均未 push；下一阶段 `farm-02` 尚未立项。
+**当前状态**：设计已审核并以 `5da6956` 提交，六阶段实施计划以 `2f6dd8a` 提交；`farm-01` 以 `05956a8` 提交并经 ARCH-10 两轮独立复验，全仓 211/211 通过。`farm-02` 已立项，动工前补充锁定订单候选池、奖励快照、提醒去重、持久化递增 ID、无事务账本的状态去重、最小摘要、局部迁移修复以及结算与命令单次提交语义；尚未放行编码。所有提交均未 push。

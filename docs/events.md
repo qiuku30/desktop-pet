@@ -46,7 +46,7 @@
 
 | 事件名 | 参数 | 触发时机 |
 |--------|------|----------|
-| `farm:state:changed` | `{ summary: object }` | 农场状态结算或事务提交后摘要变化 |
+| `farm:state:changed` | `{ summary: { farmLevel, farmExp, matureFieldCount, processing: { queuedCount, activeTaskId, nextCompletionAt }, orders: { readyCount, coolingDownCount } } }` | 农场状态成功提交后最后发送；摘要由提交后状态推导，不持久化 |
 | `farm:crop:harvested` | `{ cropId: string, quantity: number, tileId: string }` | 成功收获作物 |
 | `farm:processing:completed` | `{ taskIds: string[], outputs: object }` | 一批或多批加工任务完成 |
 | `farm:order:completed` | `{ orderId: string, rewards: object }` | 订单整单交付成功 |
