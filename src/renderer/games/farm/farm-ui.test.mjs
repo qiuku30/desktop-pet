@@ -56,7 +56,7 @@ test('view model exposes exactly sixteen stable tiles and farm-02 summary semant
   assert.deepEqual(vm.tiles.map(tile => tile.id), FARM_CONFIG.farms['basic-farm'].tiles.map(tile => tile.id))
   assert.deepEqual(vm.summary, {
     matureFieldCount: 2,
-    processing: { queuedCount: 0 },
+    processing: { queuedCount: 0, nextCompletionAt: null },
     orders: { readyCount: 0 },
     farmLevel: 1,
     farmExp: 4,
@@ -91,7 +91,7 @@ test('view model derives unlock, seed, land, building and work-lock presentation
   assert.equal(vm.tiles.find(tile => tile.id === 'r2c2').building.refundPreview, 30)
 })
 
-test('shell contains accessible disabled future tabs and harvest-all state', () => {
+test('shell enables all three tabs, keeps the summary and exposes a child tab host', () => {
   const vm = buildFarmViewModel({
     farm: sampleState(),
     inventory: {},
@@ -100,10 +100,29 @@ test('shell contains accessible disabled future tabs and harvest-all state', () 
   }, FARM_CONFIG, NOW)
   const html = renderFarmShell(vm)
 
-  assert.match(html, /data-farm-tab="processing"[^>]*disabled[^>]*aria-disabled="true"/)
-  assert.match(html, /data-farm-tab="orders"[^>]*disabled[^>]*aria-disabled="true"/)
+  assert.match(html, /data-farm-tab="processing"/)
+  assert.match(html, /data-farm-tab="orders"/)
+  assert.doesNotMatch(html, /data-farm-tab="(?:processing|orders)"[^>]*disabled/)
+  assert.match(html, /class="farm-tab-content"/)
+  assert.match(html, /aria-label="农场摘要"/)
   assert.match(html, /data-action="harvest-all"/)
   assert.doesNotMatch(html, /data-action="harvest-all"[^>]*disabled/)
+})
+
+test('summary persists with identical values across every selected tab', () => {
+  const vm = buildFarmViewModel({
+    farm: sampleState(),
+    inventory: {},
+    coins: 7,
+    petLevel: 1,
+  }, FARM_CONFIG, NOW)
+  const summaries = ['field', 'processing', 'orders'].map(activeTab => {
+    const html = renderFarmShell(vm, { activeTab })
+    return html.match(/<section class="farm-summary"[\s\S]*?<\/section>/)?.[0]
+  })
+  assert.equal(new Set(summaries).size, 1)
+  assert.match(summaries[0], /Lv\.1/)
+  assert.match(summaries[0], /可交付/)
 })
 
 test('field renderer emits sixteen keyboard-focusable tile buttons', () => {
@@ -150,6 +169,14 @@ function createHarness(farm = createDefaultFarmState(NOW, () => 0.5), { level = 
     level,
   }
   let clickHandler = null
+  let childClickHandler = null
+  const childContainer = {
+    innerHTML: '',
+    addEventListener(type, handler) { if (type === 'click') childClickHandler = handler },
+    removeEventListener(type, handler) {
+      if (type === 'click' && childClickHandler === handler) childClickHandler = null
+    },
+  }
   const container = {
     className: '',
     innerHTML: '',
@@ -159,11 +186,15 @@ function createHarness(farm = createDefaultFarmState(NOW, () => 0.5), { level = 
     removeEventListener(type, handler) {
       if (type === 'click' && clickHandler === handler) clickHandler = null
     },
+    querySelector(selector) {
+      return selector === '.farm-tab-content' ? childContainer : null
+    },
   }
   const calls = []
   const service = Object.fromEntries([
     'plant', 'harvest', 'harvestAll', 'removeCrop', 'unlockTile', 'upgradeLand',
     'build', 'moveBuilding', 'upgradeBuilding', 'demolishBuilding',
+    'enqueue', 'cancelQueued', 'completeOrder', 'abandonOrder', 'settle',
   ].map(name => [name, async args => {
     calls.push([name, args])
     return name === 'demolishBuilding' ? { ok: true, refund: 30 } : { ok: true }
@@ -204,7 +235,26 @@ function createHarness(farm = createDefaultFarmState(NOW, () => 0.5), { level = 
       },
     })
   }
-  return { state, container, calls, overlays, cleanup, click, clickTile }
+  const clickTab = farmTab => {
+    const tab = { dataset: { farmTab } }
+    clickHandler({
+      target: {
+        closest(selector) {
+          if (selector === '[data-farm-tab]') return tab
+          return null
+        },
+      },
+    })
+  }
+  const clickChild = dataset => {
+    const action = { dataset, disabled: false }
+    childClickHandler?.({
+      target: { closest: selector => selector === '[data-action]' ? action : null },
+    })
+  }
+  return {
+    state, container, childContainer, calls, overlays, cleanup, click, clickTile, clickTab, clickChild,
+  }
 }
 
 test('plant forwards quick-buy intent and harvest-all remains one service command', async () => {
@@ -215,6 +265,7 @@ test('plant forwards quick-buy intent and harvest-all remains one service comman
     cropId: 'crop:wheat',
     quickBuy: 'true',
   })
+  await new Promise(resolve => setImmediate(resolve))
   harness.click({ action: 'harvest-all' })
   await new Promise(resolve => setImmediate(resolve))
 
@@ -350,5 +401,207 @@ test('building move mode accepts only an empty open field target', async () => {
     'moveBuilding',
     { buildingId: 'building:1', targetTileId: 'r1c2' },
   ])
+  harness.cleanup()
+})
+
+function deferred() {
+  let resolve
+  const promise = new Promise(done => { resolve = done })
+  return { promise, resolve }
+}
+
+function createGateHarness() {
+  const farm = createDefaultFarmState(NOW, () => 0.5)
+  const state = { farm, inventory: {}, coins: 0, level: 1 }
+  const callbacks = []
+  const settlements = []
+  const mutations = []
+  let settleCalls = 0
+  let mutationCalls = 0
+  let clickHandler = null
+  let renderCount = 0
+  const container = {
+    className: '',
+    get innerHTML() { return '' },
+    set innerHTML(_value) { renderCount += 1 },
+    addEventListener(type, handler) { if (type === 'click') clickHandler = handler },
+    removeEventListener(type, handler) {
+      if (type === 'click' && clickHandler === handler) clickHandler = null
+    },
+    querySelector() { return null },
+  }
+  const service = {
+    settle() {
+      settleCalls += 1
+      const gate = deferred()
+      settlements.push(gate)
+      return gate.promise
+    },
+    harvestAll() {
+      mutationCalls += 1
+      const gate = deferred()
+      mutations.push(gate)
+      return gate.promise
+    },
+  }
+  const cleanup = mountFarm(container, {
+    service,
+    petState: {
+      get(key) { return structuredClone(state[key]) },
+      subscribe() { return () => {} },
+    },
+    eventBus: { on() { return () => {} } },
+    now: () => NOW,
+    setIntervalFn(callback, delay) {
+      callbacks.push({ callback, delay })
+      return callbacks.length
+    },
+    clearIntervalFn() {},
+    closeOverlay() {},
+  })
+  const lowFrequency = callbacks.find(entry => entry.delay === 30_000)
+  const clickMutation = () => clickHandler({
+    target: {
+      closest(selector) {
+        if (selector === '[data-action]') {
+          return { dataset: { action: 'harvest-all' }, disabled: false }
+        }
+        return null
+      },
+    },
+  })
+  return {
+    cleanup,
+    lowFrequency,
+    settlements,
+    mutations,
+    clickMutation,
+    settleCalls: () => settleCalls,
+    mutationCalls: () => mutationCalls,
+    renderCount: () => renderCount,
+  }
+}
+
+test('settlement requests during an active settlement coalesce into exactly one follow-up', async () => {
+  const harness = createGateHarness()
+  assert.ok(harness.lowFrequency)
+  harness.lowFrequency.callback()
+  harness.lowFrequency.callback()
+  harness.lowFrequency.callback()
+  assert.equal(harness.settleCalls(), 1)
+  harness.settlements[0].resolve({ ok: true })
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(harness.settleCalls(), 2)
+  harness.settlements[1].resolve({ ok: true })
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(harness.settleCalls(), 2)
+  harness.cleanup()
+})
+
+test('mutation clicked during settlement waits, locks immediately and runs exactly once', async () => {
+  const harness = createGateHarness()
+  harness.lowFrequency.callback()
+  harness.clickMutation()
+  harness.clickMutation()
+  assert.equal(harness.mutationCalls(), 0)
+  harness.settlements[0].resolve({ ok: true })
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(harness.mutationCalls(), 1)
+  harness.mutations[0].resolve({ ok: true })
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(harness.mutationCalls(), 1)
+  harness.cleanup()
+})
+
+test('settlement requests during mutation coalesce into exactly one follow-up', async () => {
+  const harness = createGateHarness()
+  harness.clickMutation()
+  assert.equal(harness.mutationCalls(), 1)
+  harness.lowFrequency.callback()
+  harness.lowFrequency.callback()
+  assert.equal(harness.settleCalls(), 0)
+  harness.mutations[0].resolve({ ok: true })
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(harness.settleCalls(), 1)
+  harness.settlements[0].resolve({ ok: true })
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(harness.settleCalls(), 1)
+  harness.cleanup()
+})
+
+test('cleanup cancels queued follow-ups and late settlement or mutation side effects', async () => {
+  const settlementCase = createGateHarness()
+  settlementCase.lowFrequency.callback()
+  settlementCase.lowFrequency.callback()
+  const settlementRenders = settlementCase.renderCount()
+  settlementCase.cleanup()
+  settlementCase.settlements[0].resolve({ ok: true })
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(settlementCase.settleCalls(), 1)
+  assert.equal(settlementCase.renderCount(), settlementRenders)
+
+  const waitingMutationCase = createGateHarness()
+  waitingMutationCase.lowFrequency.callback()
+  waitingMutationCase.clickMutation()
+  const waitingRenders = waitingMutationCase.renderCount()
+  waitingMutationCase.cleanup()
+  waitingMutationCase.settlements[0].resolve({ ok: true })
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(waitingMutationCase.mutationCalls(), 0)
+  assert.equal(waitingMutationCase.renderCount(), waitingRenders)
+
+  const mutationCase = createGateHarness()
+  mutationCase.clickMutation()
+  mutationCase.lowFrequency.callback()
+  const mutationRenders = mutationCase.renderCount()
+  mutationCase.cleanup()
+  mutationCase.mutations[0].resolve({ ok: true })
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(mutationCase.settleCalls(), 0)
+  assert.equal(mutationCase.renderCount(), mutationRenders)
+})
+
+test('processing cancellation and order abandonment confirmations show escaped exact details', async () => {
+  const farm = createDefaultFarmState(NOW, () => 0.5)
+  farm.processor.queue = [
+    {
+      id: 'processing-task:1', recipeId: 'recipe:cookie', status: 'running',
+      inputs: { 'crop:wheat': 2 }, outputs: { 'food:cookie': 3 },
+      completesAt: '2026-07-26T08:30:00.000Z',
+    },
+    {
+      id: 'processing-task:2', recipeId: 'recipe:cookie', status: 'queued',
+      inputs: { 'crop:wheat': 2, '<unsafe>': 1 }, outputs: { 'food:cookie': 3 },
+      completesAt: null,
+    },
+  ]
+  farm.orders.slots[0] = {
+    order: {
+      id: 'order:1',
+      requirements: { 'crop:carrot': 2, '<unsafe>': 1 },
+      rewards: { coins: 10, farmExp: 8, seedReward: null },
+    },
+    regenerateAt: null,
+  }
+  const harness = createHarness(farm)
+
+  harness.clickTab('processing')
+  harness.clickChild({ action: 'cancel-processing', taskId: 'processing-task:2' })
+  assert.match(harness.overlays[0].options.html, /小麦 × 2/)
+  assert.match(harness.overlays[0].options.html, /&lt;unsafe&gt; × 1/)
+  assert.match(harness.overlays[0].options.html, /全部返还/)
+  harness.overlays[0].resolve('cancel')
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(harness.calls.some(([name]) => name === 'cancelQueued'), false)
+
+  harness.clickTab('orders')
+  harness.clickChild({ action: 'abandon-order', slotIndex: '0' })
+  assert.match(harness.overlays[1].options.html, /胡萝卜 × 2/)
+  assert.match(harness.overlays[1].options.html, /&lt;unsafe&gt; × 1/)
+  assert.match(harness.overlays[1].options.html, /30 分钟冷却，期间无订单/)
+  harness.clickTab('field')
+  harness.overlays[1].resolve('confirm')
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(harness.calls.some(([name]) => name === 'abandonOrder'), false)
   harness.cleanup()
 })

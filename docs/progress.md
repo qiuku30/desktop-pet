@@ -508,4 +508,11 @@
 - ⏸ 加工台、订单、小鸟奖励和桌宠提醒不在本窗口范围；实现窗口须先报告功能、界面、数据及事件/依赖边界，等待 ARCH-10 确认后再编码。
 - 🔄 首轮实现全仓 267/267，语法与 `git diff --check` 通过；ARCH-10 独立复验发现加载失败后同页无法重试、移动目标缺少可访问名称、Dashboard 生命周期仅有源码正则而缺少行为测试，以及部分土地/建筑 UI 命令覆盖不足，已退回 farm-03 返修。
 - 🔄 第一轮返修后全仓 274/274，原四项缺口关闭；ARCH-10 第二轮失败链探针发现旧页已 cleanup 后仍保留旧 current ID、点击旧入口无法恢复，以及 `activate()` 抛错不调用新页面 cleanup，已再次退回返修。新增 `dashboard/page-navigation.js` 未提前申请文件扩围，ARCH-10 基于最小可测试生命周期模块需要予以后补授权并要求交付如实记录。
-- ✅ 第二轮返修后通过 ARCH-10 第三轮独立复验：旧入口恢复、activate 异常 cleanup、dispose 与迟到 render 的对抗探针通过；全仓 277/277，生产 JS 语法和 `git diff --check` 通过；Electron 冷启动、农场挂载、16 格/禁用页签、主页往返和重新挂载通过。farm-03 当前未 commit/merge/push。
+- ✅ 第二轮返修后通过 ARCH-10 第三轮独立复验：旧入口恢复、activate 异常 cleanup、dispose 与迟到 render 的对抗探针通过；全仓 277/277，生产 JS 语法和 `git diff --check` 通过；Electron 冷启动、农场挂载、16 格/禁用页签、主页往返和重新挂载通过。farm-03 已以 `550aa3a` 提交，未 merge/push。
+
+## 🌾 农场经营 — farm-04 加工台与订单 UI（2026-07-26）
+
+- 📝 用户已确认由 Codex 执行高难度 farm-04，范围为加工配方/三任务队列/取消退款、三槽订单/交付/放弃冷却、跨页摘要与离线结算生命周期。
+- ⏸ 出售、投喂、小鸟彩蛋和桌宠弱提醒不在本窗口范围；实现窗口须先报告功能、界面、数据、结算时机及防重设计，等待 ARCH-10 确认后再编码。
+- 🔄 首轮实现全仓 287/287、语法与 `git diff --check` 通过；ARCH-10 独立复验确认两项未覆盖竞态：结算请求若发生在已有 settlement 期间不会登记完成后补跑，边界完成可能延迟至下一次 30 秒轮询；settlement 期间仍可启动 mutation，违反全局单一操作门控。已退回 farm-04，要求统一串行门控、合并一次补跑并增加双向交错与 cleanup 回归测试。
+- ✅ 返修后通过 ARCH-10 第二轮独立复验：settlement/mutation 统一串行门控，在途结算请求合并为一次后续补跑，settlement 期间首次 mutation 点击立即锁定并等待，重复点击不排队；cleanup 阻断迟到 mutation、settlement、render 与反馈。可控 Promise 竞态测试、加工/订单 UI 定向 27/27、全仓 290/290、生产文件语法和 `git diff --check` 均通过；Electron 实测农田/加工/订单切换、三槽内容、放弃确认取消、主页往返与重新挂载通过。尚未 commit/merge/push。

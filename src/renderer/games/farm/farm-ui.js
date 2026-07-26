@@ -5,6 +5,14 @@ import {
 } from './farm-config.mjs'
 import { canCompleteOrder } from './farm-orders.mjs'
 import { canUnlockTile, isCropMature } from './farm-rules.mjs'
+import {
+  buildProcessingViewModel,
+  renderProcessingTab,
+} from './farm-processing-ui.js'
+import {
+  buildOrdersViewModel,
+  renderOrdersTab,
+} from './farm-orders-ui.js'
 
 const BUILDING_META = Object.freeze({
   'building:sprinkler': { name: '洒水器', emoji: '💦' },
@@ -31,6 +39,13 @@ const ERROR_MESSAGES = Object.freeze({
   BUILDING_WORKING: '建筑正在为生长作物提供效果，暂时不能移动或拆除。',
   BUILDING_MAX_LEVEL: '建筑已经达到最高等级。',
   BUILDING_LEVEL_LOCKED: '农场等级尚未解锁该建筑升级。',
+  UNKNOWN_RECIPE: '配方不存在。',
+  QUEUE_FULL: '加工队列已满。',
+  INSUFFICIENT_INGREDIENTS: '加工材料不足。',
+  TASK_NOT_FOUND: '加工任务已不存在。',
+  TASK_RUNNING: '正在加工的任务不能取消。',
+  ORDER_NOT_FOUND: '订单已不存在。',
+  INSUFFICIENT_ITEMS: '库存不足，无法完整交付。',
 })
 
 export function escapeHtml(value) {
@@ -74,9 +89,13 @@ function formatRemaining(readyAt, now) {
 
 function farmSummary(farm, inventory, now) {
   const tiles = farm.farms[farm.activeFarmId].tiles
+  const activeProcessing = farm.processor.queue[0] || null
   return {
     matureFieldCount: tiles.filter(tile => tile.crop && isCropMature(tile.crop, now)).length,
-    processing: { queuedCount: farm.processor.queue.length },
+    processing: {
+      queuedCount: farm.processor.queue.length,
+      nextCompletionAt: activeProcessing?.completesAt || null,
+    },
     orders: {
       readyCount: farm.orders.slots.filter(slot =>
         slot.order && canCompleteOrder(slot.order, inventory)).length,
@@ -165,6 +184,7 @@ export function buildFarmViewModel(snapshot, config = FARM_CONFIG, now = new Dat
     buildingCount,
     buildingCapacity,
     farmLevelRequiredExp: config.farmLevels[farm.level - 1]?.requiredExp ?? null,
+    now,
   }
 }
 
@@ -223,10 +243,13 @@ function summaryHtml(vm) {
   const queueLabel = vm.summary.processing.queuedCount
     ? `${vm.summary.processing.queuedCount} 批`
     : '空闲'
+  const queueTime = vm.summary.processing.nextCompletionAt
+    ? formatRemaining(vm.summary.processing.nextCompletionAt, vm.now)
+    : ''
   return `<section class="farm-summary" aria-label="农场摘要">
     <div class="farm-summary-item"><span>农场</span><strong>Lv.${vm.summary.farmLevel}</strong><small>${expLabel}</small></div>
     <div class="farm-summary-item"><span>成熟</span><strong>${vm.summary.matureFieldCount}</strong><small>块田</small></div>
-    <div class="farm-summary-item"><span>加工</span><strong>${queueLabel}</strong></div>
+    <div class="farm-summary-item"><span>加工</span><strong>${queueLabel}</strong>${queueTime ? `<small>${escapeHtml(queueTime)}</small>` : ''}</div>
     <div class="farm-summary-item"><span>订单</span><strong>${vm.summary.orders.readyCount}</strong><small>可交付</small></div>
     <div class="farm-summary-item"><span>金币</span><strong>${vm.coins}</strong><small>🪙</small></div>
   </section>`
@@ -234,17 +257,13 @@ function summaryHtml(vm) {
 
 export function renderFarmShell(vm, ui = {}) {
   const harvestDisabled = vm.summary.matureFieldCount === 0 ? ' disabled' : ''
-  return `<div class="farm-page">
-    ${summaryHtml(vm)}
-    <div class="farm-tabs" role="tablist" aria-label="农场区域">
-      <button type="button" class="farm-tab farm-tab--active" role="tab" aria-selected="true" data-farm-tab="field">农田</button>
-      <button type="button" class="farm-tab" role="tab" data-farm-tab="processing" disabled aria-disabled="true">加工</button>
-      <button type="button" class="farm-tab" role="tab" data-farm-tab="orders" disabled aria-disabled="true">订单</button>
-    </div>
-    <div class="farm-toolbar">
+  const activeTab = ui.activeTab || 'field'
+  const tab = (id, label) => `<button type="button" class="farm-tab${activeTab === id ? ' farm-tab--active' : ''}"
+    role="tab" aria-selected="${activeTab === id}" data-farm-tab="${id}">${label}</button>`
+  let fieldContent = `<div class="farm-toolbar">
       <span>建筑 ${vm.buildingCount}/${vm.buildingCapacity}</span>
       <span class="farm-feedback" role="status" aria-live="polite">${escapeHtml(ui.feedback || '')}</span>
-      <button type="button" class="farm-btn farm-btn--primary" data-action="harvest-all"${harvestDisabled}>收获全部</button>
+      <button type="button" class="farm-btn farm-btn--primary" data-action="harvest-all"${harvestDisabled}${ui.busy ? ' disabled' : ''}>收获全部</button>
       <button type="button" class="farm-btn" data-action="open-warehouse">前往仓库</button>
     </div>
     <div class="farm-workspace">
@@ -254,6 +273,22 @@ export function renderFarmShell(vm, ui = {}) {
       <aside class="farm-actions" aria-label="田地操作">
         ${renderActionPanel(vm, ui)}
       </aside>
+    </div>`
+  if (ui.busy) {
+    fieldContent = fieldContent.replace(
+      /<button(?=[^>]*data-action="(?!open-warehouse)[^"]+")[^>]*>/g,
+      tag => tag.includes(' disabled') ? tag : tag.replace('>', ' disabled>'),
+    )
+  }
+  return `<div class="farm-page">
+    ${summaryHtml(vm)}
+    <div class="farm-tabs" role="tablist" aria-label="农场区域">
+      ${tab('field', '农田')}
+      ${tab('processing', '加工')}
+      ${tab('orders', '订单')}
+    </div>
+    <div class="farm-tab-content" data-active-farm-tab="${activeTab}">
+      ${activeTab === 'field' ? fieldContent : ''}
     </div>
   </div>`
 }
@@ -343,7 +378,7 @@ function renderActionPanel(vm, ui) {
     </div>`
 }
 
-function confirmationHtml({ title, body, confirmLabel = '确认' }) {
+function confirmationHtml({ title, body, bodyHtml, confirmLabel = '确认' }) {
   return `<style>
     body{margin:0;background:#2c2c2c;color:#ddd;font-family:'Microsoft YaHei','PingFang SC',sans-serif}
     #overlay-handle{display:none}.farm-confirm{padding:16px}.farm-confirm h2{font-size:15px;margin:0 0 10px;color:#fff}
@@ -351,7 +386,7 @@ function confirmationHtml({ title, body, confirmLabel = '确认' }) {
     .farm-confirm button{padding:7px 16px;border:1px solid #555;border-radius:6px;background:transparent;color:#ddd}
     .farm-confirm .danger{border-color:#e57373;color:#ef9a9a}
   </style><div class="farm-confirm">
-    <h2>${escapeHtml(title)}</h2><p>${escapeHtml(body)}</p>
+    <h2>${escapeHtml(title)}</h2><p>${bodyHtml || escapeHtml(body)}</p>
     <div class="farm-confirm-actions">
       <button type="button" data-overlay-result="cancel">取消</button>
       <button type="button" class="danger" data-overlay-result="confirm">${escapeHtml(confirmLabel)}</button>
@@ -367,12 +402,22 @@ export function mountFarm(container, {
   showOverlay = options => window.electronAPI.showOverlay(options),
   closeOverlay = () => window.electronAPI.closeOverlay(),
   now = () => new Date().toISOString(),
+  setIntervalFn = setInterval,
+  clearIntervalFn = clearInterval,
 } = {}) {
   let disposed = false
   let generation = 0
+  let tabGeneration = 0
+  let activeTab = 'field'
+  let activeTabCleanup = null
+  const processingBoundaries = new Set()
+  const orderBoundaries = new Set()
   let selectedTileId = null
   let mode = null
   let feedback = ''
+  let mutationBusy = false
+  let settlementInFlight = null
+  let settlementPending = false
 
   const snapshot = () => ({
     farm: petState.get('farm'),
@@ -383,24 +428,79 @@ export function mountFarm(container, {
 
   const render = () => {
     if (disposed) return
+    activeTabCleanup?.()
+    activeTabCleanup = null
     const vm = buildFarmViewModel(snapshot(), FARM_CONFIG, now())
     if (selectedTileId && !vm.tiles.some(tile => tile.id === selectedTileId)) selectedTileId = null
     container.className = 'page page--farm'
-    container.innerHTML = renderFarmShell(vm, { selectedTileId, mode, feedback })
+    container.innerHTML = renderFarmShell(vm, {
+      selectedTileId, mode, feedback, activeTab, busy: mutationBusy,
+    })
+    const childContainer = container.querySelector?.('.farm-tab-content')
+    if (!childContainer || activeTab === 'field') return
+    const childActions = {
+      now,
+      isBusy: () => mutationBusy,
+      requestSettlement,
+      setIntervalFn,
+      clearIntervalFn,
+    }
+    if (activeTab === 'processing') {
+      activeTabCleanup = renderProcessingTab(
+        childContainer,
+        buildProcessingViewModel(snapshot(), FARM_CONFIG, now()),
+        {
+          ...childActions,
+          boundaryTracker: processingBoundaries,
+          onEnqueue: recipeId => execute(() => service.enqueue({ recipeId })),
+          onCancel: taskId => confirmCancelProcessing(taskId),
+        },
+      )
+    } else {
+      activeTabCleanup = renderOrdersTab(
+        childContainer,
+        buildOrdersViewModel(snapshot(), now()),
+        {
+          ...childActions,
+          boundaryTracker: orderBoundaries,
+          onComplete: slotIndex => execute(() => service.completeOrder({ slotIndex })),
+          onAbandon: slotIndex => confirmAbandonOrder(slotIndex),
+        },
+      )
+    }
   }
 
   const execute = async command => {
+    if (disposed || mutationBusy) return
+    mutationBusy = true
     const callGeneration = generation
-    const result = await command()
-    if (disposed || callGeneration !== generation) return
-    feedback = result.ok
-      ? (result.uiSuccessMessage || '操作成功')
-      : (ERROR_MESSAGES[result.error] || '操作失败，请重试。')
+    const blockingSettlement = settlementInFlight
     render()
+    try {
+      if (blockingSettlement) await blockingSettlement
+      if (disposed || callGeneration !== generation) return
+      const result = await command()
+      if (disposed || callGeneration !== generation) return
+      feedback = result.ok
+        ? (result.uiSuccessMessage || '操作成功')
+        : (ERROR_MESSAGES[result.error] || '操作失败，请重试。')
+    } catch (error) {
+      if (!disposed && callGeneration === generation) {
+        console.error('[Farm UI] mutation failed:', error)
+        feedback = '操作失败，请重试。'
+      }
+    } finally {
+      if (!disposed && callGeneration === generation) {
+        mutationBusy = false
+        render()
+        if (settlementPending) requestSettlement()
+      }
+    }
   }
 
   const confirmThen = async (options, command) => {
     const callGeneration = generation
+    const callTabGeneration = tabGeneration
     const result = await showOverlay({
       html: confirmationHtml(options),
       width: 360,
@@ -408,11 +508,82 @@ export function mountFarm(container, {
       x: 120,
       y: 100,
     })
-    if (disposed || callGeneration !== generation || result !== 'confirm') return
+    if (disposed || callGeneration !== generation || callTabGeneration !== tabGeneration
+        || result !== 'confirm') return
     await execute(command)
   }
 
+  function requestSettlement() {
+    if (disposed) return Promise.resolve()
+    if (mutationBusy) {
+      settlementPending = true
+      return Promise.resolve()
+    }
+    if (settlementInFlight) {
+      settlementPending = true
+      return settlementInFlight
+    }
+    settlementPending = false
+    const callGeneration = generation
+    settlementInFlight = Promise.resolve(service.settle())
+      .catch(error => {
+        if (!disposed && callGeneration === generation) {
+          console.error('[Farm UI] settlement failed:', error)
+          feedback = '结算失败，将稍后重试。'
+        }
+      })
+      .finally(() => {
+        settlementInFlight = null
+        if (!disposed && callGeneration === generation) {
+          render()
+          if (settlementPending && !mutationBusy) requestSettlement()
+        }
+      })
+    return settlementInFlight
+  }
+
+  function confirmCancelProcessing(taskId) {
+    const task = snapshot().farm.processor.queue.find(entry => entry.id === taskId)
+    if (!task || task.status !== 'queued') return
+    const details = Object.entries(task.inputs).map(([id, count]) => {
+      const item = ITEMS[id]
+      return `${escapeHtml(item?.name || id)} × ${count}`
+    }).join('、')
+    confirmThen({
+      title: '取消排队任务',
+      bodyHtml: `将全部返还：${details}。确定取消吗？`,
+      confirmLabel: '确认取消',
+    }, () => service.cancelQueued({ taskId }))
+  }
+
+  function confirmAbandonOrder(slotIndex) {
+    const order = snapshot().farm.orders.slots[slotIndex]?.order
+    if (!order) return
+    const details = Object.entries(order.requirements).map(([id, count]) => {
+      const item = ITEMS[id]
+      return `${escapeHtml(item?.name || id)} × ${count}`
+    }).join('、')
+    confirmThen({
+      title: '放弃订单',
+      bodyHtml: `订单需求：${details}。放弃后本槽进入 30 分钟冷却，期间无订单。`,
+      confirmLabel: '确认放弃',
+    }, () => service.abandonOrder({ slotIndex }))
+  }
+
   const onClick = event => {
+    const tabButton = event.target.closest('[data-farm-tab]')
+    if (tabButton) {
+      const nextTab = tabButton.dataset.farmTab
+      if (['field', 'processing', 'orders'].includes(nextTab) && nextTab !== activeTab) {
+        tabGeneration += 1
+        activeTab = nextTab
+        selectedTileId = null
+        mode = null
+        feedback = ''
+        render()
+      }
+      return
+    }
     const tileButton = event.target.closest('[data-tile-id].farm-tile')
     const action = event.target.closest('[data-action]')
     if (tileButton && !action) {
@@ -436,6 +607,7 @@ export function mountFarm(container, {
       return
     }
     if (!action || action.disabled) return
+    if (mutationBusy && action.dataset.action !== 'open-warehouse') return
     const data = action.dataset
     switch (data.action) {
       case 'harvest-all':
@@ -503,7 +675,7 @@ export function mountFarm(container, {
   const unsubscribePet = petState.subscribe(EVENTS.PET_STATE_CHANGED, ({ key }) => {
     if (['farm', 'inventory', 'coins', 'level'].includes(key)) render()
   })
-  const tick = setInterval(render, 30_000)
+  const tick = setIntervalFn(requestSettlement, 30_000)
   render()
 
   return () => {
@@ -511,7 +683,9 @@ export function mountFarm(container, {
     disposed = true
     generation += 1
     mode = null
-    clearInterval(tick)
+    activeTabCleanup?.()
+    activeTabCleanup = null
+    clearIntervalFn(tick)
     container.removeEventListener('click', onClick)
     unsubscribeFarm()
     unsubscribePet()

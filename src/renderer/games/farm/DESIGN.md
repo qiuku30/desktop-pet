@@ -1,6 +1,6 @@
 # 农场模块技术设计
 
-> farm-02 提供领域层；farm-03 增加农田与建筑页面。加工、订单操作页、桌宠提醒和旧库存消费者迁移仍由 farm-04～06 负责。
+> farm-02 提供领域层；farm-03 增加农田与建筑页面；farm-04 增加加工、订单与跨页摘要。桌宠提醒和旧库存消费者迁移仍由 farm-05～06 负责。
 
 ## 分层
 
@@ -11,6 +11,8 @@
 - `farm-orders.mjs`：稳定候选池、70/30 单/双项、去重、奖励快照、整单交付和冷却再生。
 - `farm-service.js`：唯一读取 PetState 并调用 `setMany()` 的农场协调器。
 - `farm-ui.js`：农田 view model、HTML 渲染、事件委托、确认流程与页面生命周期。
+- `farm-processing-ui.js`：配方/材料 view model、三槽队列、运行倒计时与排队取消交互。
+- `farm-orders-ui.js`：三槽订单、持有/需求、奖励快照、交付与冷却倒计时交互。
 - `farm-module.js`：唯一公开 Dashboard 挂载入口，负责初始化 PetState、创建 service 和注入样式。
 - `farm.css`：响应式 `4×4` 网格、农田/建筑状态、低频动画和减少动态效果适配。
 
@@ -110,3 +112,29 @@ UI 不调用 `PetState.set/setMany()`，也不重写生长、产量、邻接或�
 `cleanup` 清除事件订阅、DOM 监听、低频时间刷新、移动模式和迟到确认，并关闭残留
 overlay。洒水器、堆肥箱、成熟作物和移动目标仅使用克制的低频动画；
 `prefers-reduced-motion: reduce` 下全部禁用。
+
+## farm-04 加工与订单页面
+
+三个页签全部可用，顶部摘要不随页签切换销毁。加工页按配置展示配方解锁、
+输入材料 `owned/required`、输出、耗时和三任务串行队列；只有 queued 任务提供取消，
+确认框从任务 `inputs` 快照逐项展示全额退款。订单页固定展示三个持久槽，
+逐项展示 `owned/required` 和创建时奖励快照；完整交付无需确认，放弃确认展示需求并
+明确该槽进入 30 分钟无订单冷却。
+
+`mountFarm` 是结算入口和全局 mutation busy lock 的唯一所有者：
+
+- 30 秒低频 interval 调用同一个 single-flight `requestSettlement()`。
+- child tab 只有 1 秒显示 timer；加工完成或冷却边界首次到零时请求同一个 gate，
+  不创建周期性结算 loop。
+- settlement 与 mutation 共用串行门控：settlement/mutation 在途期间收到的 settlement
+  请求只合并为一个 pending 标记；当前操作结束时先消费并清除该标记，再恰好补跑一次。
+  补跑期间到达的新请求可以重新登记下一次 pending。
+- settlement 在途时首次 mutation 点击立即占用全局 busy lock，等待该 settlement 完成后
+  才调用业务 command；重复点击不会排入第二个 mutation。mutation 在途时的 settlement
+  请求则统一留到 command 完成后补跑。
+- service 业务命令内部已在同一事务中先结算，UI 不额外调用 `settle()`。
+- mutation 期间所有农场业务操作由全局 busy lock 防重；页签仍可切换。
+- child cleanup 清除自己的 DOM listener 和 1 秒 timer；mount cleanup 再清除当前
+  child、30 秒 interval、订阅、overlay 和迟到异步回调。
+- 页签 generation 使切页后的迟到确认失效；mount generation 使卸载后的 settlement、
+  mutation 和确认 Promise 不得重绘或恢复旧 busy 状态。

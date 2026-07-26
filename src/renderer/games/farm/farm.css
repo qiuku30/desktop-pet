@@ -60,6 +60,14 @@
 .farm-tab--active { color: #dce9d8; border-bottom-color: #79a76f; }
 .farm-tab:disabled { opacity: 0.35; cursor: default; }
 
+.farm-tab-content {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .farm-toolbar {
   display: flex;
   align-items: center;
@@ -202,6 +210,76 @@
 
 .farm-choice small { color: #9daa99; font-size: 10px; text-align: right; }
 
+.farm-processing-view {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(210px, .72fr);
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 10px 12px 12px;
+}
+
+.farm-processing-recipes,
+.farm-processing-queue,
+.farm-orders-view {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.farm-processing-recipes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  align-content: start;
+  gap: 8px;
+}
+
+.farm-recipe-card,
+.farm-queue-slot,
+.farm-order-card {
+  border: 1px solid #3b493a;
+  border-radius: 9px;
+  background: rgba(39, 48, 38, .94);
+  padding: 10px;
+}
+
+.farm-recipe-card--locked { opacity: .55; }
+.farm-card-title { color: #edf3ea; font-size: 14px; font-weight: 600; }
+.farm-material-list { display: flex; flex-wrap: wrap; gap: 5px 10px; margin: 9px 0; color: #b7c3b3; font-size: 11px; }
+.farm-material--missing { color: #e59a94 !important; }
+.farm-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.farm-card-footer small { color: #94a291; }
+
+.farm-processing-queue {
+  padding: 10px;
+  border: 1px solid #354034;
+  border-radius: 10px;
+  background: rgba(30, 36, 29, .92);
+}
+
+.farm-processing-queue h2 { margin: 0 0 8px; color: #dce9d8; font-size: 14px; }
+.farm-queue-slot { min-height: 54px; margin-bottom: 7px; }
+.farm-queue-slot > div { display: flex; justify-content: space-between; gap: 8px; color: #d5dfd2; }
+.farm-queue-slot > small { display: block; margin: 6px 0; color: #9daa99; }
+.farm-queue-slot--empty { display: grid; place-items: center; color: #697466; border-style: dashed; }
+.farm-output-summary { color: #aebbaa; font-size: 11px; line-height: 1.6; }
+
+.farm-orders-view {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(190px, 1fr));
+  align-content: start;
+  gap: 9px;
+  padding: 10px 12px 12px;
+}
+
+.farm-order-requirements { list-style: none; margin: 10px 0; padding: 0; }
+.farm-order-requirements li { display: flex; justify-content: space-between; gap: 8px; margin: 5px 0; color: #b7c3b3; font-size: 12px; }
+.farm-order-rewards { min-height: 34px; color: #e4c86f; font-size: 11px; line-height: 1.5; }
+.farm-order-card--cooldown { display: grid; min-height: 150px; align-content: center; text-align: center; }
+.farm-order-cooldown { margin-top: 14px; color: #96a492; }
+.farm-btn--ghost { border-color: transparent; background: transparent; color: #9daa99; }
+
 @keyframes farm-target-pulse { 50% { box-shadow: 0 0 9px rgba(117,201,133,.45); } }
 @keyframes farm-mature-breathe { 50% { transform: translateY(-2px) scale(1.03); } }
 @keyframes farm-sprinkler-sway { 50% { transform: rotate(3deg); } }
@@ -220,6 +298,10 @@
   }
   .farm-grid { width: min(100%, calc(100vh - 160px)); gap: 4px; }
   .farm-actions { padding: 7px; }
+  .farm-processing-view { grid-template-columns: minmax(220px, 1fr) minmax(170px, .72fr); padding: 7px 8px 8px; }
+  .farm-processing-recipes { grid-template-columns: 1fr; }
+  .farm-orders-view { grid-template-columns: 1fr; padding: 7px 8px 8px; }
+  .farm-order-card--cooldown { min-height: 100px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
