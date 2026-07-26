@@ -35,7 +35,14 @@
 ## 状态切换
 
 - 宠物态 ↔ 面板态：loadFile 切换 HTML + 窗口 resize
-- 面板内导航切换：`switchPage(pageId)` → fade 动画 → 替换 `#content-area` 内容，PetState 订阅不销毁
+- 面板内导航切换：`switchPage(pageId)` → fade 动画 → 替换 `#content-area` 内容。
+- `page-navigation.js` 集中管理单调递增 navigation token 和页面 cleanup。异步模块
+  先挂载到离屏 staging 容器，只有 token 仍有效时才激活；迟到模块立即执行 cleanup，
+  不能覆盖当前页面或当前 cleanup。
+- mounted page 身份只在渲染与激活成功后提交；旧页开始 cleanup 时立即清空。加载或
+  激活失败后，失败目标与旧入口都可重新渲染，错误结果不会注册为 current page 或
+  current cleanup；若 render 已产生 cleanup 而 activate 失败，该 cleanup 恰好执行一次。
+- 关闭面板会使当前 token 失效并调用当前页面 cleanup。
 
 ## 导航配置
 
@@ -44,6 +51,16 @@
   - `section: 'top'` — 上部区域；`section: 'bottom'` — `margin-top: auto` 推到底部
   - `enabled: false` → `.nav-item--disabled`（`pointer-events: none` + 半透明）
   - 占位页面统一使用 `buildPlaceholderPage(container, icon, label)` 渲染
+
+## 动态模块
+
+- `src/renderer/shared/module-registry.js` 保存 `{ id, modulePath }`。
+- 农场注册为 `{ id: 'farm', modulePath: '../games/farm/farm-module.js' }`。
+- Dashboard 只通过 `loadRegisteredModule()` 加载模块，并只调用公开
+  `mount(container, options)` 合约。
+- 农场导航固定在番茄之后、2048 之前；Dashboard 通过
+  `onNavigateWarehouse` 回调提供仓库跳转，不允许农场直接 import 仓库实现。
+- 配置、动态 import 或 mount 失败时只在内容区显示错误占位，其他页面继续可用。
 
 ## 设置页面
 

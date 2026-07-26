@@ -1,0 +1,231 @@
+.page--farm {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.farm-page {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  background: linear-gradient(180deg, #202820, #1e1e1e 38%);
+}
+
+.farm-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(64px, 1fr));
+  gap: 6px;
+  padding: 8px 12px;
+  flex-shrink: 0;
+}
+
+.farm-summary-item {
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px solid #3b493a;
+  border-radius: 8px;
+  background: rgba(38, 51, 38, 0.9);
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.farm-summary-item span,
+.farm-summary-item small { color: #8fa18d; font-size: 10px; }
+.farm-summary-item strong { color: #dce9d8; font-size: 13px; overflow: hidden; text-overflow: ellipsis; }
+
+.farm-tabs {
+  display: flex;
+  padding: 0 12px;
+  border-bottom: 1px solid #354034;
+  flex-shrink: 0;
+}
+
+.farm-tab {
+  padding: 7px 18px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #91a08f;
+  font: inherit;
+  cursor: pointer;
+}
+
+.farm-tab--active { color: #dce9d8; border-bottom-color: #79a76f; }
+.farm-tab:disabled { opacity: 0.35; cursor: default; }
+
+.farm-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 6px 12px;
+  color: #9aaa98;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.farm-feedback {
+  flex: 1;
+  min-width: 0;
+  color: #e5c97b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.farm-workspace {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(180px, 0.68fr);
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 12px 12px;
+  flex: 1;
+}
+
+.farm-grid {
+  align-self: center;
+  justify-self: center;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  width: min(100%, calc(100vh - 190px));
+  max-width: 430px;
+  aspect-ratio: 1;
+}
+
+.farm-tile {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid #50654b;
+  border-radius: 10px;
+  padding: 4px;
+  background: #5b4933;
+  color: #eee;
+  font: inherit;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.farm-tile:hover,
+.farm-tile:focus-visible { outline: 2px solid #9bc28f; outline-offset: 1px; }
+.farm-tile--locked { background: #292d29; border-style: dashed; color: #747d73; }
+.farm-tile--mature { border-color: #dfc75c; box-shadow: inset 0 0 0 1px rgba(223,199,92,.35); }
+.farm-tile--selected { outline: 2px solid #76b8e8; }
+.farm-tile--move-target { outline: 2px dashed #75c985; animation: farm-target-pulse 2.4s ease-in-out infinite; }
+
+.farm-tile-land {
+  position: absolute;
+  right: 4px;
+  bottom: 2px;
+  color: rgba(255,255,255,.45);
+  font-size: 9px;
+}
+
+.farm-crop,
+.farm-building {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  gap: 1px;
+}
+
+.farm-tile-icon { font-size: clamp(17px, 3.2vw, 30px); line-height: 1; }
+.farm-tile-label,
+.farm-tile-time,
+.farm-tile-badge { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.farm-tile-label { font-size: clamp(9px, 1.3vw, 12px); }
+.farm-tile-time { color: #d5c8a8; font-size: 9px; }
+.farm-tile-badge { color: #9fd3ef; font-size: 9px; }
+.farm-crop--mature { animation: farm-mature-breathe 3.6s ease-in-out infinite; }
+.farm-building--sprinkler { animation: farm-sprinkler-sway 5s ease-in-out infinite; }
+.farm-building--compost-bin { animation: farm-compost-lift 7s ease-in-out infinite; }
+
+.farm-actions {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid #354034;
+  border-radius: 10px;
+  background: rgba(39, 45, 38, .92);
+  font-size: 12px;
+}
+
+.farm-action-title { color: #fff; font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+.farm-action-empty { display: grid; min-height: 100%; place-items: center; color: #748071; text-align: center; }
+.farm-actions p { color: #a9b4a6; line-height: 1.55; }
+.farm-action-section h3 { margin: 12px 0 6px; color: #9eae9a; font-size: 11px; font-weight: 500; }
+.farm-action-buttons { display: flex; flex-direction: column; gap: 6px; }
+
+.farm-btn,
+.farm-choice {
+  border: 1px solid #536250;
+  border-radius: 6px;
+  background: #303a2f;
+  color: #d5dfd2;
+  font: inherit;
+  cursor: pointer;
+}
+
+.farm-btn { padding: 6px 10px; }
+.farm-btn--primary { border-color: #6c9d62; color: #bfe5b7; }
+.farm-btn--danger { border-color: #915b57; color: #efaaa5; }
+.farm-btn:disabled,
+.farm-choice:disabled { opacity: .35; cursor: default; }
+.farm-btn:not(:disabled):hover,
+.farm-choice:not(:disabled):hover { background: #3d4a3b; }
+
+.farm-choice {
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 5px;
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  text-align: left;
+}
+
+.farm-choice small { color: #9daa99; font-size: 10px; text-align: right; }
+
+@keyframes farm-target-pulse { 50% { box-shadow: 0 0 9px rgba(117,201,133,.45); } }
+@keyframes farm-mature-breathe { 50% { transform: translateY(-2px) scale(1.03); } }
+@keyframes farm-sprinkler-sway { 50% { transform: rotate(3deg); } }
+@keyframes farm-compost-lift { 45%,55% { transform: translateY(-1px); } }
+
+@media (max-width: 720px), (max-height: 470px) {
+  .farm-summary { gap: 3px; padding: 5px 8px; }
+  .farm-summary-item { padding: 4px; flex-direction: column; align-items: center; gap: 0; }
+  .farm-tabs { padding: 0 8px; }
+  .farm-tab { padding: 5px 12px; }
+  .farm-toolbar { padding: 4px 8px; }
+  .farm-workspace {
+    grid-template-columns: minmax(210px, 1fr) minmax(150px, .7fr);
+    gap: 6px;
+    padding: 0 8px 8px;
+  }
+  .farm-grid { width: min(100%, calc(100vh - 160px)); gap: 4px; }
+  .farm-actions { padding: 7px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .farm-building,
+  .farm-crop,
+  .farm-tile--move-target {
+    animation: none !important;
+  }
+}

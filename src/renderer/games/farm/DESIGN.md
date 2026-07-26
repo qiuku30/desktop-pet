@@ -1,6 +1,6 @@
 # 农场模块技术设计
 
-> farm-02：无 UI 领域层。页面接入、dashboard 导航、桌宠提醒和旧库存消费者迁移由 farm-03～06 负责。
+> farm-02 提供领域层；farm-03 增加农田与建筑页面。加工、订单操作页、桌宠提醒和旧库存消费者迁移仍由 farm-04～06 负责。
 
 ## 分层
 
@@ -10,6 +10,9 @@
 - `farm-processing.mjs`：三批串行加工、即时扣料、排队取消与跨多任务离线结算。
 - `farm-orders.mjs`：稳定候选池、70/30 单/双项、去重、奖励快照、整单交付和冷却再生。
 - `farm-service.js`：唯一读取 PetState 并调用 `setMany()` 的农场协调器。
+- `farm-ui.js`：农田 view model、HTML 渲染、事件委托、确认流程与页面生命周期。
+- `farm-module.js`：唯一公开 Dashboard 挂载入口，负责初始化 PetState、创建 service 和注入样式。
+- `farm.css`：响应式 `4×4` 网格、农田/建筑状态、低频动画和减少动态效果适配。
 
 纯模块不得访问 DOM、Electron、timer、localStorage 或文件系统。当前时间和随机源由调用方注入；实例 ID 使用持久化 `nextIds`，不使用随机数。
 
@@ -82,3 +85,28 @@ createFarmService({ petState, eventBus, now, random })
 - `notifiedReadyOrderIds` 与 `lastCompletedProcessingTaskId` 提供跨重启弱提醒去重键。
 
 库存增减复用 farm-01 的不可变门面及安全整数 `RangeError` 契约。
+
+## farm-03 页面层
+
+公开合约：
+
+```js
+mount(container, { onNavigateWarehouse }) -> Promise<cleanup>
+```
+
+Dashboard 只从共享模块注册表动态加载该合约，不直接 import 农场内部文件。
+页面内部通过 `createFarmService()` 执行播种、收获、扩地、土地升级和建筑命令；
+UI 不调用 `PetState.set/setMany()`，也不重写生长、产量、邻接或奖励公式。
+
+页面由顶部摘要、三个内部页签、响应式 `4×4` 按钮网格和操作区组成。
+“加工 / 订单”在 farm-03 保持可见但为可访问的禁用按钮。建筑移动使用显式
+`{ type: 'move-building', buildingId }` 模式，只接受空的开放田地。
+
+移除生长作物和拆除建筑通过现有 overlay 双按钮确认；只有结果精确为
+`confirm` 且页面仍存活时才执行 service 命令。拆除预览由
+`investedCoins × buildingRefundRate` 向下取整派生，实际到账以
+`demolishBuilding()` 返回的 `refund` 为准。
+
+`cleanup` 清除事件订阅、DOM 监听、低频时间刷新、移动模式和迟到确认，并关闭残留
+overlay。洒水器、堆肥箱、成熟作物和移动目标仅使用克制的低频动画；
+`prefers-reduced-motion: reduce` 下全部禁用。

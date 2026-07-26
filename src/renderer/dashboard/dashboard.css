@@ -83,6 +83,12 @@ html, body {
   transition: opacity 0.15s ease;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  #content-area {
+    transition: none;
+  }
+}
+
 /* ── 导航栏 ── */
 
 .nav-section {

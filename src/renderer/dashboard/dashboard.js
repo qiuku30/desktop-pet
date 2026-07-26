@@ -7,6 +7,7 @@ const CORNER = 16
 
 // ── 返回宠物 ──
 document.getElementById('btn-close').addEventListener('click', async () => {
+  disposeCurrentPage()
   window.electronAPI.closeOverlay()      // 关闭可能残留的右键菜单
   hideTooltip()
   Game2048UI.saveBeforeClose()
@@ -97,7 +98,9 @@ import { calcRequiredExp, addExp, getFoodExp } from '../shared/exp-service.js'
 import { calcMaxSatiety } from '../shared/satiety-service.js'
 import { getMoodTier, migrateMood, boostMood, getExpMultiplier, MOOD_CONFIG } from '../shared/mood-service.js'
 import { EVENTS } from '../shared/events.js'
+import { loadRegisteredModule } from '../shared/module-registry.js'
 import { NAV_ITEMS, WAREHOUSE_CATEGORIES } from './nav-config.js'
+import { createPageNavigationCoordinator } from './page-navigation.js'
 import { SETTINGS_TABS } from './settings-config.js'
 import * as Game2048UI from '../games/2048/2048-ui.js'
 
@@ -112,7 +115,6 @@ const TOOLTIP_FIELDS = {
 
 // ── 导航状态 ──
 let currentPageId = 'home'
-let _pageCleanup = null   // 当前页面的清理函数（切页时调用，防订阅泄漏）
 
 function buildHomePage() {
   const area = document.getElementById('content-area')
@@ -1070,43 +1072,53 @@ function buildGame2048Page(container) {
 }
 
 // ── 页面切换 ──
-function switchPage(pageId) {
-  if (currentPageId === pageId) return
-
-  const item = NAV_ITEMS.find(n => n.id === pageId)
-  if (!item || !item.enabled) return
-
-  const area = document.getElementById('content-area')
-
-  // fade out
-  area.style.opacity = '0'
-
-  // 关闭可能残留的右键菜单 overlay（切页时清理）
-  window.electronAPI.closeOverlay()
-  hideTooltip()
-
-  setTimeout(() => {
-    // 清理旧页面（取消订阅等，防泄漏 — ADR-006 精神）
-    if (_pageCleanup) {
-      _pageCleanup()
-      _pageCleanup = null
-    }
-
-    // 渲染目标页面（配置驱动：所有页面统一走 item.render）
-    // render 可返回清理函数（仓库等有内部订阅的页面）
-    const cleanup = item.render(area)
-    if (typeof cleanup === 'function') _pageCleanup = cleanup
-
-    currentPageId = pageId
-
-    // fade in
-    requestAnimationFrame(() => {
-      area.style.opacity = '1'
-    })
-
-    // 更新导航高亮
+const pageNavigation = createPageNavigationCoordinator({
+  initialPageId: currentPageId,
+  resolvePage(pageId) {
+    const item = NAV_ITEMS.find(entry => entry.id === pageId)
+    if (!item?.enabled) return null
+    const area = document.getElementById('content-area')
+    return { render: () => item.render(area) }
+  },
+  async beforeNavigate() {
+    const area = document.getElementById('content-area')
+    area.style.opacity = '0'
+    window.electronAPI.closeOverlay()
+    hideTooltip()
+    await new Promise(resolve => setTimeout(resolve, 150))
+  },
+  onDeactivate() {
+    currentPageId = null
     updateNavActive()
-  }, 150)
+  },
+  onActivate(pageId) {
+    currentPageId = pageId
+    updateNavActive()
+    const area = document.getElementById('content-area')
+    requestAnimationFrame(() => {
+      if (pageNavigation.currentPageId === pageId) area.style.opacity = '1'
+    })
+  },
+  onError(pageId, error) {
+    const area = document.getElementById('content-area')
+    area.className = 'page page--placeholder'
+    area.innerHTML = `
+      <div class="placeholder-page" role="alert">
+        <div class="placeholder-icon">⚠️</div>
+        <div class="placeholder-label">页面加载失败</div>
+        <div class="placeholder-hint">请稍后重试，其他功能不受影响</div>
+      </div>`
+    area.style.opacity = '1'
+    console.error(`[Dashboard] 页面 ${pageId} 加载失败:`, error)
+  },
+})
+
+async function switchPage(pageId) {
+  return pageNavigation.navigate(pageId)
+}
+
+function disposeCurrentPage() {
+  pageNavigation.dispose()
 }
 
 // ── 导航栏渲染 ──
@@ -1467,6 +1479,21 @@ async function initStatus() {
 
   const pomodoroItem = NAV_ITEMS.find(n => n.id === 'pomodoro')
   if (pomodoroItem) pomodoroItem.render = buildPomodoroPage
+
+  const farmItem = NAV_ITEMS.find(n => n.id === 'farm')
+  if (farmItem) farmItem.render = async container => {
+    const farmModule = await loadRegisteredModule('farm')
+    const staging = document.createElement('div')
+    const cleanup = await farmModule.mount(staging, {
+      onNavigateWarehouse: () => switchPage('warehouse'),
+    })
+    return {
+      cleanup,
+      activate() {
+        container.replaceChildren(staging)
+      },
+    }
+  }
 
   const g2048Item = NAV_ITEMS.find(n => n.id === 'game2048')
   if (g2048Item) g2048Item.render = buildGame2048Page
