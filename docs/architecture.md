@@ -214,3 +214,25 @@ function loadModule(moduleId) {
 
 **教训**：Electron 的 frameless + transparent + min=max 组合在 Windows 高 DPI 下
 是已知雷区。永远用 `setBounds` 替代 `setPosition`，且尺寸走内存变量不走 `getSize()`。
+
+---
+
+## ADR-009: PetState 多字段原子更新
+
+**决策**：在保持 `get/set/subscribe/flush` 兼容的前提下，为 PetState 增加
+`setMany(updates)`，用于一次业务事务同时更新库存、金币和模块状态。
+
+**理由**：
+- 农场的收获、订单、加工和快捷补购都横跨多个全局字段。
+- 连续调用多次 `set()` 会让订阅方观察到半完成状态，也可能安排多次保存。
+- 模块不得绕过 PetState 直接修改内部数据或写文件。
+
+**接口语义**：
+- 先校验并计算完整更新，再一次性替换所有目标字段。
+- 所有字段更新完成后再发送各字段映射事件和 `PET_STATE_CHANGED`。
+- 一次调用只安排一次防抖保存。
+- 对象和数组继续遵循副本隔离规则。
+- `setMany()` 只提供原子 key-value 提交，不承载业务计算。
+
+**首个使用场景**：农场统一库存迁移与农场事务。订单提交必须在一个事务中完成
+库存扣除、金币奖励、农场经验增加和订单槽替换。

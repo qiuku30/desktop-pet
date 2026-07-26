@@ -42,12 +42,19 @@
 | `game:2048:completed` | `{ score: number }` | 通关 |
 | `game:2048:score` | `{ score: number }` | 得分更新 |
 
-## 游戏：农场
+## 农场
 
 | 事件名 | 参数 | 触发时机 |
 |--------|------|----------|
-| `game:farm:harvest` | `{ crop: string, quantity: number }` | 收获作物 |
-| `game:farm:food:synthesized` | `{ food: string }` | 合成食物 |
+| `farm:state:changed` | `{ summary: object }` | 农场状态结算或事务提交后摘要变化 |
+| `farm:crop:harvested` | `{ cropId: string, quantity: number, tileId: string }` | 成功收获作物 |
+| `farm:processing:completed` | `{ taskIds: string[], outputs: object }` | 一批或多批加工任务完成 |
+| `farm:order:completed` | `{ orderId: string, rewards: object }` | 订单整单交付成功 |
+| `farm:order:ready` | `{ orderIds: string[] }` | 订单首次变为可交付，用于弱提醒 |
+| `farm:bird:rewarded` | `{ amount: number, dailyCount: number }` | 点击小鸟并成功领取金币 |
+
+> 早期占位的 `game:farm:harvest` / `game:farm:food:synthesized` 尚无实现方，
+> 已在 ARCH-10 正式设计中替换为统一的 `farm:*` 命名。
 
 ## 游戏：单词
 
