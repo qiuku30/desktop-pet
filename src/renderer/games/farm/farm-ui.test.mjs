@@ -1,5 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { spawn } from 'node:child_process'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import electronPath from 'electron'
 
 import {
   buildFarmViewModel,
@@ -13,6 +19,173 @@ import { createDefaultFarmState } from './farm-state.mjs'
 import { FARM_CONFIG } from './farm-config.mjs'
 
 const NOW = '2026-07-26T08:00:00.000Z'
+const FARM_CSS_PATH = fileURLToPath(new URL('./farm.css', import.meta.url))
+
+async function measureFarmLayouts() {
+  const tempRoot = await mkdtemp(path.join(tmpdir(), 'desktop-pet-farm-layout-'))
+  const entryPath = path.join(tempRoot, 'layout-check.cjs')
+  const userDataPath = path.join(tempRoot, 'user-data')
+  const timeoutMs = 30_000
+  const entrySource = `
+const { app, BrowserWindow } = require('electron')
+const { readFile } = require('node:fs/promises')
+
+app.commandLine.appendSwitch('disable-gpu')
+app.setPath('userData', process.env.FARM_LAYOUT_USER_DATA)
+
+const fieldMarkup = \`
+  <div class="farm-toolbar"><span>建筑 1/2</span><span class="farm-feedback"></span><button class="farm-btn">收获全部</button></div>
+  <div class="farm-workspace">
+    <div class="farm-grid">\${Array.from({ length: 16 }, (_, index) => \`<button class="farm-tile">块\${index + 1}</button>\`).join('')}</div>
+    <aside class="farm-actions"><div class="farm-action-title">田地操作</div></aside>
+  </div>\`
+const childMarkup = {
+  processing: '<div class="farm-processing-view"><div class="farm-processing-recipes"><article class="farm-recipe-card">配方</article></div><aside class="farm-processing-queue">队列</aside></div>',
+  orders: '<div class="farm-orders-view"><article class="farm-order-card">订单一</article><article class="farm-order-card">订单二</article><article class="farm-order-card">订单三</article></div>',
+}
+const rect = element => {
+  const value = element.getBoundingClientRect()
+  return { top: value.top, right: value.right, bottom: value.bottom, left: value.left, width: value.width, height: value.height }
+}
+
+async function loadCase(win, css, markup) {
+  const html = \`<!doctype html><meta charset="utf-8"><style>
+    * { box-sizing: border-box; }
+    html, body, .page--farm { width: 100%; height: 100%; margin: 0; }
+    \${css}
+  </style><main class="page--farm"><section class="farm-page">
+    <div class="farm-summary">\${Array.from({ length: 5 }, () => '<div class="farm-summary-item">摘要</div>').join('')}</div>
+    <div class="farm-tabs"><button class="farm-tab">农田</button><button class="farm-tab">加工</button><button class="farm-tab">订单</button></div>
+    <div class="farm-tab-content">\${markup}</div>
+  </section></main>\`
+  await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html))
+}
+
+async function main() {
+  await app.whenReady()
+  const css = await readFile(process.env.FARM_LAYOUT_CSS, 'utf8')
+  const win = new BrowserWindow({ show: false, useContentSize: true, webPreferences: { sandbox: true } })
+  const results = {}
+  for (const [width, height] of [[800, 600], [600, 400]]) {
+    win.setContentSize(width, height)
+    await loadCase(win, css, fieldMarkup)
+    results[\`\${width}x\${height}\`] = await win.webContents.executeJavaScript(\`(() => {
+      const content = document.querySelector('.farm-tab-content')
+      const toolbar = document.querySelector('.farm-toolbar')
+      const workspace = document.querySelector('.farm-workspace')
+      const grid = document.querySelector('.farm-grid')
+      const actions = document.querySelector('.farm-actions')
+      return {
+        flexDirection: getComputedStyle(content).flexDirection,
+        gridColumns: getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length,
+        content: (\${rect.toString()})(content),
+        toolbar: (\${rect.toString()})(toolbar),
+        workspace: (\${rect.toString()})(workspace),
+        grid: (\${rect.toString()})(grid),
+        actions: (\${rect.toString()})(actions),
+        contentScrollWidth: content.scrollWidth,
+        contentClientWidth: content.clientWidth,
+      }
+    })()\`)
+    for (const [name, markup] of Object.entries(childMarkup)) {
+      await loadCase(win, css, markup)
+      results[\`\${width}x\${height}\`][name] = await win.webContents.executeJavaScript(\`(() => {
+        const content = document.querySelector('.farm-tab-content')
+        const child = content.firstElementChild
+        return {
+          content: (\${rect.toString()})(content),
+          child: (\${rect.toString()})(child),
+          contentScrollWidth: content.scrollWidth,
+          contentClientWidth: content.clientWidth,
+          childScrollWidth: child.scrollWidth,
+          childClientWidth: child.clientWidth,
+        }
+      })()\`)
+    }
+  }
+  process.stdout.write('FARM_LAYOUT_RESULT:' + JSON.stringify(results) + '\\n')
+  win.destroy()
+  app.quit()
+}
+
+main().catch(error => {
+  process.stderr.write(error.stack + '\\n')
+  app.exit(1)
+})
+`
+
+  let child
+  try {
+    await mkdir(userDataPath)
+    await writeFile(entryPath, entrySource, 'utf8')
+    const result = await new Promise((resolve, reject) => {
+      child = spawn(electronPath, [entryPath], {
+        env: {
+          ...process.env,
+          FARM_LAYOUT_CSS: FARM_CSS_PATH,
+          FARM_LAYOUT_USER_DATA: userDataPath,
+        },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+      let stdout = ''
+      let stderr = ''
+      const timer = setTimeout(() => {
+        child.kill('SIGKILL')
+        reject(new Error(`Electron layout test timed out after ${timeoutMs}ms\n${stderr}`))
+      }, timeoutMs)
+      child.stdout.on('data', chunk => { stdout += chunk })
+      child.stderr.on('data', chunk => { stderr += chunk })
+      child.on('error', error => {
+        clearTimeout(timer)
+        reject(error)
+      })
+      child.on('close', (code, signal) => {
+        clearTimeout(timer)
+        if (code !== 0) {
+          reject(new Error(`Electron layout test exited with code ${code}, signal ${signal}\n${stderr}`))
+          return
+        }
+        const marker = stdout.split('\n').find(line => line.startsWith('FARM_LAYOUT_RESULT:'))
+        if (!marker) {
+          reject(new Error(`Electron layout test produced no result\nstdout:\n${stdout}\nstderr:\n${stderr}`))
+          return
+        }
+        resolve(JSON.parse(marker.slice('FARM_LAYOUT_RESULT:'.length)))
+      })
+    })
+    return result
+  } finally {
+    if (child && child.exitCode === null && child.signalCode === null) child.kill('SIGKILL')
+    await rm(tempRoot, { recursive: true, force: true })
+  }
+}
+
+test('farm tabs preserve responsive layout contracts in Chromium', { timeout: 35_000 }, async t => {
+  const layouts = await measureFarmLayouts()
+  if (process.env.FARM_LAYOUT_DIAGNOSTICS === '1') t.diagnostic(JSON.stringify(layouts))
+  const epsilon = 1
+
+  for (const viewport of ['800x600', '600x400']) {
+    const layout = layouts[viewport]
+    assert.equal(layout.flexDirection, 'column', `${viewport}: tab content must stack vertically`)
+    assert.ok(layout.toolbar.bottom <= layout.workspace.top + epsilon, `${viewport}: toolbar must be above workspace`)
+    assert.ok(Math.abs(layout.grid.width - layout.grid.height) <= epsilon, `${viewport}: field grid must remain square`)
+    assert.equal(layout.gridColumns, 4, `${viewport}: field grid must keep four columns`)
+    assert.ok(layout.grid.right <= layout.actions.left + epsilon, `${viewport}: grid and actions must stay in the same row`)
+    assert.ok(layout.workspace.right <= layout.content.right + epsilon, `${viewport}: workspace must fit tab content`)
+    assert.ok(layout.actions.right <= layout.content.right + epsilon, `${viewport}: actions must fit tab content`)
+    assert.ok(layout.contentScrollWidth <= layout.contentClientWidth, `${viewport}: field tab must not overflow horizontally`)
+
+    for (const childName of ['processing', 'orders']) {
+      const child = layout[childName]
+      assert.ok(child.child.left >= child.content.left - epsilon, `${viewport} ${childName}: child must start inside content`)
+      assert.ok(child.child.right <= child.content.right + epsilon, `${viewport} ${childName}: child must fit content width`)
+      assert.ok(child.child.bottom <= child.content.bottom + epsilon, `${viewport} ${childName}: child must fit content height`)
+      assert.ok(child.contentScrollWidth <= child.contentClientWidth, `${viewport} ${childName}: content must not overflow horizontally`)
+      assert.ok(child.childScrollWidth <= child.childClientWidth, `${viewport} ${childName}: child must not be horizontally clipped`)
+    }
+  }
+})
 
 function sampleState() {
   const farm = createDefaultFarmState(NOW, () => 0.5)

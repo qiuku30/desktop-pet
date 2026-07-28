@@ -534,3 +534,12 @@
 - 🔄 farm-06 已获准按严格 TDD 开始实现；实现窗口不得修改三份 tracker，不得 stage/commit/merge/push。
 - 🔄 首轮实现窗口报告全仓 345/345；ARCH-10 新鲜定向回归 114/114，但独立探针复现非空加工队列错误回退旧 `lastCompletedProcessingTaskId`，代码审查另发现领取 Promise 跨自然离场后第 10 次成功无法取消按旧日计数排定的下一只。已退回返修，要求 persisted key 仅在空队列使用，并以提交后的真实每日计数和可控 Promise/fake timer 覆盖上限竞态。
 - ✅ 返修后通过 ARCH-10 第二轮独立复验：非空未完成队列返回 null，整队完成才产生当前队尾 key；第 9→10 次领取即使跨自然离场也会取消后续 timer 和迟到 callback，UI 使用事务提交后的真实本地日计数。新鲜定向 51/51、全仓 349/349、生产文件语法、合规扫描与 `git diff --check` 均通过；Electron 冷启动显示正式 Canvas 且未见 Emoji 闪变。长计时、跨日、sleep 与 Dashboard 鼠标流程未虚报，确定性测试覆盖对应边界。尚未 commit/merge/push。
+- ✅ farm-06 已以 `564a3b5` 提交到本地 `main`，未 merge/push。
+
+## 🌾 农场经营 — farm-fix-01 农田面板布局修复（2026-07-28）
+
+- ✅ 根因确认：`.farm-tab-content` 为 flex 容器但未指定纵向方向，导致工具栏与 workspace 横排，800×600 下网格缩至约 240×240，操作区右缘超出内容区约 57px。
+- ✅ 最小生产修复仅为 `.farm-tab-content` 增加 `flex-direction: column`，未修改农场事务、计时、提醒、小鸟或桌宠语义。
+- ✅ 新增单实例隔离 Electron/Chromium 布局回归，同轮覆盖 800×600、600×400 及农田/加工/订单三类内容；验证工具栏位于 workspace 上方、4×4 正方形网格与操作区同行、内容无横向溢出或裁切。
+- ✅ ARCH-10 独立复验：沙箱内 GUI 子进程会 `SIGABRT`，在获准的 GUI 环境中定向 26/26、全仓 350/350，`node --check`、`git diff --check` 和临时目录清理均通过。
+- ⏸ 当前三个实现文件与 ARCH-10 三份 tracker 未提交；未 stage/merge/push，等待用户授权提交。

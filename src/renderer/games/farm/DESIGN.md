@@ -105,6 +105,11 @@ UI 不调用 `PetState.set/setMany()`，也不重写生长、产量、邻接或�
 “加工 / 订单”在 farm-03 保持可见但为可访问的禁用按钮。建筑移动使用显式
 `{ type: 'move-building', buildingId }` 模式，只接受空的开放田地。
 
+页签内容容器固定采用纵向 flex：农田工具栏位于 workspace 上方，workspace 内
+`4×4` 正方形网格与操作区保持同行，且两者右缘不得超出页签内容。加工与订单 child
+页面作为页签内容的单一 flex child 填充剩余空间，不产生横向溢出或裁切。该契约在
+Chromium 中以 800×600 和 600×400 两档内容尺寸执行布局回归。
+
 移除生长作物和拆除建筑通过现有 overlay 双按钮确认；只有结果精确为
 `confirm` 且页面仍存活时才执行 service 命令。拆除预览由
 `investedCoins × buildingRefundRate` 向下取整派生，实际到账以
