@@ -11,6 +11,7 @@ import {
   RECIPES,
   validateFarmConfig,
 } from './farm-config.mjs'
+import { getItem } from '../../shared/item-config.js'
 
 test('approved config validates', () => {
   assert.deepEqual(validateFarmConfig(FARM_CONFIG), [])
@@ -51,6 +52,30 @@ test('crop, recipe and building numbers exactly match the approved tables', () =
     unlockFarmLevel: 7,
     cost: 360,
   })
+})
+
+test('all crop commerce values match the shared catalog', () => {
+  for (const [cropId, crop] of Object.entries(CROPS)) {
+    assert.equal(getItem(crop.seedId).buyPrice, crop.seedPrice)
+    assert.equal(getItem(crop.seedId).unlockFarmLevel, crop.unlockFarmLevel)
+    assert.equal(getItem(cropId).sellPrice, crop.sellPrice)
+  }
+})
+
+test('validator reports stable shared catalog commerce mismatches', () => {
+  const broken = structuredClone(FARM_CONFIG)
+  broken.items['seed:wheat'].buyPrice = 99
+  broken.items['seed:carrot'].unlockFarmLevel = 9
+  broken.items['crop:corn'].sellPrice = 99
+
+  assert.deepEqual(
+    validateFarmConfig(broken).filter(error => error.code.includes('MISMATCH')),
+    [
+      { code: 'SEED_PRICE_MISMATCH', path: 'crops.crop:wheat.seedPrice' },
+      { code: 'SEED_UNLOCK_MISMATCH', path: 'crops.crop:carrot.unlockFarmLevel' },
+      { code: 'CROP_SELL_PRICE_MISMATCH', path: 'crops.crop:corn.sellPrice' },
+    ],
+  )
 })
 
 test('map, level and order configuration preserve launch constraints', () => {

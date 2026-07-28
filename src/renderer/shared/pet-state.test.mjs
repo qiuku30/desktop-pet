@@ -152,7 +152,9 @@ test('init migrates legacy inventory and persists the complete migrated snapshot
 
   assert.equal(savedSnapshots.length, 1)
   assert.deepEqual(savedSnapshots[0], {
-    ...initialState,
+    level: 7,
+    coins: 123,
+    settings: { showTooltip: false },
     inventory: { 'food:milk': 2 },
     inventoryMigrationVersion: 1,
   })
@@ -196,7 +198,7 @@ test('store defaults create universal inventory fields for a new save', async ()
   const persisted = JSON.parse(writes[0][1])
   assert.deepEqual(persisted.inventory, {})
   assert.equal(persisted.inventoryMigrationVersion, 0)
-  assert.deepEqual(persisted.foodInventory, [])
+  assert.equal(Object.hasOwn(persisted, 'foodInventory'), false)
 })
 
 test('events expose the six approved farm names and remove old placeholders', () => {

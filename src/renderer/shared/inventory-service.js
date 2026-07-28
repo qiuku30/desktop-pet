@@ -69,7 +69,11 @@ export function removeItems(inventory, requirements) {
 
 export function migrateLegacyFoodInventory(state) {
   if ((state?.inventoryMigrationVersion || 0) >= 1) {
-    return { state, migrated: false }
+    if (!Object.hasOwn(state || {}, 'foodInventory')) {
+      return { state, migrated: false }
+    }
+    const { foodInventory: _legacy, ...cleanState } = state
+    return { state: cleanState, migrated: true }
   }
 
   let inventory = normalizeInventory(state?.inventory)
@@ -89,10 +93,11 @@ export function migrateLegacyFoodInventory(state) {
     inventory = addItems(inventory, { [itemId]: entry.count })
   }
 
+  const { foodInventory: _legacy, ...cleanState } = state || {}
   return {
     migrated: true,
     state: {
-      ...state,
+      ...cleanState,
       inventory,
       inventoryMigrationVersion: 1,
     },

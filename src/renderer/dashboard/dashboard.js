@@ -93,7 +93,9 @@ document.addEventListener('pointerup', () => {
 // ── 宠物状态展示 ──
 
 import { PetState } from '../shared/pet-state.js'
-import { FOODS, FEED_CONFIG, consumeFood, applyFeed, emitFed } from '../shared/feed-service.js'
+import { FOODS, FEED_CONFIG, calculateFeedTransaction, emitFed } from '../shared/feed-service.js'
+import { getItem, listFeedableItems, listItems, listPurchasableItems } from '../shared/item-config.js'
+import { addItems, getItemCount, removeItems } from '../shared/inventory-service.js'
 import { calcRequiredExp, addExp, getFoodExp } from '../shared/exp-service.js'
 import { calcMaxSatiety } from '../shared/satiety-service.js'
 import { getMoodTier, migrateMood, boostMood, getExpMultiplier, MOOD_CONFIG } from '../shared/mood-service.js'
@@ -109,9 +111,53 @@ const TOOLTIP_FIELDS = {
   satiety:   { label: '饱腹',   icon: '🍽' },
   exp:       { label: '经验',   icon: '⭐' },
   sellPrice: { label: '售价',   icon: '🪙' },
-  buyPrice:  { label: '售价',   icon: '💰' },
+  buyPrice:  { label: '购买价', icon: '💰' },
   effect:    { label: '效果',   icon: '✨' },  // 道具预留
 }
+
+// inventory transaction helpers:start
+export function sellInventoryItem({ inventory, coins, item, quantity }) {
+  if (!Number.isSafeInteger(quantity) || quantity <= 0 || !item || !Number.isSafeInteger(item.sellPrice) || item.sellPrice <= 0) {
+    return { ok: false, error: 'INVALID_QUANTITY' }
+  }
+  const removed = removeItems(inventory, { [item.id]: quantity })
+  if (!removed.ok) return { ok: false, error: 'INSUFFICIENT_ITEMS' }
+  const proceeds = item.sellPrice * quantity
+  const nextCoins = coins + proceeds
+  if (!Number.isSafeInteger(proceeds) || !Number.isSafeInteger(nextCoins) || nextCoins < 0) {
+    return { ok: false, error: 'INVALID_QUANTITY' }
+  }
+  return { ok: true, updates: { inventory: removed.inventory, coins: nextCoins } }
+}
+
+export function destroyInventoryItem({ inventory, itemId, quantity }) {
+  if (!Number.isSafeInteger(quantity) || quantity <= 0 || typeof itemId !== 'string') {
+    return { ok: false, error: 'INVALID_QUANTITY' }
+  }
+  const removed = removeItems(inventory, { [itemId]: quantity })
+  if (!removed.ok) return { ok: false, error: 'INSUFFICIENT_ITEMS' }
+  return { ok: true, updates: { inventory: removed.inventory } }
+}
+
+export function buyInventoryItem({ inventory, coins, item, quantity, farmLevel }) {
+  if (!Number.isSafeInteger(quantity) || quantity <= 0 || !item || !Number.isSafeInteger(item.buyPrice) || item.buyPrice <= 0) {
+    return { ok: false, error: 'INVALID_QUANTITY' }
+  }
+  if (Number.isInteger(item.unlockFarmLevel) && farmLevel < item.unlockFarmLevel) {
+    return { ok: false, error: 'ITEM_LOCKED' }
+  }
+  const cost = item.buyPrice * quantity
+  if (!Number.isSafeInteger(cost) || cost <= 0) return { ok: false, error: 'INVALID_QUANTITY' }
+  if (!Number.isSafeInteger(coins) || coins < cost) return { ok: false, error: 'INSUFFICIENT_COINS' }
+  try {
+    const nextInventory = addItems(inventory, { [item.id]: quantity })
+    return { ok: true, updates: { inventory: nextInventory, coins: coins - cost } }
+  } catch (error) {
+    if (error?.name === 'RangeError') return { ok: false, error: 'INVALID_QUANTITY' }
+    throw error
+  }
+}
+// inventory transaction helpers:end
 
 // ── 导航状态 ──
 let currentPageId = 'home'
@@ -161,20 +207,49 @@ function buildHomePage() {
 
 // ── 仓库页面 ──
 
+function quantityOverlayHTML({ action, max, label }) {
+  return `
+    <style>
+      .quantity-picker { display:grid; grid-template-columns:36px 1fr 36px; gap:8px; align-items:center; padding:10px; }
+      .quantity-picker input { min-width:0; width:100%; box-sizing:border-box; text-align:center; }
+      .quantity-picker__all { grid-column:1 / 2; }
+      .quantity-picker__confirm { grid-column:2 / 4; }
+      .quantity-picker button { min-height:32px; }
+    </style>
+    <div class="quantity-picker">
+      <button data-quantity-step="-1">－</button>
+      <input id="quantity" type="number" min="1" max="${max}" value="1">
+      <button data-quantity-step="1">＋</button>
+      <button class="quantity-picker__all" data-quantity-all data-quantity-input="quantity">全部</button>
+      <button class="quantity-picker__confirm"
+              data-overlay-quantity-action="${action}"
+              data-overlay-quantity-input="quantity">${label}</button>
+    </div>`
+}
+
+function showQuantityOverlay({ action, max, label, x, y }) {
+  if (!Number.isSafeInteger(max) || max < 1) return Promise.resolve(null)
+  return window.electronAPI.showOverlay({
+    html: quantityOverlayHTML({ action, max, label }),
+    width: 230,
+    height: 120,
+    x,
+    y,
+  })
+}
+
 function buildWarehousePage(container) {
   container.className = 'page page--warehouse'
 
-  // 数据源：FOODS 配置 + foodInventory 库存
-  const foodInventory = PetState.get('foodInventory') || []
-  const invMap = {}
-  foodInventory.forEach(item => { invMap[item.id] = item.count })
-
-  const allItems = Object.values(FOODS).map(food => ({
-    ...food,
-    count: invMap[food.id] || 0,
+  const inventory = PetState.get('inventory') || {}
+  const allItems = listItems().map(item => ({
+    ...item,
+    count: getItemCount(inventory, item.id),
   }))
 
   let activeCatId = 'all'
+  let pageActive = true
+  let renderDelay = null
 
   // 类别优先级映射（按 WAREHOUSE_CATEGORIES 顺序，不含 'all'）
   const catOrder = Object.fromEntries(
@@ -242,7 +317,9 @@ function buildWarehousePage(container) {
 
     const grid = container.querySelector('.wh-grid')
     grid.style.opacity = '0'
-    setTimeout(() => {
+    renderDelay = setTimeout(() => {
+      renderDelay = null
+      if (!pageActive) return
       renderGrid(catId)
       requestAnimationFrame(() => { grid.style.opacity = '1' })
     }, 200)
@@ -259,9 +336,9 @@ function buildWarehousePage(container) {
     _whTooltipItem = itemEl
     if (!itemEl) return  // 进入 gap 区域，保持上一个 tooltip
     const itemId = itemEl.dataset.itemId
-    const food = FOODS[itemId]
-    if (!food) return
-    showTooltip(food, itemEl.getBoundingClientRect())
+    const item = getItem(itemId)
+    if (!item) return
+    showTooltip(item, itemEl.getBoundingClientRect())
   }, true)
 
   container.querySelector('.wh-grid').addEventListener('mouseleave', (e) => {
@@ -274,7 +351,7 @@ function buildWarehousePage(container) {
   // ── 仓库物品右键操作菜单 ──
 
   const WH_MENU_ACTIONS = [
-    { id: 'use',     label: '使用',  icon: '🍽', show: (item, count) => item.category === 'food' && count > 0 },
+    { id: 'use',     label: '使用',  icon: '🍽', show: (item, count) => Number.isFinite(item.satiety) && item.satiety > 0 && count > 0 },
     { id: 'sell',    label: '出售',  icon: '🪙', show: (item, count) => item.sellPrice > 0 && count > 0 },
     { id: 'destroy', label: '销毁',  icon: '🗑', show: (item, count) => count > 0 },
   ]
@@ -290,17 +367,16 @@ function buildWarehousePage(container) {
     _whContextMenuOpen = true
 
     const itemId = itemEl.dataset.itemId
-    const food = FOODS[itemId]
-    if (!food) { _whContextMenuOpen = false; return }
+    const item = getItem(itemId)
+    if (!item) { _whContextMenuOpen = false; return }
 
     // 用实时库存（渲染时的 allItems 可能因订阅更新而滞后，从 PetState 直接读）
-    const currentInv = PetState.get('foodInventory') || []
-    const entry = currentInv.find(item => item.id === itemId)
-    const count = entry ? entry.count : 0
+    const currentInv = PetState.get('inventory') || {}
+    const count = getItemCount(currentInv, itemId)
 
     // 构建菜单项；全禁用则不弹窗（否则无法关闭 overlay）
     const menuItems = WH_MENU_ACTIONS.map(action => {
-      const enabled = action.show(food, count)
+      const enabled = action.show(item, count)
       return { action, enabled }
     })
 
@@ -345,7 +421,7 @@ function buildWarehousePage(container) {
     // overlay 关闭后恢复 tooltip 悬停
     _whContextMenuOpen = false
 
-    if (!result) return
+    if (!pageActive || !result) return
 
     // 处理菜单操作
     switch (result) {
@@ -354,22 +430,43 @@ function buildWarehousePage(container) {
         break
 
       case 'sell': {
-        const inv = PetState.get('foodInventory') || []
-        const { newInventory, consumed } = consumeFood(itemId, inv)
-        if (!consumed) break
-        PetState.set('foodInventory', newInventory)
-        const coins = PetState.get('coins') || 0
-        PetState.set('coins', coins + food.sellPrice)
-        showToast(`出售了${food.name}，获得 ${food.sellPrice} 🪙`)
+        const quantityResult = await showQuantityOverlay({
+          action: 'sell',
+          max: count,
+          label: '确认出售',
+          x: e.clientX,
+          y: e.clientY,
+        })
+        if (!pageActive || quantityResult?.action !== 'sell') break
+        const transaction = sellInventoryItem({
+          inventory: PetState.get('inventory') || {},
+          coins: PetState.get('coins') || 0,
+          item,
+          quantity: quantityResult.quantity,
+        })
+        if (!transaction.ok) break
+        PetState.setMany(transaction.updates)
+        showToast(`出售了 ${quantityResult.quantity} 个${item.name}，获得 ${item.sellPrice * quantityResult.quantity} 🪙`)
         break
       }
 
       case 'destroy': {
-        const inv = PetState.get('foodInventory') || []
-        const { newInventory, consumed } = consumeFood(itemId, inv)
-        if (!consumed) break
-        PetState.set('foodInventory', newInventory)
-        showToast(`销毁了${food.name}`)
+        const quantityResult = await showQuantityOverlay({
+          action: 'destroy',
+          max: count,
+          label: '确认销毁',
+          x: e.clientX,
+          y: e.clientY,
+        })
+        if (!pageActive || quantityResult?.action !== 'destroy') break
+        const transaction = destroyInventoryItem({
+          inventory: PetState.get('inventory') || {},
+          itemId,
+          quantity: quantityResult.quantity,
+        })
+        if (!transaction.ok) break
+        PetState.setMany(transaction.updates)
+        showToast(`销毁了 ${quantityResult.quantity} 个${item.name}`)
         break
       }
     }
@@ -377,16 +474,19 @@ function buildWarehousePage(container) {
 
   // 订阅库存变更，自动刷新网格
   const unsub = PetState.subscribe(EVENTS.PET_STATE_CHANGED, ({ key }) => {
-    if (key !== 'foodInventory') return
-    const inv = PetState.get('foodInventory') || []
-    const map = {}
-    inv.forEach(item => { map[item.id] = item.count })
-    allItems.forEach(item => { item.count = map[item.id] || 0 })
+    if (key !== 'inventory') return
+    const inv = PetState.get('inventory') || {}
+    allItems.forEach(item => { item.count = getItemCount(inv, item.id) })
     renderGrid(activeCatId)
   })
 
   // 返回清理函数：切换离开仓库页时取消订阅
-  return () => { unsub() }
+  return () => {
+    pageActive = false
+    if (renderDelay) clearTimeout(renderDelay)
+    unsub()
+    window.electronAPI.closeOverlay()
+  }
 }
 
 // ── 商店页面 ──
@@ -394,20 +494,17 @@ function buildWarehousePage(container) {
 function buildShopPage(container) {
   container.className = 'page page--shop'
 
-  // 数据源：FOODS 配置 + foodInventory 库存
-  const foodInventory = PetState.get('foodInventory') || []
-  const invMap = {}
-  foodInventory.forEach(item => { invMap[item.id] = item.count })
-
-  const allItems = Object.values(FOODS)
-    .filter(f => f.buyPrice > 0)
-    .map(food => ({
-      ...food,
-      count: invMap[food.id] || 0,
+  const inventory = PetState.get('inventory') || {}
+  const allItems = listPurchasableItems()
+    .map(item => ({
+      ...item,
+      count: getItemCount(inventory, item.id),
     }))
-    .sort((a, b) => a.buyPrice - b.buyPrice)
+    .sort((a, b) => a.buyPrice - b.buyPrice || a.id.localeCompare(b.id))
 
   let activeCatId = 'all'
+  let pageActive = true
+  let renderDelay = null
 
   function renderCoinsBar() {
     const el = container.querySelector('#shop-coins-value')
@@ -429,14 +526,18 @@ function buildShopPage(container) {
     }
 
     const coins = PetState.get('coins') || 0
+    const farmLevel = PetState.get('farm')?.level || 1
 
     grid.innerHTML = filtered.map(item => {
-      const canBuy = coins >= item.buyPrice
-      return `<div class="shop-item" data-item-id="${item.id}">
+      const locked = Number.isInteger(item.unlockFarmLevel) && farmLevel < item.unlockFarmLevel
+      const canBuy = !locked && coins >= item.buyPrice
+      const lockCopy = locked ? `农场 Lv.${item.unlockFarmLevel} 解锁` : ''
+      return `<div class="shop-item${locked ? ' shop-item--locked' : ''}" data-item-id="${item.id}">
         <span class="shop-item-emoji">${item.emoji}</span>
         <span class="shop-item-name">${item.name}</span>
         <span class="shop-item-count">×${item.count}</span>
         <span class="shop-item-price">💰${item.buyPrice}</span>
+        ${locked ? `<span class="shop-item-lock">${lockCopy}</span>` : ''}
         <button class="shop-btn${canBuy ? '' : ' shop-btn--disabled'}"
                 data-action="buy" data-item-id="${item.id}"
                 ${canBuy ? '' : 'disabled'}>购买</button>
@@ -479,38 +580,46 @@ function buildShopPage(container) {
 
     const grid = container.querySelector('.shop-grid')
     grid.style.opacity = '0'
-    setTimeout(() => {
+    renderDelay = setTimeout(() => {
+      renderDelay = null
+      if (!pageActive) return
       renderGrid(catId)
       requestAnimationFrame(() => { grid.style.opacity = '1' })
     }, 200)
   })
 
   // ── 购买按钮点击 ──
-  container.querySelector('.shop-grid').addEventListener('click', (e) => {
+  container.querySelector('.shop-grid').addEventListener('click', async (e) => {
     const btn = e.target.closest('[data-action="buy"]')
     if (!btn || btn.disabled) return
     const itemId = btn.dataset.itemId
-    const food = FOODS[itemId]
-    if (!food) return
+    const item = getItem(itemId)
+    if (!item) return
 
     const coins = PetState.get('coins') || 0
-    if (coins < food.buyPrice) {
+    const max = Math.floor(coins / item.buyPrice)
+    if (max < 1) {
       showToast('金币不足 💰')
       return
     }
-
-    // 扣金币
-    PetState.set('coins', coins - food.buyPrice)
-
-    // 库存 +1
-    const inv = PetState.get('foodInventory') || []
-    const existing = inv.find(item => item.id === itemId)
-    const newInventory = existing
-      ? inv.map(item => item.id === itemId ? { ...item, count: item.count + 1 } : item)
-      : [...inv, { id: itemId, count: 1 }]
-    PetState.set('foodInventory', newInventory)
-
-    showToast(`购买了${food.name}！`)
+    const quantityResult = await showQuantityOverlay({
+      action: 'buy',
+      max,
+      label: '确认购买',
+      x: e.clientX,
+      y: e.clientY,
+    })
+    if (!pageActive || quantityResult?.action !== 'buy') return
+    const transaction = buyInventoryItem({
+      inventory: PetState.get('inventory') || {},
+      coins: PetState.get('coins') || 0,
+      item,
+      quantity: quantityResult.quantity,
+      farmLevel: PetState.get('farm')?.level || 1,
+    })
+    if (!transaction.ok) return
+    PetState.setMany(transaction.updates)
+    showToast(`购买了 ${quantityResult.quantity} 个${item.name}！`)
   })
 
   // ── 商品悬停 tooltip ──
@@ -524,13 +633,10 @@ function buildShopPage(container) {
     _shopTooltipItem = itemEl
     if (!itemEl) return
     const itemId = itemEl.dataset.itemId
-    const food = FOODS[itemId]
-    if (!food) return
+    const item = getItem(itemId)
+    if (!item) return
     // 商店 tooltip：把 sellPrice 替换为 buyPrice
-    const shopFood = {
-      ...food,
-      tooltipFields: food.tooltipFields.map(f => f === 'sellPrice' ? 'buyPrice' : f),
-    }
+    const shopFood = buildShopTooltipItem(item)
     showTooltip(shopFood, itemEl.getBoundingClientRect())
   }, true)
 
@@ -556,13 +662,15 @@ function buildShopPage(container) {
     _shopContextMenuOpen = true
 
     const itemId = itemEl.dataset.itemId
-    const food = FOODS[itemId]
-    if (!food) { _shopContextMenuOpen = false; return }
+    const item = getItem(itemId)
+    if (!item) { _shopContextMenuOpen = false; return }
 
     const coins = PetState.get('coins') || 0
+    const farmLevel = PetState.get('farm')?.level || 1
+    const locked = Number.isInteger(item.unlockFarmLevel) && farmLevel < item.unlockFarmLevel
 
     const menuItems = SHOP_MENU_ACTIONS.map(action => {
-      const enabled = action.show(food, coins)
+      const enabled = !locked && action.show(item, coins)
       return { action, enabled }
     })
 
@@ -606,21 +714,28 @@ function buildShopPage(container) {
 
     _shopContextMenuOpen = false
 
-    if (result !== 'buy') return
+    if (!pageActive || result !== 'buy') return
 
     // 右键购买（与左键逻辑一致）
-    if (coins < food.buyPrice) return
-
-    PetState.set('coins', coins - food.buyPrice)
-
-    const inv = PetState.get('foodInventory') || []
-    const existing = inv.find(item => item.id === itemId)
-    const newInventory = existing
-      ? inv.map(item => item.id === itemId ? { ...item, count: item.count + 1 } : item)
-      : [...inv, { id: itemId, count: 1 }]
-    PetState.set('foodInventory', newInventory)
-
-    showToast(`购买了${food.name}！`)
+    const max = Math.floor(coins / item.buyPrice)
+    const quantityResult = await showQuantityOverlay({
+      action: 'buy',
+      max,
+      label: '确认购买',
+      x: e.clientX,
+      y: e.clientY,
+    })
+    if (!pageActive || quantityResult?.action !== 'buy') return
+    const transaction = buyInventoryItem({
+      inventory: PetState.get('inventory') || {},
+      coins: PetState.get('coins') || 0,
+      item,
+      quantity: quantityResult.quantity,
+      farmLevel: PetState.get('farm')?.level || 1,
+    })
+    if (!transaction.ok) return
+    PetState.setMany(transaction.updates)
+    showToast(`购买了 ${quantityResult.quantity} 个${item.name}！`)
   })
 
   // ── 订阅状态变更，自动刷新 ──
@@ -629,17 +744,21 @@ function buildShopPage(container) {
       renderCoinsBar()
       renderGrid(activeCatId)
     }
-    if (key === 'foodInventory') {
-      const inv = PetState.get('foodInventory') || []
-      const map = {}
-      inv.forEach(item => { map[item.id] = item.count })
-      allItems.forEach(item => { item.count = map[item.id] || 0 })
+    if (key === 'inventory') {
+      const inv = PetState.get('inventory') || {}
+      allItems.forEach(item => { item.count = getItemCount(inv, item.id) })
       renderGrid(activeCatId)
     }
+    if (key === 'farm') renderGrid(activeCatId)
   })
 
   // 返回清理函数：切换离开商店页时取消订阅
-  return () => { unsub() }
+  return () => {
+    pageActive = false
+    if (renderDelay) clearTimeout(renderDelay)
+    unsub()
+    window.electronAPI.closeOverlay()
+  }
 }
 
 // ── 番茄钟页面 ──
@@ -1298,13 +1417,11 @@ function renderCoins() {
 function renderInventory() {
   const card = document.getElementById('card-inventory')
   if (!card) return
-  const foodInventory = PetState.get('foodInventory') || []
-  const invMap = {}
-  foodInventory.forEach(item => { invMap[item.id] = item.count })
+  const inventory = PetState.get('inventory') || {}
 
-  const items = Object.values(FOODS)
+  const items = listFeedableItems()
   const cells = items.map(food => {
-    const count = invMap[food.id] || 0
+    const count = getItemCount(inventory, food.id)
     const emptyCls = count === 0 ? ' inventory-item--empty' : ''
     return `<div class="inventory-item${emptyCls}" data-food-id="${food.id}">
       <span>${food.emoji}</span>
@@ -1346,7 +1463,7 @@ function onStateChanged({ key }) {
     case 'coins':
       renderCoins()
       break
-    case 'foodInventory':
+    case 'inventory':
       renderInventory()
       break
   }
@@ -1363,92 +1480,85 @@ function showToast(msg) {
 
 // ── 快速投喂 ──
 function handleFeed(foodId) {
-  const food = FOODS[foodId]
-  if (!food) return
-
-  // 饱腹值上限检查（先检查，避免浪费食物）
-  const satiety = PetState.get('satiety') || 0
-  const level = PetState.get('level') || 1
-  if (satiety >= calcMaxSatiety(level)) {
-    showToast('已经吃饱了 🍽')
+  const transaction = calculateFeedTransaction({
+    inventory: PetState.get('inventory') || {},
+    itemId: foodId,
+    satiety: PetState.get('satiety') || 0,
+    intimacy: PetState.get('intimacy') || 0,
+    mood: PetState.get('mood') ?? MOOD_CONFIG.initialMood,
+    exp: PetState.get('exp') || 0,
+    level: PetState.get('level') || 1,
+  })
+  if (!transaction.ok) {
+    if (transaction.error === 'SATIETY_FULL') {
+      showToast('已经吃饱了 🍽')
+    }
     return
   }
 
-  const foodInventory = PetState.get('foodInventory') || []
-  const { newInventory, consumed } = consumeFood(foodId, foodInventory)
-  if (!consumed) return
-
-  PetState.set('foodInventory', newInventory)
-
-  // 更新饱腹 + 亲密度
-  const intimacy = PetState.get('intimacy') || 0
-  const { newSatiety, newIntimacy } = applyFeed(satiety, intimacy, food, level)
-  PetState.set('satiety', newSatiety)
-  PetState.set('intimacy', newIntimacy)
-
-  // 喂食加心情
-  const currentMood = PetState.get('mood') ?? MOOD_CONFIG.initialMood
-  const newMoodVal = boostMood(currentMood, MOOD_CONFIG.feedBoost)
-  if (newMoodVal !== currentMood) {
-    PetState.set('mood', newMoodVal)
-  }
-
-  // 喂食经验结算（带心情倍率）
-  const foodExp = getFoodExp(food)
-  if (foodExp > 0) {
-    const exp = PetState.get('exp') || 0
-    const adjustedExp = Math.round(foodExp * getExpMultiplier(newMoodVal))
-    const addResult = addExp(exp, level, adjustedExp)
-    PetState.set('exp', addResult.newExp)
-    if (addResult.leveledUp) {
-      PetState.set('level', addResult.newLevel)
-      showToast(`🎉 升级了！Lv.${addResult.newLevel}！`)
-    }
-  }
-
-  // 发投喂事件
+  PetState.setMany(transaction.updates)
   emitFed(foodId)
-  showToast(`投喂了${food.name}！`)
+  if (transaction.leveledUp) {
+    showToast(`🎉 升级了！Lv.${transaction.updates.level}！`)
+  } else {
+    showToast(`投喂了${transaction.item.name}！`)
+  }
 }
 
 // ── tooltip ──
 
-function buildTooltipHTML(food) {
+// tooltip behavior helpers:start
+export function buildShopTooltipItem(item) {
+  const fields = (item.tooltipFields || [])
+    .filter(field => field !== 'sellPrice' && field !== 'buyPrice')
+  if (Number.isFinite(item.buyPrice)) fields.push('buyPrice')
+  return { ...item, tooltipFields: fields }
+}
+
+function getTooltipFields(food) {
+  return (food.tooltipFields || []).filter(key =>
+    TOOLTIP_FIELDS[key] && food[key] !== null && food[key] !== undefined
+  )
+}
+
+function getTooltipIntimacy(food) {
+  if (!Number.isFinite(food.satiety) || food.satiety <= 0) return null
+  return food.intimacy ?? FEED_CONFIG.intimacyPerFeed
+}
+
+export function buildTooltipHTML(food) {
   let html = `<style>body{margin:0;padding:10px 14px;background:#2c2c2c;font-family:'Microsoft YaHei','PingFang SC',sans-serif;color:#ccc;border-radius:8px;}</style>`
   html += `<div style="font-size:14px;color:#fff;margin-bottom:6px">${food.name}</div>`
 
-  // 字段驱动：物品声明 tooltipFields → 按声明顺序渲染；否则兜底展示售价
-  const fields = food.tooltipFields
-  if (fields && fields.length > 0) {
-    for (const key of fields) {
-      const cfg = TOOLTIP_FIELDS[key]
-      if (!cfg) continue
-      const prefix = (key === 'sellPrice' || key === 'buyPrice') ? '' : '+'
-      html += `<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.6"><span style="color:#999">${cfg.icon} ${cfg.label}</span><span style="color:#7eb">${prefix}${food[key]}</span></div>`
-    }
-  } else if (food.sellPrice) {
-    // 兜底：未声明 tooltipFields 但有售价
-    html += `<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.6"><span style="color:#999">🪙 售价</span><span style="color:#7eb">${food.sellPrice}</span></div>`
+  for (const key of getTooltipFields(food)) {
+    const cfg = TOOLTIP_FIELDS[key]
+    const prefix = (key === 'sellPrice' || key === 'buyPrice') ? '' : '+'
+    html += `<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.6"><span style="color:#999">${cfg.icon} ${cfg.label}</span><span style="color:#7eb">${prefix}${food[key]}</span></div>`
   }
 
-  html += `<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.6"><span style="color:#999">💕 亲密度</span><span style="color:#7eb">+${FEED_CONFIG.intimacyPerFeed}</span></div>`
+  const intimacy = getTooltipIntimacy(food)
+  if (intimacy !== null) {
+    html += `<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.6"><span style="color:#999">💕 亲密度</span><span style="color:#7eb">+${intimacy}</span></div>`
+  }
   return html
 }
+
+export function calculateTooltipHeight(food) {
+  const fieldCount = getTooltipFields(food).length
+  const intimacyCount = getTooltipIntimacy(food) === null ? 0 : 1
+  return 26 + (fieldCount + intimacyCount) * 20 + 24
+}
+// tooltip behavior helpers:end
 
 function showTooltip(food, rect) {
   const settings = PetState.get('settings')
   if (settings && settings.showTooltip === false) return
-  // 根据内容行数动态计算高度，避免溢出滚动条
-  const fields = food.tooltipFields
-  const fieldCount = (fields && fields.length > 0) ? fields.length : (food.sellPrice ? 1 : 0)
-  // 名称行(~26px) + N 个字段行(~20px each) + 亲密度行(~20px) + padding(~24px)
-  const h = 26 + fieldCount * 20 + 20 + 24
   window.electronAPI.showTooltip({
     html: buildTooltipHTML(food),
     x: Math.round(rect.right + 8),
     y: Math.round(rect.top),
     width: 175,
-    height: Math.round(h),
+    height: Math.round(calculateTooltipHeight(food)),
   })
 }
 

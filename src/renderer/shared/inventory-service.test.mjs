@@ -105,6 +105,7 @@ test('migrates mapped legacy food by merging with existing inventory', () => {
     'food:cookie': 4,
   })
   assert.equal(result.state.inventoryMigrationVersion, 1)
+  assert.equal(Object.hasOwn(result.state, 'foodInventory'), false)
   assert.equal(oldState.inventoryMigrationVersion, undefined)
   assert.deepEqual(oldState.inventory, { 'food:apple': 3, 'crop:wheat': 4 })
 })
@@ -165,4 +166,5 @@ test('legacy migration is idempotent after version one', () => {
   assert.equal(second.migrated, false)
   assert.equal(second.state, first.state)
   assert.deepEqual(second.state.inventory, { 'food:apple': 2 })
+  assert.equal(Object.hasOwn(second.state, 'foodInventory'), false)
 })

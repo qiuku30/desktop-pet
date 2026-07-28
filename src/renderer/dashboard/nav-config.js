@@ -29,7 +29,9 @@ function buildShopPlaceholder(container) {
 export const WAREHOUSE_CATEGORIES = [
   { id: 'all',  label: '全部', enabled: true },
   { id: 'food', label: '食物', enabled: true },
-  { id: 'item', label: '道具', enabled: false },
+  { id: 'crop', label: '作物', enabled: true },
+  { id: 'seed', label: '种子', enabled: true },
+  { id: 'material', label: '材料', enabled: true },
 ]
 
 export const NAV_ITEMS = [

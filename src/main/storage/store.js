@@ -16,7 +16,6 @@ const DEFAULT_STATE = {
   satiety: 100,        // 0+，越高越饱，随时间下降
   intimacy: 0,         // 亲密度
   coins: 100,
-  foodInventory: [],   // 食物库存
   inventory: {},       // 通用库存（稳定命名空间 itemId → count）
   inventoryMigrationVersion: 0,
   zoomLevel: 1.0,      // 窗口缩放倍率（0.75 / 1.0 / 1.25 / 1.5）

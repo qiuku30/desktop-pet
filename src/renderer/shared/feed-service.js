@@ -5,6 +5,10 @@
 
 import { EventBus } from './event-bus.js'
 import { EVENTS } from './events.js'
+import { getItem, listFeedableItems } from './item-config.js'
+import { removeItems } from './inventory-service.js'
+import { addExp, getFoodExp } from './exp-service.js'
+import { boostMood, getExpMultiplier, MOOD_CONFIG } from './mood-service.js'
 import { calcMaxSatiety } from './satiety-service.js'
 
 // ── 喂食通用配置 ──
@@ -15,29 +19,17 @@ export const FEED_CONFIG = {
 
 // ── 食物配置表 ──
 // 新增食物品类只需加一行，无需改业务逻辑代码。
-export const FOODS = {
-  apple:  { id: 'apple',  name: '苹果',   emoji: '🍎', satiety: 20, exp: 10, sellPrice: 4,  buyPrice: 10, category: 'food', tooltipFields: ['satiety', 'exp', 'sellPrice'] },
-  cake:   { id: 'cake',   name: '蛋糕',   emoji: '🍰', satiety: 30, exp: 25, sellPrice: 10, buyPrice: 30, category: 'food', tooltipFields: ['satiety', 'exp', 'sellPrice'] },
-  fish:   { id: 'fish',   name: '小鱼干', emoji: '🐟', satiety: 25, exp: 20, sellPrice: 8,  buyPrice: 20, category: 'food', tooltipFields: ['satiety', 'exp', 'sellPrice'] },
-  milk:   { id: 'milk',   name: '牛奶',   emoji: '🥛', satiety: 15, exp: 10, sellPrice: 3,  buyPrice: 10, category: 'food', tooltipFields: ['satiety', 'exp', 'sellPrice'] },
-  cookie: { id: 'cookie', name: '饼干',   emoji: '🍪', satiety: 10, exp: 5,  sellPrice: 2,  buyPrice: 5,  category: 'food', tooltipFields: ['satiety', 'exp', 'sellPrice'] },
-}
+export const FOODS = Object.freeze(Object.fromEntries(
+  listFeedableItems().map(food => [food.id, food]),
+))
 
 // ── 纯函数：消耗食物 ──
-// 从 foodInventory 中扣减 1 个指定食物。
-// 不碰 PetState，调用方负责 set('foodInventory', ...)。
+// 从通用 inventory 中扣减 1 个指定食物。
+// 不碰 PetState，调用方负责将完整投喂事务一次性提交。
 // 返回 { newInventory, consumed } — consumed=false 表示库存不足或没有该食物。
-export function consumeFood(foodId, foodInventory) {
-  const entry = foodInventory.find(item => item.id === foodId)
-  if (!entry || entry.count <= 0) {
-    return { newInventory: foodInventory, consumed: false }
-  }
-
-  const newInventory = foodInventory
-    .map(item => item.id === foodId ? { ...item, count: item.count - 1 } : item)
-    .filter(item => item.count > 0)
-
-  return { newInventory, consumed: true }
+export function consumeFood(foodId, inventory) {
+  const result = removeItems(inventory, { [foodId]: 1 })
+  return { newInventory: result.inventory, consumed: result.ok }
 }
 
 // ── 纯函数：计算投喂后的新值 ──
@@ -47,8 +39,59 @@ export function consumeFood(foodId, foodInventory) {
 export function applyFeed(satiety, intimacy, food, level = 1) {
   return {
     newSatiety: Math.min(calcMaxSatiety(level), satiety + food.satiety),
-    newIntimacy: intimacy + FEED_CONFIG.intimacyPerFeed,
+    newIntimacy: intimacy + (food.intimacy ?? FEED_CONFIG.intimacyPerFeed),
   }
+}
+
+export function calculateFeedTransaction({
+  inventory,
+  itemId,
+  satiety,
+  intimacy,
+  mood,
+  exp,
+  level,
+}) {
+  const food = getItem(itemId)
+  if (!food || !Number.isFinite(food.satiety) || food.satiety <= 0) {
+    return { ok: false, error: 'ITEM_NOT_FEEDABLE' }
+  }
+  if (satiety >= calcMaxSatiety(level)) {
+    return { ok: false, error: 'SATIETY_FULL' }
+  }
+  const consumed = consumeFood(itemId, inventory)
+  if (!consumed.consumed) return { ok: false, error: 'INSUFFICIENT_ITEMS' }
+
+  const feed = applyFeed(satiety, intimacy, food, level)
+  const newMood = boostMood(mood, MOOD_CONFIG.feedBoost)
+  const adjustedExp = Math.round(getFoodExp(food) * getExpMultiplier(newMood))
+  const expResult = addExp(exp, level, adjustedExp)
+  return {
+    ok: true,
+    item: food,
+    leveledUp: expResult.leveledUp,
+    updates: {
+      inventory: consumed.newInventory,
+      satiety: feed.newSatiety,
+      intimacy: feed.newIntimacy,
+      mood: newMood,
+      exp: expResult.newExp,
+      level: expResult.newLevel,
+    },
+  }
+}
+
+export function commitFeedTransaction({
+  transaction,
+  itemId,
+  setMany,
+  emit = emitFed,
+}) {
+  if (!transaction?.ok || typeof setMany !== 'function') {
+    throw new TypeError('successful feed transaction and setMany are required')
+  }
+  setMany(transaction.updates)
+  emit(itemId)
 }
 
 // ── 发送投喂事件 ──

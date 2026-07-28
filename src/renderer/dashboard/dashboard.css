@@ -672,6 +672,21 @@ html, body {
   background: rgba(255, 255, 255, 0.08);
 }
 
+.shop-item--locked {
+  opacity: 0.5;
+}
+
+.shop-item--locked:hover {
+  background: #2c2c2c;
+}
+
+.shop-item-lock {
+  min-height: 28px;
+  color: #d2a75b;
+  font-size: 11px;
+  text-align: center;
+}
+
 .shop-item-emoji {
   font-size: 32px;
   line-height: 1;

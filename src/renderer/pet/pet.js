@@ -8,7 +8,9 @@ import {
   wanderTarget,
 } from './pet-motion.mjs'
 import { PetState } from '../shared/pet-state.js'
-import { FOODS, consumeFood, applyFeed, emitFed } from '../shared/feed-service.js'
+import { calculateFeedTransaction, emitFed } from '../shared/feed-service.js'
+import { listFeedableItems } from '../shared/item-config.js'
+import { getItemCount } from '../shared/inventory-service.js'
 import { checkDailyInteraction, addExp, getFoodExp, EXP_CONFIG } from '../shared/exp-service.js'
 import { SATIETY_CONFIG, calcMaxSatiety, calcDecay, reduceSatiety } from '../shared/satiety-service.js'
 import { MOOD_CONFIG, getMoodTier, calcMoodDecay, reduceMood, boostMood, getExpMultiplier, getClickBoost, migrateMood, clampMood } from '../shared/mood-service.js'
@@ -534,12 +536,9 @@ async function init() {
 
   // 右键菜单 — 喂食
   _unsubMenuFeed = window.electronAPI.onMenuFeed(async () => {
-    const foodInventory = PetState.get('foodInventory') || []
-    const invMap = {}
-    foodInventory.forEach(item => { invMap[item.id] = item.count })
-
-    const items = Object.values(FOODS)
-      .map(food => ({ ...food, count: invMap[food.id] || 0 }))
+    const inventory = PetState.get('inventory') || {}
+    const items = listFeedableItems()
+      .map(food => ({ ...food, count: getItemCount(inventory, food.id) }))
       .sort((a, b) => b.count - a.count)
 
     const hasFood = items.some(item => item.count > 0)
@@ -616,58 +615,34 @@ async function init() {
       return
     }
 
-    const food = FOODS[result]
-    if (!food) return
-
-    const level = PetState.get('level') || 1
-    const satiety = PetState.get('satiety') || 0
-    const maxSatiety = calcMaxSatiety(level)
-    if (satiety >= maxSatiety) {
-      showBubble('已经吃饱了 🍽')
+    const transaction = calculateFeedTransaction({
+      inventory: PetState.get('inventory') || {},
+      itemId: result,
+      satiety: PetState.get('satiety') || 0,
+      intimacy: PetState.get('intimacy') || 0,
+      mood: PetState.get('mood') ?? MOOD_CONFIG.initialMood,
+      exp: PetState.get('exp') || 0,
+      level: PetState.get('level') || 1,
+    })
+    if (!transaction.ok) {
+      if (transaction.error === 'SATIETY_FULL') showBubble('已经吃饱了 🍽')
       return
     }
 
-    // 消耗食物
-    const { newInventory } = consumeFood(result, foodInventory)
-    PetState.set('foodInventory', newInventory)
-
-    // 更新饱腹 + 亲密度（上限由等级决定）
-    const intimacy = PetState.get('intimacy') || 0
-    const { newSatiety, newIntimacy } = applyFeed(satiety, intimacy, food, level)
-    PetState.set('satiety', newSatiety)
-    PetState.set('intimacy', newIntimacy)
-
-    // 喂食加心情
-    const currentMood = PetState.get('mood') ?? MOOD_CONFIG.initialMood
-    const newMoodVal = boostMood(currentMood, MOOD_CONFIG.feedBoost)
-    PetState.set('mood', newMoodVal)
-
-    // 发投喂事件
+    levelChangeSource = 'feed'
+    try {
+      PetState.setMany(transaction.updates)
+    } finally {
+      levelChangeSource = null
+    }
     emitFed(result)
 
-    // 喂食经验结算（心情加成 + 复用外层 level，避免重复取值）
-    let feedLeveledUp = false
-    const foodExp = getFoodExp(food)
-    if (foodExp > 0) {
-      const exp = PetState.get('exp') || 0
-      const adjustedExp = Math.round(foodExp * getExpMultiplier(newMoodVal))
-      const addResult = addExp(exp, level, adjustedExp)
-      PetState.set('exp', addResult.newExp)
-      if (addResult.leveledUp) {
-        feedLeveledUp = true
-        levelChangeSource = 'feed'
-        try {
-          PetState.set('level', addResult.newLevel)
-        } finally {
-          levelChangeSource = null
-        }
-        showBubble(`🎉 升级了！Lv.${addResult.newLevel}！`)
-      }
+    if (transaction.leveledUp) {
+      showBubble(`🎉 升级了！Lv.${transaction.updates.level}！`)
     }
-
     // 成功喂食重置用户闲置；若同时升级，运行时保证 eat → happy。
-    animationRuntime?.playFeedResult({ leveledUp: feedLeveledUp })
-    showBubble(`投喂了${food.name}！`)
+    animationRuntime?.playFeedResult({ leveledUp: transaction.leveledUp })
+    showBubble(`投喂了${transaction.item.name}！`)
   })
 
   // 右键菜单 — 状态

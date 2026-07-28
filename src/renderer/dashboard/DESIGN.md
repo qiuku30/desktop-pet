@@ -72,3 +72,10 @@
 - 副作用按控件类型分发：alwaysOnTop → IPC send/on → `mainWindow.setAlwaysOnTop()`；showTooltip → 无副作用，`showTooltip()` 调用时读值判断
 - 扩展预留：底部"重置所有设置"按钮（置灰）、配置项 `unlockLevel` / `disabled` 字段
 - 🟡 搁置：面板透明度（CSS `--panel-opacity` 无法穿透 `transparent:false` 窗口，恢复需窗口透明 + frame:false + 自绘标题栏）
+
+## 统一仓库与商店
+
+- 仓库和主页库存卡只读取通用 `inventory`，物品展示、分类、投喂能力、买价和售价统一来自共享物品目录。
+- 仓库分类固定为全部、食物、作物、种子、材料；出售和销毁通过通用数量 overlay 选择数量，确认后各自只调用一次 `PetState.setMany()`。
+- 商店保留五种普通食物并展示六种种子；普通食物和已解锁种子都支持批量购买。锁定种子仍可见，置灰并显示 `农场 Lv.X 解锁`。
+- 购买事务同时提交金币和库存；页面离开时取消订阅、延迟分类渲染并关闭未完成 overlay。

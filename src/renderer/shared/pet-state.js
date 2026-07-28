@@ -8,7 +8,7 @@ import { migrateLegacyFoodInventory } from './inventory-service.js'
 
 // key → 事件映射。这些 key 在 set 时会额外发一个语义明确的专用事件。
 // payloadKey 对齐 docs/events.md 各事件的参数字段名（satiety→value / mood→mood / level→level）。
-// 所有 key（含未映射的 exp / intimacy / coins / foodInventory 等）都会发 PET_STATE_CHANGED 通用事件；
+// 所有 key（含未映射的 exp / intimacy / coins / inventory 等）都会发 PET_STATE_CHANGED 通用事件；
 // 需要更细粒度语义的（如金币赚/花）仍由调用方自己 EventBus.emit。
 const KEY_EVENT_MAP = {
   satiety: { event: EVENTS.PET_SATIETY_CHANGED, payloadKey: 'value' },

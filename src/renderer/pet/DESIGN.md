@@ -19,7 +19,7 @@
 - 饱腹值（satiety，0-动态上限，随时间衰减）
 - 亲密度（intimacy，喂食 +5）
 - 金币（coins，待接入）
-- 食物库存（foodInventory）
+- 通用库存（`inventory`，命名空间 itemId → 数量）
 - 每日互动计数（dailyInteractionCount / lastInteractionDate）
 - 饱腹衰减时间戳（lastSatietyUpdate）
 
@@ -72,6 +72,10 @@ sleep；页面销毁会清空队列和轮询计时器。`pet.js` 在喂食内部
 避免同步 `PET_STATE_CHANGED` 订阅重复直播放 happy；点击/外部升级仍由订阅触发，
 若此时正在播放 `eat`，则复用或新增唯一一个 queued happy，避免丢失或重复。
 队列不改变 `eat > happy/interact > walk > sad/sleep > idle` 的既定优先级。
+
+投喂物品来自共享物品目录的 feedable 能力集合，包含旧食物、可直接投喂作物和加工品。
+投喂固定消耗一件，并从单一状态快照计算 `inventory/satiety/intimacy/mood/exp/level`；
+`PetState.setMany()` 同步提交未抛异常后才发送 `PET_FED`，不为投喂额外 `flush()`。
 
 ### 生命周期
 

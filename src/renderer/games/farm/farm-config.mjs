@@ -185,6 +185,15 @@ export function validateFarmConfig(config) {
     if (![crop.durationMs, crop.baseYield, crop.seedPrice, crop.sellPrice].every(positive)) {
       errors.push({ code: 'INVALID_CROP_NUMBER', path: `crops.${cropId}` })
     }
+    if (items[crop.seedId]?.buyPrice !== crop.seedPrice) {
+      errors.push({ code: 'SEED_PRICE_MISMATCH', path: `crops.${cropId}.seedPrice` })
+    }
+    if (items[crop.seedId]?.unlockFarmLevel !== crop.unlockFarmLevel) {
+      errors.push({ code: 'SEED_UNLOCK_MISMATCH', path: `crops.${cropId}.unlockFarmLevel` })
+    }
+    if (items[cropId]?.sellPrice !== crop.sellPrice) {
+      errors.push({ code: 'CROP_SELL_PRICE_MISMATCH', path: `crops.${cropId}.sellPrice` })
+    }
   }
 
   for (const [farmId, farm] of Object.entries(config?.farms || {})) {
