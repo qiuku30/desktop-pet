@@ -1,6 +1,6 @@
 # 农场模块技术设计
 
-> farm-02 提供领域层；farm-03 增加农田与建筑页面；farm-04 增加加工、订单与跨页摘要。桌宠提醒和旧库存消费者迁移仍由 farm-05～06 负责。
+> farm-02 提供领域层；farm-03 增加农田与建筑页面；farm-04 增加加工、订单与跨页摘要；farm-05 完成统一库存消费者迁移；farm-06 增加小鸟彩蛋和共享弱提醒摘要。
 
 ## 分层
 
@@ -14,6 +14,7 @@
 - `farm-processing-ui.js`：配方/材料 view model、三槽队列、运行倒计时与排队取消交互。
 - `farm-orders-ui.js`：三槽订单、持有/需求、奖励快照、交付与冷却倒计时交互。
 - `farm-module.js`：唯一公开 Dashboard 挂载入口，负责初始化 PetState、创建 service 和注入样式。
+- `farm-bird.mjs`：农场页会话内的小鸟出现/离场 scheduler；只管理 timer 和唯一 `birdId`，不发放奖励。
 - `farm.css`：响应式 `4×4` 网格、农田/建筑状态、低频动画和减少动态效果适配。
 
 纯模块不得访问 DOM、Electron、timer、localStorage 或文件系统。当前时间和随机源由调用方注入；实例 ID 使用持久化 `nextIds`，不使用随机数。
@@ -138,3 +139,29 @@ overlay。洒水器、堆肥箱、成熟作物和移动目标仅使用克制的�
   child、30 秒 interval、订阅、overlay 和迟到异步回调。
 - 页签 generation 使切页后的迟到确认失效；mount generation 使卸载后的 settlement、
   mutation 和确认 Promise 不得重绘或恢复旧 busy 状态。
+
+## farm-06 小鸟与弱提醒摘要
+
+小鸟只由已挂载且可见的 `mountFarm` 启动。首次延迟 2～5 分钟，上一只离开或成功
+领取后延迟 5～12 分钟，停留 8～12 秒；同一时间最多一只。scheduler 的
+`onAppear/onLeave` 只驱动可访问原生按钮和页面反馈，点击后立即锁定，唯一奖励入口为
+`FarmService.claimBird({ birdId })`。页面隐藏、cleanup 和销毁会取消 timer 与当前小鸟，
+generation 守卫阻止领奖 Promise 的迟到反馈。每日次数按 `now()` 的本地日期解释；
+旧日期的持久化计数视为 0，既有 30 秒页面结算 tick 会让跨午夜且前一日已封顶的页面
+重新尝试首次调度。减少动态效果时小鸟悬浮动画禁用。
+
+`src/renderer/shared/farm-summary.js` 是不依赖 pet/dashboard/farm 内部模块的纯摘要：
+
+```js
+{
+  matureCount,
+  processingCompletionKey,
+  readyOrderIds,
+}
+```
+
+成熟和“整队加工完成”按传入时间纯派生；加工队列结算后继续使用既有
+`lastCompletedProcessingTaskId` 作为稳定去重键；订单可交付只比较合法需求与统一库存。
+畸形状态回退为空摘要。`diffFarmReminder(previous, next)` 每次最多返回一个 descriptor，
+优先级固定为 `mature → processing-complete → order-ready`；同次其余 transition 随
+`next` 成为基线并被消费，不建立补播队列。

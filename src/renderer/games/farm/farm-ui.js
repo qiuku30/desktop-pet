@@ -13,6 +13,7 @@ import {
   buildOrdersViewModel,
   renderOrdersTab,
 } from './farm-orders-ui.js'
+import { createBirdScheduler } from './farm-bird.mjs'
 
 const BUILDING_META = Object.freeze({
   'building:sprinkler': { name: '洒水器', emoji: '💦' },
@@ -282,6 +283,12 @@ export function renderFarmShell(vm, ui = {}) {
   }
   return `<div class="farm-page">
     ${summaryHtml(vm)}
+    ${ui.bird || ui.birdRewardText ? `<div class="farm-bird-visit">
+      ${ui.bird ? `<button type="button" class="farm-bird" data-action="claim-bird"
+        data-bird-id="${escapeHtml(ui.bird.birdId)}"
+        aria-label="点击小鸟获得金币"${ui.birdClaimBusy ? ' disabled' : ''}>🐦</button>` : ''}
+      ${ui.birdRewardText ? `<span class="farm-bird-reward" role="status">${escapeHtml(ui.birdRewardText)}</span>` : ''}
+    </div>` : ''}
     <div class="farm-tabs" role="tablist" aria-label="农场区域">
       ${tab('field', '农田')}
       ${tab('processing', '加工')}
@@ -404,6 +411,8 @@ export function mountFarm(container, {
   now = () => new Date().toISOString(),
   setIntervalFn = setInterval,
   clearIntervalFn = clearInterval,
+  createBirdSchedulerFn = createBirdScheduler,
+  documentRef = globalThis.document,
 } = {}) {
   let disposed = false
   let generation = 0
@@ -418,6 +427,9 @@ export function mountFarm(container, {
   let mutationBusy = false
   let settlementInFlight = null
   let settlementPending = false
+  let currentBird = null
+  let birdClaimBusy = false
+  let birdRewardText = ''
 
   const snapshot = () => ({
     farm: petState.get('farm'),
@@ -434,7 +446,14 @@ export function mountFarm(container, {
     if (selectedTileId && !vm.tiles.some(tile => tile.id === selectedTileId)) selectedTileId = null
     container.className = 'page page--farm'
     container.innerHTML = renderFarmShell(vm, {
-      selectedTileId, mode, feedback, activeTab, busy: mutationBusy,
+      selectedTileId,
+      mode,
+      feedback,
+      activeTab,
+      busy: mutationBusy,
+      bird: currentBird,
+      birdClaimBusy,
+      birdRewardText,
     })
     const childContainer = container.querySelector?.('.farm-tab-content')
     if (!childContainer || activeTab === 'field') return
@@ -535,6 +554,7 @@ export function mountFarm(container, {
       .finally(() => {
         settlementInFlight = null
         if (!disposed && callGeneration === generation) {
+          birdScheduler?.start({ dailyCount: birdDailyCount() })
           render()
           if (settlementPending && !mutationBusy) requestSettlement()
         }
@@ -610,6 +630,9 @@ export function mountFarm(container, {
     if (mutationBusy && action.dataset.action !== 'open-warehouse') return
     const data = action.dataset
     switch (data.action) {
+      case 'claim-bird':
+        claimCurrentBird(data.birdId)
+        break
       case 'harvest-all':
         execute(() => service.harvestAll())
         break
@@ -670,12 +693,81 @@ export function mountFarm(container, {
     }
   }
 
+  async function claimCurrentBird(birdId) {
+    if (disposed || birdClaimBusy || !currentBird || currentBird.birdId !== birdId) return
+    birdClaimBusy = true
+    const callGeneration = generation
+    render()
+    try {
+      const result = await service.claimBird({ birdId })
+      if (disposed || callGeneration !== generation) return
+      if (!result.ok) {
+        birdClaimBusy = false
+        feedback = ERROR_MESSAGES[result.error] || '小鸟已经飞走了。'
+        render()
+        return
+      }
+      birdRewardText = `+${result.amount} 🪙`
+      birdClaimBusy = false
+      birdScheduler.claimed({
+        birdId,
+        dailyCount: birdDailyCount(),
+      })
+      render()
+    } catch (error) {
+      if (!disposed && callGeneration === generation) {
+        console.error('[Farm UI] bird claim failed:', error)
+        birdClaimBusy = false
+        feedback = '领取失败，请重试。'
+        render()
+      }
+    }
+  }
+
   container.addEventListener('click', onClick)
   const unsubscribeFarm = eventBus?.on?.(EVENTS.FARM_STATE_CHANGED, () => render()) || (() => {})
   const unsubscribePet = petState.subscribe(EVENTS.PET_STATE_CHANGED, ({ key }) => {
     if (['farm', 'inventory', 'coins', 'level'].includes(key)) render()
   })
   const tick = setIntervalFn(requestSettlement, 30_000)
+  const birdScheduler = documentRef
+    ? createBirdSchedulerFn({
+        onAppear(bird) {
+          if (disposed) return
+          currentBird = bird
+          birdClaimBusy = false
+          birdRewardText = ''
+          render()
+        },
+        onLeave(bird) {
+          if (disposed || currentBird?.birdId !== bird.birdId) return
+          currentBird = null
+          birdClaimBusy = false
+          render()
+        },
+      })
+    : null
+  const birdDailyCount = () => {
+    const daily = snapshot().farm?.daily
+    const date = new Date(now())
+    if (!Number.isFinite(date.getTime())) return 0
+    const today = [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, '0'),
+      String(date.getDate()).padStart(2, '0'),
+    ].join('-')
+    return daily?.birdRewardDate === today
+      ? Math.max(0, Math.min(10, daily.birdRewardCount || 0))
+      : 0
+  }
+  const onVisibilityChange = () => {
+    birdScheduler?.setVisible(!documentRef.hidden, { dailyCount: birdDailyCount() })
+  }
+  documentRef?.addEventListener?.('visibilitychange', onVisibilityChange)
+  if (documentRef?.hidden) {
+    birdScheduler?.setVisible(false, { dailyCount: birdDailyCount() })
+  }
+  birdScheduler?.start({ dailyCount: birdDailyCount() })
   render()
 
   return () => {
@@ -689,6 +781,8 @@ export function mountFarm(container, {
     container.removeEventListener('click', onClick)
     unsubscribeFarm()
     unsubscribePet()
+    documentRef?.removeEventListener?.('visibilitychange', onVisibilityChange)
+    birdScheduler?.destroy()
     closeOverlay()
   }
 }

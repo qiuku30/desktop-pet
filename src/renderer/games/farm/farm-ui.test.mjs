@@ -8,6 +8,7 @@ import {
   renderFarmShell,
   renderFieldGrid,
 } from './farm-ui.js'
+import { createBirdScheduler } from './farm-bird.mjs'
 import { createDefaultFarmState } from './farm-state.mjs'
 import { FARM_CONFIG } from './farm-config.mjs'
 
@@ -161,7 +162,12 @@ test('dynamic overlay text escaping covers confirmation content', () => {
   )
 })
 
-function createHarness(farm = createDefaultFarmState(NOW, () => 0.5), { level = 12 } = {}) {
+function createHarness(farm = createDefaultFarmState(NOW, () => 0.5), {
+  level = 12,
+  birdSchedulerFactory,
+  documentRef,
+  claimBirdImpl,
+} = {}) {
   const state = {
     farm,
     inventory: {},
@@ -194,9 +200,15 @@ function createHarness(farm = createDefaultFarmState(NOW, () => 0.5), { level = 
   const service = Object.fromEntries([
     'plant', 'harvest', 'harvestAll', 'removeCrop', 'unlockTile', 'upgradeLand',
     'build', 'moveBuilding', 'upgradeBuilding', 'demolishBuilding',
-    'enqueue', 'cancelQueued', 'completeOrder', 'abandonOrder', 'settle',
+    'enqueue', 'cancelQueued', 'completeOrder', 'abandonOrder', 'settle', 'claimBird',
   ].map(name => [name, async args => {
     calls.push([name, args])
+    if (name === 'claimBird') {
+      if (claimBirdImpl) return claimBirdImpl(args, state)
+      state.farm.daily.birdRewardDate = '2026-07-26'
+      state.farm.daily.birdRewardCount += 1
+      return { ok: true, amount: 2 }
+    }
     return name === 'demolishBuilding' ? { ok: true, refund: 30 } : { ok: true }
   }]))
   const petState = {
@@ -212,6 +224,8 @@ function createHarness(farm = createDefaultFarmState(NOW, () => 0.5), { level = 
     now: () => NOW,
     showOverlay: options => new Promise(resolve => overlays.push({ options, resolve })),
     closeOverlay: () => {},
+    createBirdSchedulerFn: birdSchedulerFactory,
+    documentRef,
   })
   const click = dataset => {
     const action = { dataset, disabled: false }
@@ -256,6 +270,204 @@ function createHarness(farm = createDefaultFarmState(NOW, () => 0.5), { level = 
     state, container, childContainer, calls, overlays, cleanup, click, clickTile, clickTab, clickChild,
   }
 }
+
+test('bird UI is accessible, claims once through FarmService and cleans visibility lifecycle', async () => {
+  let schedulerOptions
+  const schedulerCalls = []
+  let visibilityHandler = null
+  const documentRef = {
+    hidden: false,
+    addEventListener(type, handler) {
+      if (type === 'visibilitychange') visibilityHandler = handler
+    },
+    removeEventListener(type, handler) {
+      if (type === 'visibilitychange' && visibilityHandler === handler) visibilityHandler = null
+    },
+  }
+  const harness = createHarness(createDefaultFarmState(NOW, () => 0.5), {
+    documentRef,
+    birdSchedulerFactory(options) {
+      schedulerOptions = options
+      return {
+        start(args) { schedulerCalls.push(['start', args]) },
+        setVisible(visible, args) { schedulerCalls.push(['setVisible', visible, args]) },
+        claimed(args) {
+          schedulerCalls.push(['claimed', args])
+          schedulerOptions.onLeave({ birdId: args.birdId })
+        },
+        destroy() { schedulerCalls.push(['destroy']) },
+      }
+    },
+  })
+
+  assert.deepEqual(schedulerCalls, [['start', { dailyCount: 0 }]])
+  schedulerOptions.onAppear({ birdId: 'bird:test' })
+  assert.match(harness.container.innerHTML, /<button[^>]*data-action="claim-bird"/)
+  assert.match(harness.container.innerHTML, /aria-label="点击小鸟获得金币"/)
+
+  harness.click({ action: 'claim-bird', birdId: 'bird:test' })
+  harness.click({ action: 'claim-bird', birdId: 'bird:test' })
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(harness.calls.filter(([name]) => name === 'claimBird').length, 1)
+  assert.deepEqual(harness.calls.find(([name]) => name === 'claimBird'), [
+    'claimBird',
+    { birdId: 'bird:test' },
+  ])
+  assert.match(harness.container.innerHTML, /\+2 🪙/)
+  assert.deepEqual(schedulerCalls.at(-1), ['claimed', { birdId: 'bird:test', dailyCount: 1 }])
+
+  documentRef.hidden = true
+  visibilityHandler()
+  assert.deepEqual(schedulerCalls.at(-1), ['setVisible', false, { dailyCount: 1 }])
+
+  harness.cleanup()
+  assert.deepEqual(schedulerCalls.at(-1), ['destroy'])
+  assert.equal(visibilityHandler, null)
+  schedulerOptions.onAppear({ birdId: 'bird:late' })
+  assert.doesNotMatch(harness.container.innerHTML, /bird:late/)
+})
+
+test('bird daily cap is treated as zero after the local date changes', () => {
+  const farm = createDefaultFarmState(NOW, () => 0.5)
+  farm.daily.birdRewardDate = '2026-07-25'
+  farm.daily.birdRewardCount = 10
+  farm.daily.claimedBirdIds = Array.from({ length: 10 }, (_, index) => `bird:${index}`)
+  const schedulerCalls = []
+  const harness = createHarness(farm, {
+    documentRef: {
+      hidden: false,
+      addEventListener() {},
+      removeEventListener() {},
+    },
+    birdSchedulerFactory() {
+      return {
+        start(args) { schedulerCalls.push(args) },
+        setVisible() {},
+        claimed() {},
+        destroy() {},
+      }
+    },
+  })
+
+  assert.deepEqual(schedulerCalls, [{ dailyCount: 0 }])
+  harness.cleanup()
+})
+
+test('bird claim uses committed cross-day count instead of the click-time count', async () => {
+  const farm = createDefaultFarmState(NOW, () => 0.5)
+  farm.daily.birdRewardDate = '2026-07-25'
+  farm.daily.birdRewardCount = 9
+  const schedulerCalls = []
+  let schedulerOptions
+  const harness = createHarness(farm, {
+    documentRef: {
+      hidden: false,
+      addEventListener() {},
+      removeEventListener() {},
+    },
+    claimBirdImpl(args, state) {
+      state.farm.daily.birdRewardDate = '2026-07-26'
+      state.farm.daily.birdRewardCount = 1
+      return { ok: true, amount: 1 }
+    },
+    birdSchedulerFactory(options) {
+      schedulerOptions = options
+      return {
+        start() {},
+        setVisible() {},
+        claimed(args) { schedulerCalls.push(args) },
+        destroy() {},
+      }
+    },
+  })
+
+  schedulerOptions.onAppear({ birdId: 'bird:cross-day' })
+  harness.click({ action: 'claim-bird', birdId: 'bird:cross-day' })
+  await new Promise(resolve => setImmediate(resolve))
+
+  assert.deepEqual(schedulerCalls, [{ birdId: 'bird:cross-day', dailyCount: 1 }])
+  harness.cleanup()
+})
+
+test('pending 9-to-10 bird claim cancels the next timer after natural departure', async () => {
+  const farm = createDefaultFarmState(NOW, () => 0.5)
+  farm.daily.birdRewardDate = '2026-07-26'
+  farm.daily.birdRewardCount = 9
+  let resolveClaim
+  const claimPromise = new Promise(resolve => { resolveClaim = resolve })
+  let nextTimerId = 1
+  const timers = new Map()
+  const setTimer = (callback, delay) => {
+    const id = nextTimerId++
+    timers.set(id, { callback, delay })
+    return id
+  }
+  const clearTimer = id => timers.delete(id)
+  let appearedBirdId = null
+  const runNextTimer = () => {
+    const [id, timer] = timers.entries().next().value
+    timers.delete(id)
+    timer.callback()
+  }
+  const harness = createHarness(farm, {
+    documentRef: {
+      hidden: false,
+      addEventListener() {},
+      removeEventListener() {},
+    },
+    claimBirdImpl: () => claimPromise,
+    birdSchedulerFactory: options => createBirdScheduler({
+      ...options,
+      onAppear(bird) {
+        appearedBirdId = bird.birdId
+        options.onAppear(bird)
+      },
+      random: () => 0,
+      setTimer,
+      clearTimer,
+    }),
+  })
+
+  runNextTimer()
+  harness.click({ action: 'claim-bird', birdId: appearedBirdId })
+  runNextTimer()
+  assert.equal(timers.size, 1)
+  const staleAppearance = timers.values().next().value.callback
+
+  harness.state.farm.daily.birdRewardCount = 10
+  resolveClaim({ ok: true, amount: 3 })
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(timers.size, 0)
+
+  staleAppearance()
+  assert.doesNotMatch(harness.container.innerHTML, /data-action="claim-bird"/)
+  harness.cleanup()
+})
+
+test('farm mounted while document is hidden never starts a visible bird timer', () => {
+  const schedulerCalls = []
+  const harness = createHarness(createDefaultFarmState(NOW, () => 0.5), {
+    documentRef: {
+      hidden: true,
+      addEventListener() {},
+      removeEventListener() {},
+    },
+    birdSchedulerFactory() {
+      return {
+        start(args) { schedulerCalls.push(['start', args]) },
+        setVisible(visible, args) { schedulerCalls.push(['setVisible', visible, args]) },
+        claimed() {},
+        destroy() {},
+      }
+    },
+  })
+
+  assert.deepEqual(schedulerCalls, [
+    ['setVisible', false, { dailyCount: 0 }],
+    ['start', { dailyCount: 0 }],
+  ])
+  harness.cleanup()
+})
 
 test('plant forwards quick-buy intent and harvest-all remains one service command', async () => {
   const harness = createHarness()

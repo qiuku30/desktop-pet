@@ -23,6 +23,10 @@ import {
 import {
   createPetStartupVisual,
 } from './pet-startup-visual.mjs'
+import {
+  createPetFarmReminder,
+  formatFarmIndicator,
+} from './pet-farm-reminder.mjs'
 
 // 动态窗口尺寸（配合 scaleFactor 自适应 + 用户缩放）
 function getWinSize() {
@@ -70,6 +74,7 @@ let _unsubUserDrag = null
 let _unsubPomodoroTick = null
 let _unsubPomodoroPhase = null
 let _unsubPetState = null
+let _farmReminder = null
 
 // ── 工具 ──
 function rand(min, max) { return min + Math.random() * (max - min) }
@@ -514,6 +519,7 @@ async function init() {
   if (_unsubPomodoroTick) { _unsubPomodoroTick(); _unsubPomodoroTick = null }
   if (_unsubPomodoroPhase) { _unsubPomodoroPhase(); _unsubPomodoroPhase = null }
   if (_unsubPetState) { _unsubPetState(); _unsubPetState = null }
+  if (_farmReminder) { _farmReminder.destroy(); _farmReminder = null }
 
   _unsubUserDrag = window.electronAPI.onUserDrag(onUserDrag)
 
@@ -532,6 +538,26 @@ async function init() {
         animationRuntime?.playLevelUp()
       }
     }
+  })
+
+  const farmIndicator = document.getElementById('farm-indicator')
+  _farmReminder = createPetFarmReminder({
+    getState: () => ({
+      farm: PetState.get('farm'),
+      inventory: PetState.get('inventory') || {},
+    }),
+    onSummary: summary => {
+      if (destroyed) return
+      const indicator = formatFarmIndicator(summary)
+      farmIndicator.textContent = indicator.text
+      farmIndicator.style.display = indicator.visible ? '' : 'none'
+    },
+    onBubble: text => {
+      if (!destroyed) showBubble(text)
+    },
+    subscribe: refresh => PetState.subscribe(EVENTS.PET_STATE_CHANGED, ({ key }) => {
+      if (key === 'farm' || key === 'inventory') refresh()
+    }),
   })
 
   // 右键菜单 — 喂食
@@ -728,12 +754,14 @@ function destroyPetPage() {
   if (_unsubPomodoroTick) _unsubPomodoroTick()
   if (_unsubPomodoroPhase) _unsubPomodoroPhase()
   if (_unsubPetState) _unsubPetState()
+  if (_farmReminder) _farmReminder.destroy()
   _unsubUserDrag = null
   _unsubMenuFeed = null
   _unsubMenuStatus = null
   _unsubPomodoroTick = null
   _unsubPomodoroPhase = null
   _unsubPetState = null
+  _farmReminder = null
 
   animationRuntime?.destroy()
   animationRuntime = null

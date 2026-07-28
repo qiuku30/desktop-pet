@@ -525,3 +525,12 @@
 - 📝 购买、出售、销毁和投喂各自一次 `PetState.setMany()`；不新增 IPC、事件、依赖或 farm schema，保持 pet-12 动画、sleep 与闲置语义。
 - 🔄 首轮实现新鲜全仓 316/316、语法与 `git diff --check` 通过；ARCH-10 独立探针确认 tooltip 兼容性回归：旧五种食物丢失原有饱腹/经验字段，胡萝卜/玉米/加工品自定义亲密度被固定显示为 +5，非投喂种子和作物也错误显示亲密度。已退回最小返修，要求目录元数据与渲染行为测试覆盖仓库/商店 tooltip 的字段、数值和高度。
 - ✅ tooltip 最小返修通过 ARCH-10 第二轮独立复验：目录按能力生成冻结字段，商店 tooltip 保留效果并仅替换买卖价格，亲密度只对真实可投喂项显示且使用物品自定义值；生产 `showTooltip()` 已确认调用同一组受测 helper。定向 13/13、全仓 318/318、生产文件语法、旧字段扫描与 `git diff --check` 全通过；Electron 冷启动正常。当前辅助控制无法对无边框透明宠物窗生成可靠指针事件，未虚报真实鼠标悬停，字段/数值/高度由真实渲染 helper 行为测试覆盖。尚未 commit/merge/push。
+- ✅ farm-05 已以 `33471a0` 提交到本地 `main`，未 merge/push。
+
+## 🌾 农场经营 — farm-06 弱提醒、小鸟与最终集成（2026-07-28）
+
+- 📝 用户确认由 Codex 执行高难度 farm-06；范围为农场可见时小鸟彩蛋、共享纯摘要、桌宠弱提醒及最终回归，不新增事件、IPC、依赖或持久化字段。
+- 📝 ARCH-10 锁定：无状态事件时每 30 秒纯读刷新，不从 pet 侧调用 settlement；同次 transition 按 `mature → processing-complete → order-ready` 只提示最高优先级且不补播；indicator 仅在成熟数大于 0 时显示 `🌾 N`。
+- 🔄 farm-06 已获准按严格 TDD 开始实现；实现窗口不得修改三份 tracker，不得 stage/commit/merge/push。
+- 🔄 首轮实现窗口报告全仓 345/345；ARCH-10 新鲜定向回归 114/114，但独立探针复现非空加工队列错误回退旧 `lastCompletedProcessingTaskId`，代码审查另发现领取 Promise 跨自然离场后第 10 次成功无法取消按旧日计数排定的下一只。已退回返修，要求 persisted key 仅在空队列使用，并以提交后的真实每日计数和可控 Promise/fake timer 覆盖上限竞态。
+- ✅ 返修后通过 ARCH-10 第二轮独立复验：非空未完成队列返回 null，整队完成才产生当前队尾 key；第 9→10 次领取即使跨自然离场也会取消后续 timer 和迟到 callback，UI 使用事务提交后的真实本地日计数。新鲜定向 51/51、全仓 349/349、生产文件语法、合规扫描与 `git diff --check` 均通过；Electron 冷启动显示正式 Canvas 且未见 Emoji 闪变。长计时、跨日、sleep 与 Dashboard 鼠标流程未虚报，确定性测试覆盖对应边界。尚未 commit/merge/push。

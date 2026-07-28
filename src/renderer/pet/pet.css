@@ -172,4 +172,22 @@ html, body {
   text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 
+#farm-indicator {
+  position: absolute;
+  bottom: 61%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  padding: 1vw 3vw;
+  border-radius: 4vw;
+  background: rgba(37, 54, 35, .82);
+  color: #e5f1df;
+  font-size: 5.5vw;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 9;
+  text-shadow: 0 .5vw 1.5vw rgba(0, 0, 0, .45);
+}
+
 /* 喂食 flyout 已迁移至独立 BrowserWindow overlay（infra-03 showOverlay） */

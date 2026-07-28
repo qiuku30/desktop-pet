@@ -10,6 +10,7 @@
   - `#pet-canvas` — 奶油星团透明帧动画；素材全部就绪后显示
   - `#pet-fallback` — Emoji 回退；静态首帧或动画资源加载失败时显示
 - `#speech-bubbles` — 气泡容器
+- `#farm-indicator` — 农场成熟作物弱摘要；仅 `matureCount > 0` 时显示 `🌾 N`
 - `#pomodoro-indicator` — 番茄钟浮标；与气泡同为 Canvas 上方 DOM 层
 
 ## 状态
@@ -96,6 +97,23 @@ sleep；页面销毁会清空队列和轮询计时器。`pet.js` 在喂食内部
   番茄钟监听器、待播一次性动作队列，并销毁控制器和渲染器；
 - 异步加载使用 token，忽略页面卸载后的旧结果；
 - `AnimationController` 自有 token 继续负责一次性动作 stale completion。
+
+### 农场弱提醒（farm-06）
+
+`pet-farm-reminder.mjs` 每 30 秒从现有 `farm`/`inventory` 快照调用共享纯摘要，并在
+`farm` 或 `inventory` 的 `PET_STATE_CHANGED` 时即时刷新。构造时立即取得首个快照并
+更新 indicator，但首个快照不弹气泡；后续只消费纯 transition diff，固定文案为：
+
+- 成熟：`农场有作物成熟啦～ 🌾`
+- 加工全部完成：`加工台忙完啦～ ⚙️`
+- 订单首次可交付：`有订单可以交付啦～ 📋`
+
+同次多 transition 固定按 `mature → processing-complete → order-ready` 只弹一个，
+其余随新基线消费且不补播。adapter 只接收 `onSummary` 和 `onBubble`，没有动画运行时、
+闲置计时或走动控制接口；因此提醒不调用 `noteUserActivity()`、transient 动画、wake
+或自动走动恢复，不属于有效互动。`pagehide` 通过 `destroyPetPage()` 销毁 adapter，
+清除唯一 30 秒 timer 和状态订阅；destroy 后 timer、订阅或手动 refresh 均不能更新
+indicator 或气泡。
 
 ## 移动系统（已实现）
 
