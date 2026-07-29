@@ -1,5 +1,7 @@
 # Farm 04 Processing and Orders UI Implementation Plan
 
+> **Status (2026-07-29):** Completed after settlement/mutation concurrency repairs; final implementation commit `64f049c`, 290/290 full-suite tests. The unchecked steps below are retained as the original execution script, not as current progress.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Complete the farm page with processing and order tabs, persistent top summary, offline catch-up, cancellation, delivery and abandonment flows.

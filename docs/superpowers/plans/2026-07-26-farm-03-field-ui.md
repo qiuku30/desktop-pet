@@ -1,5 +1,7 @@
 # Farm 03 Field and Building UI Implementation Plan
 
+> **Status (2026-07-29):** Completed after lifecycle and accessibility repairs; final implementation commit `550aa3a`, 277/277 full-suite tests. The unchecked steps below are retained as the original execution script, not as current progress.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Deliver the navigable farm page with a responsive `4×4` field, planting, harvesting, expansion, land upgrades, building placement, movement, upgrades and demolition.

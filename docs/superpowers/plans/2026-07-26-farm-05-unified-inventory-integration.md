@@ -1,5 +1,7 @@
 # Farm 05 Unified Inventory Integration Implementation Plan
 
+> **Status (2026-07-29):** Completed after tooltip compatibility repair; final implementation commit `33471a0`, 318/318 full-suite tests. The unchecked steps below are retained as the original execution script, not as current progress.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `executing-plans`, `test-driven-development`, and `verification-before-completion` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Do not use subagents for this project.
 
 **Goal:** Make the universal namespaced inventory the only writable inventory used by warehouse, shop and both feeding paths, while adding quantity operations and farm seed commerce without changing pet animation semantics.

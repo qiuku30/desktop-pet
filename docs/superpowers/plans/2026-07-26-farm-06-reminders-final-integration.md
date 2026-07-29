@@ -1,5 +1,7 @@
 # Farm 06 Reminders and Final Integration Implementation Plan
 
+> **Status (2026-07-29):** Completed after summary fallback and bird-cap race repairs; final implementation commit `564a3b5`, 349/349 full-suite tests. The unchecked steps below are retained as the original execution script, not as current progress.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add farm bird rewards and deduplicated desktop-pet summaries, then independently verify the complete farm module and all regressions.

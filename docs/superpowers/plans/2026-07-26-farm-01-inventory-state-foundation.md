@@ -1,5 +1,7 @@
 # Farm 01 Inventory and State Foundation Implementation Plan
 
+> **Status (2026-07-29):** Completed and independently verified; final implementation commit `05956a8`, 211/211 full-suite tests. The unchecked steps below are retained as the original execution script, not as current progress.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add the universal inventory model, idempotent legacy migration, and atomic multi-key PetState commits without changing existing farm UI.
