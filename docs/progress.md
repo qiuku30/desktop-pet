@@ -559,8 +559,12 @@
 - ⚠️ 技术原型必须先验证无 bundler Electron 项目在开发态与打包态的 Pixi ESM 入口解析；失败时停手上报最小 bundler 或受控 vendor 两种方案。
 - ✅ `farm-art-01` 完成 21 文件垂直样张；ARCH-11 首轮独立复验发现 runtime base 烘焙 16 块普通田，破坏 locked/Lv.2/Lv.3 分层，退回最小结构返修。
 - ✅ 返修后 runtime base 改为连续草地；800×600 与 600×400 review 均由无田 base + 16 个独立 land sprite 实际合成。ARCH-11 独立检查视觉并重新验证 21 文件、manifest 路径/禁业务字段、尺寸和背景模式，通过 Task 1 gate。
-- ✅ 约 4.0 MiB 资产、视觉升级设计、八任务实施计划与 ARCH-11 追踪记录已作为同一阶段里程碑纳入 `main` 并推送至 `origin/main`；尚未安装 PixiJS 或修改生产代码。
+- ✅ 约 4.0 MiB 资产、视觉升级设计、八任务实施计划与 ARCH-11 追踪记录已作为同一阶段里程碑纳入 `main` 并推送至 `origin/main`。
 - ✅ `farm-visual-02` 完成 Task 2：schema-v1 manifest 内容校验、作物四阶段派生与深度冻结视觉快照；无 UI、事件、IPC、依赖、持久化或业务 schema 改动。
 - ✅ ARCH-11 多轮独立复验修正输入对象反向冻结、WHATWG/drive/control/scheme/编码空白路径绕过及可选资产错误顺序；最终定向 19/19、全仓非 Electron 343/343、真实 VM 契约、语法、差异和独立 reviewer 均通过。
 - ✅ 四个 Task 2 新文件、fallback 合同澄清与 ARCH-11 追踪记录已作为同一里程碑纳入 `main` 并推送至 `origin/main`。
 - ⏸ 既有 `farm-ui.test.mjs` Chromium 布局子进程受当前 Electron 安装/GPU 环境限制未进入断言；Task 2 未改 UI/CSS，未将该项计作通过。
+- ✅ `farm-visual-03` 完成 Task 3：精确安装 `pixi.js@8.19.0`，建立唯一 ESM runtime boundary、固定六层 Pixi 垂直样张、9 critical/5 optional 资源分类、静态背景 + DOM hit targets 以及 Pixi → static → DOM 三级回退；尚未接入现有农场 UI。
+- ✅ 真实同 app.asar `dashboard.html → runtime → pixi.mjs → manifest → loader/adapter` 链路通过；WebGLRenderer、DPR 上限 2、最大 canvas 1600×1200，20 次 mount/resize/pause/reduced/destroy 均清理为 0 canvas，五类 Electron 输入意图全部命中。
+- ✅ ARCH-11 多轮独立 gate 修正非等价 `about:blank` 探针误诊、素材根路径、destroy-before-init、manifest 相对路径、init failure 回退、pending-init 控制、迟到 reject、skinId 越界、效果累积、partial-init renderer 泄漏及 cleanup-error 阻断回退。最终定向 43/43、全仓 GUI 393/393、`node --check`、`git diff --check`、Electron Forge package 和独立 reviewer 全部通过。
+- ✅ Task 3 十个批准文件已以 `6e2cd1c` 集成到 `main`；无事件、IPC、持久化、业务 schema、FarmService/PetState 或现有 UI 改动。既有 `MODULE_TYPELESS_PACKAGE_JSON` warning 与 npm audit 42 项未在本任务扩围处理。
