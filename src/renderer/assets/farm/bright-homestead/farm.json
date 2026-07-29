@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "skinId": "bright-homestead",
+  "logicalSize": {
+    "width": 1200,
+    "height": 720
+  },
+  "background": {
+    "src": "background/base.webp"
+  },
+  "land": {
+    "level1": {
+      "src": "land/land-1.webp",
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "logicalPosition": {
+        "x": 600,
+        "y": 430
+      }
+    }
+  },
+  "crops": {
+    "wheat": {
+      "stages": [
+        {
+          "src": "crops/wheat/stage-1.webp",
+          "anchor": {
+            "x": 0.5,
+            "y": 0.88
+          },
+          "logicalPosition": {
+            "x": 600,
+            "y": 430
+          }
+        },
+        {
+          "src": "crops/wheat/stage-2.webp",
+          "anchor": {
+            "x": 0.5,
+            "y": 0.88
+          },
+          "logicalPosition": {
+            "x": 600,
+            "y": 430
+          }
+        },
+        {
+          "src": "crops/wheat/stage-3.webp",
+          "anchor": {
+            "x": 0.5,
+            "y": 0.88
+          },
+          "logicalPosition": {
+            "x": 600,
+            "y": 430
+          }
+        },
+        {
+          "src": "crops/wheat/stage-4.webp",
+          "anchor": {
+            "x": 0.5,
+            "y": 0.88
+          },
+          "logicalPosition": {
+            "x": 600,
+            "y": 430
+          }
+        }
+      ]
+    }
+  },
+  "buildings": {
+    "sprinkler": {
+      "levels": [
+        {
+          "src": "buildings/sprinkler/level-1.webp",
+          "anchor": {
+            "x": 0.5,
+            "y": 0.9
+          },
+          "logicalPosition": {
+            "x": 720,
+            "y": 430
+          }
+        },
+        {
+          "src": "buildings/sprinkler/level-2.webp",
+          "anchor": {
+            "x": 0.5,
+            "y": 0.9
+          },
+          "logicalPosition": {
+            "x": 720,
+            "y": 430
+          }
+        },
+        {
+          "src": "buildings/sprinkler/level-3.webp",
+          "anchor": {
+            "x": 0.5,
+            "y": 0.9
+          },
+          "logicalPosition": {
+            "x": 720,
+            "y": 430
+          }
+        }
+      ]
+    }
+  },
+  "pet": {
+    "idle": {
+      "src": "pet/idle.webp",
+      "anchor": {
+        "x": 0.5,
+        "y": 0.9
+      },
+      "logicalPosition": {
+        "x": 1010,
+        "y": 560
+      }
+    }
+  },
+  "effects": {
+    "plant": {
+      "src": "effects/plant.webp",
+      "anchor": {
+        "x": 0.5,
+        "y": 0.88
+      },
+      "logicalPosition": {
+        "x": 600,
+        "y": 430
+      }
+    },
+    "harvest": {
+      "src": "effects/harvest.webp",
+      "anchor": {
+        "x": 0.5,
+        "y": 0.88
+      },
+      "logicalPosition": {
+        "x": 600,
+        "y": 430
+      }
+    }
+  },
+  "ui": {
+    "recipeCookie": {
+      "src": "ui/recipe-cookie.webp",
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "logicalPosition": {
+        "x": 1010,
+        "y": 225
+      }
+    },
+    "orderPaper": {
+      "src": "ui/order-paper.webp",
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "logicalPosition": {
+        "x": 1060,
+        "y": 365
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+Bright Homestead alpha audit
+Thresholds: visible alpha > 0; structural alpha > 32; small component < 20 px.
+Review backgrounds: white, black, checker.
+
+land/land-1.webp size=(320, 220) alpha=(0, 255) bounds=(19, 12, 301, 189) components>32=1 small=0 chroma_pixels=0
+crops/wheat/stage-1.webp size=(256, 384) alpha=(0, 255) bounds=(100, 254, 156, 338) components>32=1 small=0 chroma_pixels=0
+crops/wheat/stage-2.webp size=(256, 384) alpha=(0, 255) bounds=(58, 157, 198, 338) components>32=1 small=0 chroma_pixels=0
+crops/wheat/stage-3.webp size=(256, 384) alpha=(0, 255) bounds=(43, 53, 213, 338) components>32=2 small=1 chroma_pixels=2
+crops/wheat/stage-4.webp size=(256, 384) alpha=(0, 255) bounds=(36, 10, 219, 338) components>32=1 small=0 chroma_pixels=0
+buildings/sprinkler/level-1.webp size=(360, 360) alpha=(0, 255) bounds=(12, 24, 348, 324) components>32=1 small=0 chroma_pixels=0
+buildings/sprinkler/level-2.webp size=(360, 360) alpha=(0, 255) bounds=(12, 20, 348, 324) components>32=1 small=0 chroma_pixels=0
+buildings/sprinkler/level-3.webp size=(360, 360) alpha=(0, 255) bounds=(22, 12, 337, 324) components>32=1 small=0 chroma_pixels=0
+pet/idle.webp size=(420, 420) alpha=(0, 255) bounds=(18, 12, 402, 378) components>32=1 small=0 chroma_pixels=0
+effects/plant.webp size=(256, 256) alpha=(0, 255) bounds=(17, 12, 238, 220) components>32=6 small=0 chroma_pixels=0
+effects/harvest.webp size=(256, 256) alpha=(0, 255) bounds=(46, 12, 209, 225) components>32=12 small=6 chroma_pixels=0
+ui/recipe-cookie.webp size=(300, 360) alpha=(0, 255) bounds=(35, 12, 264, 331) components>32=4 small=3 chroma_pixels=0
+ui/order-paper.webp size=(300, 360) alpha=(0, 255) bounds=(23, 12, 277, 331) components>32=12 small=11 chroma_pixels=0
+
+wheat_bounds=[(100, 254, 156, 338), (58, 157, 198, 338), (43, 53, 213, 338), (36, 10, 219, 338)]
+wheat_anchor=(0.5,0.88) common_canvas=(256,384) common_root_baseline=338
+sprinkler_bounds=[(12, 24, 348, 324), (12, 20, 348, 324), (22, 12, 337, 324)]
+sprinkler_anchor=(0.5,0.90) common_canvas=(360,360) common_ground_baseline=324
+
+Visual findings:
+- White background: PASS; no white halo, clipped part, or disconnected structural artifact observed.
+- Black background: PASS after one edge-contract/despill pass and warm-hue correction on the two effect sprites; no black halo or chroma-key fringe observed.
+- Checker background: PASS; transparent silhouettes, soft shadows, and effect particles remain clean and intentional.
+- 800x600 stage/object readability: PASS; sixteen independent land sprites, four wheat stages, three sprinkler levels, pet, effects, recipe card, and order paper remain distinct.
+- 600x400 stage/object readability: PASS; the 4x4 grid, growth progression, and upgrade silhouettes remain distinguishable without labels.
+- Perspective/light consistency: PASS; fixed three-quarter top-down view, upper-left key light, and lower-right soft shadows are consistent across the slice.
+- Structural quality: PASS; no malformed building joints, broken crop anatomy, missing pet parts, or clipped final assets observed.
+
+Runtime layering findings:
+- reference/scene-composition.webp: concept reference with a complete cultivated field; unchanged during the structural repair.
+- background/base.webp: runtime background with continuous central grass and zero baked cultivated tiles.
+- Review assembly: begins with background/base.webp, composites land/land-1.webp exactly 16 times, then adds objects and UI.
+- Grid logical centers: origin=(600,280), x=(col-row)*72, y=(col+row)*44 for row/col 0..3.
+- Tile footprint audit: 132x82 logical pixels; minimum center-separation metric exceeds the non-overlap boundary.
+- Safe bounds: x=318..882 and y=239..585 including half-footprint; entirely inside 1200x720.
