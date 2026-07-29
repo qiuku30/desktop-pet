@@ -173,7 +173,7 @@ Expected: FAIL because the module does not exist.
 
 - [ ] **Step 3: Implement strict manifest validation**
 
-Validate schema version, skin ID, logical size, relative in-skin paths, anchors in `[0,1]`, positive frame durations and required fallback records. Return stable error strings; do not throw for content errors.
+Validate schema version, skin ID, logical size, relative in-skin paths, anchors in `[0,1]`, positive frame durations and the schema-v1 minimum renderable baseline: background, land level 1, four wheat stages, three sprinkler levels, pet idle, plant/harvest effects, recipe cookie and order paper. This Task does not introduce a `fallback` field or pretend crop/building art is a neutral placeholder; dedicated project-owned neutral fallback assets and any manifest evolution require a later ARCH-11 decision. Return stable error strings; do not throw for content errors.
 
 - [ ] **Step 4: Write snapshot RED tests**
 

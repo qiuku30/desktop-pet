@@ -670,4 +670,4 @@ main 分支，67 commits 领先 origin/main（未推送）
 - `docs/superpowers/specs/2026-07-29-farm-visual-upgrade-design.md`
 - `docs/superpowers/plans/2026-07-29-farm-visual-upgrade.md`
 
-**当前状态**：设计已获用户批准，八任务实施计划已完成自查；`farm-art-01` 已完成 21 文件垂直样张，并经 ARCH-11 退回一次“运行时背景烘焙田块”结构返修后独立复验通过。当前美术包为约 4.0 MiB，包含无田运行时背景、独立土地、小麦四阶段、洒水器三级、奶油星团、效果/UI 样张及两档 review；尚未安装 PixiJS 或修改生产代码。资产、视觉升级设计、实施计划与 ARCH-11 追踪记录已作为同一阶段里程碑纳入 `main` 并推送至 `origin/main`。
+**当前状态**：设计已获用户批准，八任务实施计划已完成自查；`farm-art-01` 已完成 21 文件垂直样张，并经 ARCH-11 退回一次“运行时背景烘焙田块”结构返修后独立复验通过。当前美术包为约 4.0 MiB，包含无田运行时背景、独立土地、小麦四阶段、洒水器三级、奶油星团、效果/UI 样张及两档 review；资产、视觉升级设计、实施计划与首轮追踪记录已以 `dd24d1e` 纳入 `main` 并推送至 `origin/main`。`farm-visual-02` 已完成 Task 2 的纯 manifest 校验和不可变视觉快照合同；ARCH-11 经多轮安全/不可变性复验，修正输入反向冻结、URL 规范化绕过、显式/编码 scheme 及错误顺序后通过最终 gate。新鲜定向 19/19、全仓非 Electron 343/343；既有 Chromium 布局测试因当前 Electron 安装/GPU 环境未进入断言且本任务无 UI/CSS 改动，未计作通过。Task 2 四个新文件、fallback 合同澄清与追踪记录已作为同一里程碑纳入 `main` 并推送至 `origin/main`；尚未安装 PixiJS 或修改现有生产业务代码。
