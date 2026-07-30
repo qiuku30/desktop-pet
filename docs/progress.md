@@ -571,4 +571,8 @@
 - ✅ `farm-art-02` 完成 Task 4 全场景资产：五类土地、六作物各四阶段、三建筑各三级与工作叠层、奶油星团四帧待机、小鸟四帧、八类反馈效果和项目自有对象 fallback；manifest 扩展为 62 条唯一运行时记录，保留 Task 3 所需旧定位合同。
 - ✅ ARCH-11 独立视觉 gate 先后退回土地半透明土芯、旧定位丢失、宠物待机帧缺失、候选母版包体膨胀及五类土地紫色键边缘；返修后五块土地洋红边审计均为 0，800×600/600×400 与白/黑/棋盘 review 通过，候选母版移出运行时目录，完整资产目录约 11 MiB。
 - ✅ Task 4 资产以 `c3725bc` 集成到 `main`；整合后全仓在 GUI 权限下 393/393 通过，`git diff --check` 通过。无事件、IPC、依赖、持久化、业务 schema 或 UI 代码改动；尚未 push。
-- 🔨 下一步：创建独立 `farm-visual-04`，把完整 manifest 资产接入 Pixi 场景运行时；不得改变现有 FarmService/PetState/事务、计时、提醒或三级回退语义。
+- ✅ `farm-visual-04` 完成完整 Pixi 场景运行时：严格 `4×4` 纯布局、land/crop/building/pet/bird 对象工厂、snapshot 键控 reconciliation、按需纹理加载与 in-flight 去重、稳定深度排序、局部动画和完整 cleanup/竞态保护；仍未接入正式农场 UI。
+- ✅ ARCH-11 集中独立 gate 修正越界网格、调用方对象反向冻结/循环输入、宠物与小鸟帧混入 fallback、作物/建筑 fallback 锚点、工作 overlay 错误木牌、对象 cleanup 覆盖关键主因及 activeEffect cleanup 阻断 renderer 回收。最终相关测试 70/70、GUI 全仓 419/419、`node --check` 与 `git diff --check` 通过。
+- ✅ 最新同 app.asar 真实 Pixi 探针完成 20 次完整 snapshot mount/update/resize/pause/reduced/effect/destroy；800×600 与 600×400 backing size 分别受 DPR≤2 约束，canvas 每次 1→0；五类 `sendInputEvent` 意图准确，destroy 后迟到 resolve/reject 无复活或 unhandled rejection。
+- ✅ Task 4 场景运行时代码以 `0d60c0b` 集成到本地 `main`；仅六个 farm 场景文件，无事件、IPC、依赖、持久化、业务 schema、FarmService/PetState 或 UI 改动。
+- 🔨 下一步：单独创建正式 UI 接入窗口，把 loader/snapshot/adapter 接入现有农场页并保留 Pixi → static → DOM 三级回退；在该窗口前不能宣称用户已在农场页看到新场景。
