@@ -5,10 +5,66 @@
     "width": 1200,
     "height": 720
   },
+  "scene": {
+    "safeRect": {
+      "x": 300,
+      "y": 190,
+      "width": 600,
+      "height": 420
+    },
+    "tileGrid": {
+      "origin": {
+        "x": 600,
+        "y": 280
+      },
+      "columnStep": {
+        "x": 72,
+        "y": 44
+      },
+      "rowStep": {
+        "x": -72,
+        "y": 44
+      },
+      "hitSize": {
+        "width": 132,
+        "height": 82
+      }
+    },
+    "processing": {
+      "x": 1010,
+      "y": 225
+    },
+    "orders": {
+      "x": 1060,
+      "y": 365
+    },
+    "pet": {
+      "x": 1010,
+      "y": 560
+    },
+    "bird": {
+      "x": 930,
+      "y": 160
+    }
+  },
   "background": {
     "src": "background/base.webp"
   },
   "land": {
+    "locked": {
+      "src": "land/locked.webp",
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "eligible": {
+      "src": "land/eligible.webp",
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
     "level1": {
       "src": "land/land-1.webp",
       "anchor": {
@@ -19,156 +75,157 @@
         "x": 600,
         "y": 430
       }
+    },
+    "level2": {
+      "src": "land/land-2.webp",
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "level3": {
+      "src": "land/land-3.webp",
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
     }
   },
   "crops": {
     "wheat": {
       "stages": [
-        {
-          "src": "crops/wheat/stage-1.webp",
-          "anchor": {
-            "x": 0.5,
-            "y": 0.88
-          },
-          "logicalPosition": {
-            "x": 600,
-            "y": 430
-          }
-        },
-        {
-          "src": "crops/wheat/stage-2.webp",
-          "anchor": {
-            "x": 0.5,
-            "y": 0.88
-          },
-          "logicalPosition": {
-            "x": 600,
-            "y": 430
-          }
-        },
-        {
-          "src": "crops/wheat/stage-3.webp",
-          "anchor": {
-            "x": 0.5,
-            "y": 0.88
-          },
-          "logicalPosition": {
-            "x": 600,
-            "y": 430
-          }
-        },
-        {
-          "src": "crops/wheat/stage-4.webp",
-          "anchor": {
-            "x": 0.5,
-            "y": 0.88
-          },
-          "logicalPosition": {
-            "x": 600,
-            "y": 430
-          }
-        }
+        { "src": "crops/wheat/stage-1.webp", "anchor": { "x": 0.5, "y": 0.88 }, "logicalPosition": { "x": 600, "y": 430 } },
+        { "src": "crops/wheat/stage-2.webp", "anchor": { "x": 0.5, "y": 0.88 }, "logicalPosition": { "x": 600, "y": 430 } },
+        { "src": "crops/wheat/stage-3.webp", "anchor": { "x": 0.5, "y": 0.88 }, "logicalPosition": { "x": 600, "y": 430 } },
+        { "src": "crops/wheat/stage-4.webp", "anchor": { "x": 0.5, "y": 0.88 }, "logicalPosition": { "x": 600, "y": 430 } }
+      ]
+    },
+    "carrot": {
+      "stages": [
+        { "src": "crops/carrot/stage-1.webp", "anchor": { "x": 0.5, "y": 0.88 } },
+        { "src": "crops/carrot/stage-2.webp", "anchor": { "x": 0.5, "y": 0.88 } },
+        { "src": "crops/carrot/stage-3.webp", "anchor": { "x": 0.5, "y": 0.88 } },
+        { "src": "crops/carrot/stage-4.webp", "anchor": { "x": 0.5, "y": 0.88 } }
+      ]
+    },
+    "corn": {
+      "stages": [
+        { "src": "crops/corn/stage-1.webp", "anchor": { "x": 0.5, "y": 0.88 } },
+        { "src": "crops/corn/stage-2.webp", "anchor": { "x": 0.5, "y": 0.88 } },
+        { "src": "crops/corn/stage-3.webp", "anchor": { "x": 0.5, "y": 0.88 } },
+        { "src": "crops/corn/stage-4.webp", "anchor": { "x": 0.5, "y": 0.88 } }
+      ]
+    },
+    "strawberry": {
+      "stages": [
+        { "src": "crops/strawberry/stage-1.webp", "anchor": { "x": 0.5, "y": 0.88 } },
+        { "src": "crops/strawberry/stage-2.webp", "anchor": { "x": 0.5, "y": 0.88 } },
+        { "src": "crops/strawberry/stage-3.webp", "anchor": { "x": 0.5, "y": 0.88 } },
+        { "src": "crops/strawberry/stage-4.webp", "anchor": { "x": 0.5, "y": 0.88 } }
+      ]
+    },
+    "pumpkin": {
+      "stages": [
+        { "src": "crops/pumpkin/stage-1.webp", "anchor": { "x": 0.5, "y": 0.88 } },
+        { "src": "crops/pumpkin/stage-2.webp", "anchor": { "x": 0.5, "y": 0.88 } },
+        { "src": "crops/pumpkin/stage-3.webp", "anchor": { "x": 0.5, "y": 0.88 } },
+        { "src": "crops/pumpkin/stage-4.webp", "anchor": { "x": 0.5, "y": 0.88 } }
+      ]
+    },
+    "star-dew-fruit": {
+      "stages": [
+        { "src": "crops/star-dew-fruit/stage-1.webp", "anchor": { "x": 0.5, "y": 0.88 } },
+        { "src": "crops/star-dew-fruit/stage-2.webp", "anchor": { "x": 0.5, "y": 0.88 } },
+        { "src": "crops/star-dew-fruit/stage-3.webp", "anchor": { "x": 0.5, "y": 0.88 } },
+        { "src": "crops/star-dew-fruit/stage-4.webp", "anchor": { "x": 0.5, "y": 0.88 } }
       ]
     }
   },
   "buildings": {
     "sprinkler": {
       "levels": [
-        {
-          "src": "buildings/sprinkler/level-1.webp",
-          "anchor": {
-            "x": 0.5,
-            "y": 0.9
-          },
-          "logicalPosition": {
-            "x": 720,
-            "y": 430
-          }
-        },
-        {
-          "src": "buildings/sprinkler/level-2.webp",
-          "anchor": {
-            "x": 0.5,
-            "y": 0.9
-          },
-          "logicalPosition": {
-            "x": 720,
-            "y": 430
-          }
-        },
-        {
-          "src": "buildings/sprinkler/level-3.webp",
-          "anchor": {
-            "x": 0.5,
-            "y": 0.9
-          },
-          "logicalPosition": {
-            "x": 720,
-            "y": 430
-          }
-        }
-      ]
+        { "src": "buildings/sprinkler/level-1.webp", "anchor": { "x": 0.5, "y": 0.9 }, "logicalPosition": { "x": 720, "y": 430 } },
+        { "src": "buildings/sprinkler/level-2.webp", "anchor": { "x": 0.5, "y": 0.9 }, "logicalPosition": { "x": 720, "y": 430 } },
+        { "src": "buildings/sprinkler/level-3.webp", "anchor": { "x": 0.5, "y": 0.9 }, "logicalPosition": { "x": 720, "y": 430 } }
+      ],
+      "workOverlay": {
+        "src": "buildings/sprinkler/work-overlay.webp",
+        "anchor": { "x": 0.5, "y": 0.9 },
+        "durationMs": 700
+      }
+    },
+    "scarecrow": {
+      "levels": [
+        { "src": "buildings/scarecrow/level-1.webp", "anchor": { "x": 0.5, "y": 0.9 } },
+        { "src": "buildings/scarecrow/level-2.webp", "anchor": { "x": 0.5, "y": 0.9 } },
+        { "src": "buildings/scarecrow/level-3.webp", "anchor": { "x": 0.5, "y": 0.9 } }
+      ],
+      "workOverlay": {
+        "src": "buildings/scarecrow/work-overlay.webp",
+        "anchor": { "x": 0.5, "y": 0.9 },
+        "durationMs": 900
+      }
+    },
+    "compost-bin": {
+      "levels": [
+        { "src": "buildings/compost-bin/level-1.webp", "anchor": { "x": 0.5, "y": 0.9 } },
+        { "src": "buildings/compost-bin/level-2.webp", "anchor": { "x": 0.5, "y": 0.9 } },
+        { "src": "buildings/compost-bin/level-3.webp", "anchor": { "x": 0.5, "y": 0.9 } }
+      ],
+      "workOverlay": {
+        "src": "buildings/compost-bin/work-overlay.webp",
+        "anchor": { "x": 0.5, "y": 0.9 },
+        "durationMs": 1100
+      }
     }
   },
   "pet": {
     "idle": {
       "src": "pet/idle.webp",
-      "anchor": {
-        "x": 0.5,
-        "y": 0.9
-      },
-      "logicalPosition": {
-        "x": 1010,
-        "y": 560
-      }
-    }
+      "anchor": { "x": 0.5, "y": 0.9 },
+      "logicalPosition": { "x": 1010, "y": 560 }
+    },
+    "idleFrames": [
+      { "src": "pet/idle-1.webp", "anchor": { "x": 0.5, "y": 0.9 }, "durationMs": 125 },
+      { "src": "pet/idle-2.webp", "anchor": { "x": 0.5, "y": 0.9 }, "durationMs": 125 },
+      { "src": "pet/idle-3.webp", "anchor": { "x": 0.5, "y": 0.9 }, "durationMs": 125 },
+      { "src": "pet/idle-4.webp", "anchor": { "x": 0.5, "y": 0.9 }, "durationMs": 125 }
+    ]
+  },
+  "bird": {
+    "frames": [
+      { "src": "bird/frame-1.webp", "anchor": { "x": 0.5, "y": 0.88 }, "durationMs": 500 },
+      { "src": "bird/frame-2.webp", "anchor": { "x": 0.5, "y": 0.88 }, "durationMs": 500 },
+      { "src": "bird/frame-3.webp", "anchor": { "x": 0.5, "y": 0.88 }, "durationMs": 180 },
+      { "src": "bird/frame-4.webp", "anchor": { "x": 0.5, "y": 0.88 }, "durationMs": 180 }
+    ]
   },
   "effects": {
-    "plant": {
-      "src": "effects/plant.webp",
-      "anchor": {
-        "x": 0.5,
-        "y": 0.88
-      },
-      "logicalPosition": {
-        "x": 600,
-        "y": 430
-      }
-    },
-    "harvest": {
-      "src": "effects/harvest.webp",
-      "anchor": {
-        "x": 0.5,
-        "y": 0.88
-      },
-      "logicalPosition": {
-        "x": 600,
-        "y": 430
-      }
+    "plant": { "src": "effects/plant.webp", "anchor": { "x": 0.5, "y": 0.88 }, "logicalPosition": { "x": 600, "y": 430 }, "durationMs": 500 },
+    "harvest": { "src": "effects/harvest.webp", "anchor": { "x": 0.5, "y": 0.88 }, "logicalPosition": { "x": 600, "y": 430 }, "durationMs": 550 },
+    "coins": { "src": "effects/coins.webp", "anchor": { "x": 0.5, "y": 0.88 }, "durationMs": 500 },
+    "unlock-land": { "src": "effects/unlock-land.webp", "anchor": { "x": 0.5, "y": 0.5 }, "durationMs": 650 },
+    "upgrade-land": { "src": "effects/upgrade-land.webp", "anchor": { "x": 0.5, "y": 0.88 }, "durationMs": 650 },
+    "building-change": { "src": "effects/building-change.webp", "anchor": { "x": 0.5, "y": 0.9 }, "durationMs": 600 },
+    "processing-complete": { "src": "effects/processing-complete.webp", "anchor": { "x": 0.5, "y": 0.5 }, "durationMs": 650 },
+    "order-complete": { "src": "effects/order-complete.webp", "anchor": { "x": 0.5, "y": 0.5 }, "durationMs": 650 }
+  },
+  "fallbacks": {
+    "object": {
+      "src": "fallbacks/object.webp",
+      "anchor": { "x": 0.5, "y": 0.9 }
     }
   },
   "ui": {
     "recipeCookie": {
       "src": "ui/recipe-cookie.webp",
-      "anchor": {
-        "x": 0.5,
-        "y": 0.5
-      },
-      "logicalPosition": {
-        "x": 1010,
-        "y": 225
-      }
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "logicalPosition": { "x": 1010, "y": 225 }
     },
     "orderPaper": {
       "src": "ui/order-paper.webp",
-      "anchor": {
-        "x": 0.5,
-        "y": 0.5
-      },
-      "logicalPosition": {
-        "x": 1060,
-        "y": 365
-      }
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "logicalPosition": { "x": 1060, "y": 365 }
     }
   }
 }

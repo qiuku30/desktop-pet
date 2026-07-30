@@ -1,0 +1,1210 @@
+{
+  "assetCount": 70,
+  "totalBytes": 11407314,
+  "cropCanvas": [
+    256,
+    384
+  ],
+  "cropBaseline": 338,
+  "buildingCanvas": [
+    360,
+    360
+  ],
+  "buildingBaseline": 324,
+  "records": [
+    {
+      "path": "background/base.webp",
+      "size": [
+        1200,
+        720
+      ],
+      "mode": "RGB",
+      "alphaBounds": [
+        0,
+        0,
+        1200,
+        720
+      ],
+      "icc": true,
+      "bytes": 1129352
+    },
+    {
+      "path": "bird/frame-1.webp",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        42,
+        36,
+        213,
+        226
+      ],
+      "icc": true,
+      "bytes": 34136
+    },
+    {
+      "path": "bird/frame-2.webp",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        41,
+        36,
+        215,
+        226
+      ],
+      "icc": true,
+      "bytes": 34840
+    },
+    {
+      "path": "bird/frame-3.webp",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        35,
+        36,
+        221,
+        226
+      ],
+      "icc": true,
+      "bytes": 38042
+    },
+    {
+      "path": "bird/frame-4.webp",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        29,
+        36,
+        227,
+        226
+      ],
+      "icc": true,
+      "bytes": 36302
+    },
+    {
+      "path": "buildings/compost-bin/level-1.webp",
+      "size": [
+        360,
+        360
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        22,
+        72,
+        337,
+        324
+      ],
+      "icc": true,
+      "bytes": 94226
+    },
+    {
+      "path": "buildings/compost-bin/level-2.webp",
+      "size": [
+        360,
+        360
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        22,
+        66,
+        337,
+        324
+      ],
+      "icc": true,
+      "bytes": 105598
+    },
+    {
+      "path": "buildings/compost-bin/level-3.webp",
+      "size": [
+        360,
+        360
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        22,
+        76,
+        337,
+        324
+      ],
+      "icc": true,
+      "bytes": 104034
+    },
+    {
+      "path": "buildings/compost-bin/work-overlay.webp",
+      "size": [
+        360,
+        360
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        82,
+        75,
+        278,
+        285
+      ],
+      "icc": true,
+      "bytes": 36164
+    },
+    {
+      "path": "buildings/scarecrow/level-1.webp",
+      "size": [
+        360,
+        360
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        84,
+        32,
+        275,
+        324
+      ],
+      "icc": true,
+      "bytes": 42704
+    },
+    {
+      "path": "buildings/scarecrow/level-2.webp",
+      "size": [
+        360,
+        360
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        81,
+        32,
+        278,
+        324
+      ],
+      "icc": true,
+      "bytes": 52694
+    },
+    {
+      "path": "buildings/scarecrow/level-3.webp",
+      "size": [
+        360,
+        360
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        77,
+        32,
+        282,
+        324
+      ],
+      "icc": true,
+      "bytes": 65232
+    },
+    {
+      "path": "buildings/scarecrow/work-overlay.webp",
+      "size": [
+        360,
+        360
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        73,
+        75,
+        286,
+        285
+      ],
+      "icc": true,
+      "bytes": 36130
+    },
+    {
+      "path": "buildings/sprinkler/level-1.webp",
+      "size": [
+        360,
+        360
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        12,
+        24,
+        348,
+        324
+      ],
+      "icc": true,
+      "bytes": 86738
+    },
+    {
+      "path": "buildings/sprinkler/level-2.webp",
+      "size": [
+        360,
+        360
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        12,
+        20,
+        348,
+        324
+      ],
+      "icc": true,
+      "bytes": 107890
+    },
+    {
+      "path": "buildings/sprinkler/level-3.webp",
+      "size": [
+        360,
+        360
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        22,
+        12,
+        337,
+        324
+      ],
+      "icc": true,
+      "bytes": 108718
+    },
+    {
+      "path": "buildings/sprinkler/work-overlay.webp",
+      "size": [
+        360,
+        360
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        45,
+        184,
+        315,
+        285
+      ],
+      "icc": true,
+      "bytes": 24746
+    },
+    {
+      "path": "crops/carrot/stage-1.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        71,
+        200,
+        185,
+        338
+      ],
+      "icc": true,
+      "bytes": 16138
+    },
+    {
+      "path": "crops/carrot/stage-2.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        105,
+        238,
+        338
+      ],
+      "icc": true,
+      "bytes": 60818
+    },
+    {
+      "path": "crops/carrot/stage-3.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        104,
+        238,
+        338
+      ],
+      "icc": true,
+      "bytes": 67340
+    },
+    {
+      "path": "crops/carrot/stage-4.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        118,
+        238,
+        338
+      ],
+      "icc": true,
+      "bytes": 69434
+    },
+    {
+      "path": "crops/corn/stage-1.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        50,
+        165,
+        205,
+        338
+      ],
+      "icc": true,
+      "bytes": 20626
+    },
+    {
+      "path": "crops/corn/stage-2.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        88,
+        238,
+        338
+      ],
+      "icc": true,
+      "bytes": 57824
+    },
+    {
+      "path": "crops/corn/stage-3.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        41,
+        238,
+        338
+      ],
+      "icc": true,
+      "bytes": 87902
+    },
+    {
+      "path": "crops/corn/stage-4.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        30,
+        23,
+        226,
+        338
+      ],
+      "icc": true,
+      "bytes": 107750
+    },
+    {
+      "path": "crops/pumpkin/stage-1.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        255,
+        237,
+        338
+      ],
+      "icc": true,
+      "bytes": 21980
+    },
+    {
+      "path": "crops/pumpkin/stage-2.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        214,
+        238,
+        338
+      ],
+      "icc": true,
+      "bytes": 35584
+    },
+    {
+      "path": "crops/pumpkin/stage-3.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        200,
+        238,
+        338
+      ],
+      "icc": true,
+      "bytes": 49182
+    },
+    {
+      "path": "crops/pumpkin/stage-4.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        201,
+        238,
+        338
+      ],
+      "icc": true,
+      "bytes": 46902
+    },
+    {
+      "path": "crops/star-dew-fruit/stage-1.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        47,
+        241,
+        209,
+        338
+      ],
+      "icc": true,
+      "bytes": 14430
+    },
+    {
+      "path": "crops/star-dew-fruit/stage-2.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        151,
+        238,
+        338
+      ],
+      "icc": true,
+      "bytes": 42742
+    },
+    {
+      "path": "crops/star-dew-fruit/stage-3.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        119,
+        238,
+        338
+      ],
+      "icc": true,
+      "bytes": 65286
+    },
+    {
+      "path": "crops/star-dew-fruit/stage-4.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        145,
+        238,
+        338
+      ],
+      "icc": true,
+      "bytes": 77492
+    },
+    {
+      "path": "crops/strawberry/stage-1.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        45,
+        261,
+        210,
+        338
+      ],
+      "icc": true,
+      "bytes": 17878
+    },
+    {
+      "path": "crops/strawberry/stage-2.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        182,
+        238,
+        338
+      ],
+      "icc": true,
+      "bytes": 42626
+    },
+    {
+      "path": "crops/strawberry/stage-3.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        170,
+        238,
+        338
+      ],
+      "icc": true,
+      "bytes": 52454
+    },
+    {
+      "path": "crops/strawberry/stage-4.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        179,
+        238,
+        338
+      ],
+      "icc": true,
+      "bytes": 57598
+    },
+    {
+      "path": "crops/wheat/stage-1.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        100,
+        254,
+        156,
+        338
+      ],
+      "icc": true,
+      "bytes": 6792
+    },
+    {
+      "path": "crops/wheat/stage-2.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        58,
+        157,
+        198,
+        338
+      ],
+      "icc": true,
+      "bytes": 28758
+    },
+    {
+      "path": "crops/wheat/stage-3.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        43,
+        53,
+        213,
+        338
+      ],
+      "icc": true,
+      "bytes": 64352
+    },
+    {
+      "path": "crops/wheat/stage-4.webp",
+      "size": [
+        256,
+        384
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        36,
+        10,
+        219,
+        338
+      ],
+      "icc": true,
+      "bytes": 85762
+    },
+    {
+      "path": "effects/building-change.webp",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        22,
+        25,
+        234,
+        230
+      ],
+      "icc": true,
+      "bytes": 47540
+    },
+    {
+      "path": "effects/coins.webp",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        53,
+        25,
+        202,
+        230
+      ],
+      "icc": true,
+      "bytes": 33730
+    },
+    {
+      "path": "effects/harvest.webp",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        47,
+        25,
+        208,
+        230
+      ],
+      "icc": true,
+      "bytes": 47320
+    },
+    {
+      "path": "effects/order-complete.webp",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        36,
+        25,
+        220,
+        230
+      ],
+      "icc": true,
+      "bytes": 40804
+    },
+    {
+      "path": "effects/plant.webp",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        28,
+        238,
+        230
+      ],
+      "icc": true,
+      "bytes": 46458
+    },
+    {
+      "path": "effects/processing-complete.webp",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        38,
+        25,
+        217,
+        230
+      ],
+      "icc": true,
+      "bytes": 42774
+    },
+    {
+      "path": "effects/unlock-land.webp",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        42,
+        238,
+        230
+      ],
+      "icc": true,
+      "bytes": 41862
+    },
+    {
+      "path": "effects/upgrade-land.webp",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        53,
+        25,
+        203,
+        230
+      ],
+      "icc": true,
+      "bytes": 31916
+    },
+    {
+      "path": "fallbacks/object.webp",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        42,
+        40,
+        214,
+        230
+      ],
+      "icc": true,
+      "bytes": 35290
+    },
+    {
+      "path": "land/eligible.webp",
+      "size": [
+        256,
+        192
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        10,
+        15,
+        246,
+        176
+      ],
+      "icc": true,
+      "bytes": 42474
+    },
+    {
+      "path": "land/land-1.webp",
+      "size": [
+        256,
+        192
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        10,
+        27,
+        246,
+        176
+      ],
+      "icc": true,
+      "bytes": 39638
+    },
+    {
+      "path": "land/land-2.webp",
+      "size": [
+        256,
+        192
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        10,
+        22,
+        246,
+        176
+      ],
+      "icc": true,
+      "bytes": 37890
+    },
+    {
+      "path": "land/land-3.webp",
+      "size": [
+        256,
+        192
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        10,
+        25,
+        246,
+        176
+      ],
+      "icc": true,
+      "bytes": 40118
+    },
+    {
+      "path": "land/locked.webp",
+      "size": [
+        256,
+        192
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        10,
+        21,
+        246,
+        176
+      ],
+      "icc": true,
+      "bytes": 42894
+    },
+    {
+      "path": "pet/idle-1.webp",
+      "size": [
+        420,
+        420
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        15,
+        39,
+        405,
+        378
+      ],
+      "icc": true,
+      "bytes": 98298
+    },
+    {
+      "path": "pet/idle-2.webp",
+      "size": [
+        420,
+        420
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        15,
+        42,
+        405,
+        378
+      ],
+      "icc": true,
+      "bytes": 96152
+    },
+    {
+      "path": "pet/idle-3.webp",
+      "size": [
+        420,
+        420
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        15,
+        40,
+        405,
+        378
+      ],
+      "icc": true,
+      "bytes": 95928
+    },
+    {
+      "path": "pet/idle-4.webp",
+      "size": [
+        420,
+        420
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        15,
+        39,
+        405,
+        378
+      ],
+      "icc": true,
+      "bytes": 96666
+    },
+    {
+      "path": "pet/idle.webp",
+      "size": [
+        420,
+        420
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        18,
+        12,
+        402,
+        378
+      ],
+      "icc": true,
+      "bytes": 109730
+    },
+    {
+      "path": "reference/scene-composition.webp",
+      "size": [
+        1200,
+        720
+      ],
+      "mode": "RGB",
+      "alphaBounds": [
+        0,
+        0,
+        1200,
+        720
+      ],
+      "icc": true,
+      "bytes": 1213800
+    },
+    {
+      "path": "review/alpha-black.webp",
+      "size": [
+        1200,
+        3000
+      ],
+      "mode": "RGB",
+      "alphaBounds": [
+        0,
+        0,
+        1200,
+        3000
+      ],
+      "icc": true,
+      "bytes": 1196946
+    },
+    {
+      "path": "review/alpha-checker.webp",
+      "size": [
+        1200,
+        3000
+      ],
+      "mode": "RGB",
+      "alphaBounds": [
+        0,
+        0,
+        1200,
+        3000
+      ],
+      "icc": true,
+      "bytes": 1288910
+    },
+    {
+      "path": "review/alpha-white.webp",
+      "size": [
+        1200,
+        3000
+      ],
+      "mode": "RGB",
+      "alphaBounds": [
+        0,
+        0,
+        1200,
+        3000
+      ],
+      "icc": true,
+      "bytes": 1272038
+    },
+    {
+      "path": "review/full-scene-600x400.webp",
+      "size": [
+        600,
+        400
+      ],
+      "mode": "RGB",
+      "alphaBounds": [
+        0,
+        0,
+        600,
+        400
+      ],
+      "icc": true,
+      "bytes": 350406
+    },
+    {
+      "path": "review/full-scene-800x600.webp",
+      "size": [
+        800,
+        600
+      ],
+      "mode": "RGB",
+      "alphaBounds": [
+        0,
+        0,
+        800,
+        600
+      ],
+      "icc": true,
+      "bytes": 598968
+    },
+    {
+      "path": "review/vertical-slice-600x400.webp",
+      "size": [
+        600,
+        400
+      ],
+      "mode": "RGB",
+      "alphaBounds": [
+        0,
+        0,
+        600,
+        400
+      ],
+      "icc": true,
+      "bytes": 337560
+    },
+    {
+      "path": "review/vertical-slice-800x600.webp",
+      "size": [
+        800,
+        600
+      ],
+      "mode": "RGB",
+      "alphaBounds": [
+        0,
+        0,
+        800,
+        600
+      ],
+      "icc": true,
+      "bytes": 574582
+    },
+    {
+      "path": "ui/order-paper.webp",
+      "size": [
+        300,
+        360
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        23,
+        12,
+        277,
+        331
+      ],
+      "icc": true,
+      "bytes": 80346
+    },
+    {
+      "path": "ui/recipe-cookie.webp",
+      "size": [
+        300,
+        360
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        35,
+        12,
+        264,
+        331
+      ],
+      "icc": true,
+      "bytes": 91080
+    }
+  ],
+  "checks": {
+    "manifestSourcesMissing": [],
+    "forbiddenManifestFields": [],
+    "cropCanvasSizes": [
+      [
+        256,
+        384
+      ]
+    ],
+    "buildingCanvasSizes": [
+      [
+        360,
+        360
+      ]
+    ],
+    "nonBackgroundWithoutAlpha": [],
+    "backgroundMode": "RGB",
+    "landAlpha": {
+      "land-1": {
+        "nonZeroMean": 236.55,
+        "opaqueCoreRatio": 0.8776
+      },
+      "land-2": {
+        "nonZeroMean": 243.2,
+        "opaqueCoreRatio": 0.9325
+      },
+      "land-3": {
+        "nonZeroMean": 239.32,
+        "opaqueCoreRatio": 0.9042
+      }
+    },
+    "compatibilityPositions": {
+      "land.level1": true,
+      "crops.wheat.stages.0": true,
+      "crops.wheat.stages.1": true,
+      "crops.wheat.stages.2": true,
+      "crops.wheat.stages.3": true,
+      "buildings.sprinkler.levels.0": true,
+      "buildings.sprinkler.levels.1": true,
+      "buildings.sprinkler.levels.2": true,
+      "pet.idle": true,
+      "effects.plant": true,
+      "effects.harvest": true,
+      "ui.recipeCookie": true,
+      "ui.orderPaper": true
+    },
+    "magentaEdge": {
+      "locked": {
+        "hits": 0,
+        "semiTransparentPixels": 1691,
+        "ratio": 0.0
+      },
+      "eligible": {
+        "hits": 0,
+        "semiTransparentPixels": 2746,
+        "ratio": 0.0
+      },
+      "land-1": {
+        "hits": 0,
+        "semiTransparentPixels": 2494,
+        "ratio": 0.0
+      },
+      "land-2": {
+        "hits": 0,
+        "semiTransparentPixels": 1451,
+        "ratio": 0.0
+      },
+      "land-3": {
+        "hits": 0,
+        "semiTransparentPixels": 1987,
+        "ratio": 0.0
+      }
+    }
+  }
+}

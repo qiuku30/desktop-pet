@@ -50,3 +50,17 @@
 - All three sprinkler levels remain distinguishable without changing their anchor or light.
 - The pet stays recognizable without covering the field.
 - Recipe and order surfaces retain usable visual hierarchy at the smaller review size.
+
+## Full-scene family contracts
+
+- Land uses five independent `256×192` transparent sprites: locked, eligible, and Levels 1–3. The runtime background remains continuous grass with no baked field.
+- Every crop uses four `256×384` stages on a common baseline at y `338`, corresponding to root anchor `(0.5, 0.88)`.
+- Every building body uses a `360×360` canvas on a common baseline at y `324`, corresponding to ground anchor `(0.5, 0.90)`.
+- Each building family has one local work overlay reused over all three body levels.
+- Bird frames use one camera, light, outline, and root family; frames 1–2 are restrained perching states and frames 3–4 are short claim/flight feedback.
+- Transaction effects are isolated `256×256` transparent sprites. They are visual feedback only and never imply business success.
+- `fallbacks/object.webp` is the project-owned neutral missing-object visual.
+
+## Family gate record
+
+The accepted full-scene sources are listed in `family-map.md`. Every family passed transparent white/black/checker inspection and the exact `800×600` / `600×400` composite check. Generated structure was never corrected by warping, painting, or crop-based concealment; deterministic post-processing was limited to chroma removal, land-matte opacity restoration, land-soil color correction, cell separation, scale-to-fit, fixed-anchor placement, color-profile export, and compositing. Processing masters were removed after the gate and are not part of the runtime skin.
