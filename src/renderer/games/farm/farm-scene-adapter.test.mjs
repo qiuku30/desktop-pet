@@ -79,6 +79,9 @@ function fakePixi({
         started: true,
         startCalls: 0,
         stopCalls: 0,
+        callbacks: new Set(),
+        add: callback => { this._ticker.callbacks.add(callback) },
+        remove: callback => { this._ticker.callbacks.delete(callback) },
         start: () => { this._ticker.started = true; this._ticker.startCalls += 1 },
         stop: () => { this._ticker.started = false; this._ticker.stopCalls += 1 },
       }
@@ -155,14 +158,39 @@ function manifest() {
   return {
     skinId: 'bright-homestead',
     logicalSize: { width: 1200, height: 720 },
+    scene: {
+      safeRect: { x: 300, y: 190, width: 600, height: 420 },
+      tileGrid: {
+        origin: { x: 600, y: 280 },
+        columnStep: { x: 72, y: 44 },
+        rowStep: { x: -72, y: 44 },
+        hitSize: { width: 132, height: 82 },
+      },
+      processing: { x: 1010, y: 225 },
+      orders: { x: 1060, y: 365 },
+      pet: { x: 1010, y: 560 },
+      bird: { x: 930, y: 160 },
+    },
     background: { src: 'background/base.webp' },
-    land: { level1: { src: 'land/land-1.webp', logicalPosition: { x: 600, y: 430 } } },
+    land: {
+      locked: { src: 'land/locked.webp', anchor: { x: 0.5, y: 0.5 } },
+      eligible: { src: 'land/eligible.webp', anchor: { x: 0.5, y: 0.5 } },
+      level1: { src: 'land/land-1.webp', anchor: { x: 0.5, y: 0.5 } },
+      level2: { src: 'land/land-2.webp', anchor: { x: 0.5, y: 0.5 } },
+      level3: { src: 'land/land-3.webp', anchor: { x: 0.5, y: 0.5 } },
+    },
     crops: {
       wheat: {
         stages: Array.from({ length: 4 }, (_, index) => ({
           src: `crops/wheat/stage-${index + 1}.webp`,
           anchor: { x: 0.5, y: 0.88 },
           logicalPosition: { x: 600, y: 430 },
+        })),
+      },
+      carrot: {
+        stages: Array.from({ length: 4 }, (_, index) => ({
+          src: `crops/carrot/stage-${index + 1}.webp`,
+          anchor: { x: 0.5, y: 0.88 },
         })),
       },
     },
@@ -174,6 +202,16 @@ function manifest() {
           logicalPosition: { x: 720, y: 430 },
         })),
       },
+      scarecrow: {
+        levels: Array.from({ length: 3 }, (_, index) => ({
+          src: `buildings/scarecrow/level-${index + 1}.webp`,
+          anchor: { x: 0.5, y: 0.9 },
+        })),
+        workOverlay: {
+          src: 'buildings/scarecrow/work-overlay.webp',
+          anchor: { x: 0.5, y: 0.9 },
+        },
+      },
     },
     pet: {
       idle: {
@@ -181,15 +219,57 @@ function manifest() {
         anchor: { x: 0.5, y: 0.9 },
         logicalPosition: { x: 1010, y: 560 },
       },
+      idleFrames: [
+        { src: 'pet/idle-1.webp', anchor: { x: 0.5, y: 0.9 }, durationMs: 125 },
+        { src: 'pet/idle-2.webp', anchor: { x: 0.5, y: 0.9 }, durationMs: 125 },
+      ],
+    },
+    bird: {
+      frames: [
+        { src: 'bird/frame-1.webp', anchor: { x: 0.5, y: 0.88 }, durationMs: 500 },
+        { src: 'bird/frame-2.webp', anchor: { x: 0.5, y: 0.88 }, durationMs: 500 },
+      ],
     },
     effects: {
       plant: { src: 'effects/plant.webp' },
       harvest: { src: 'effects/harvest.webp' },
     },
+    fallbacks: {
+      object: { src: 'fallbacks/object.webp', anchor: { x: 0.5, y: 0.9 } },
+    },
     ui: {
       recipeCookie: { src: 'ui/recipe-cookie.webp' },
       orderPaper: { src: 'ui/order-paper.webp' },
     },
+  }
+}
+
+function sceneSnapshot(overrides = {}) {
+  const tiles = []
+  for (let row = 0; row < 4; row += 1) {
+    for (let col = 0; col < 4; col += 1) {
+      tiles.push({
+        tileId: `r${row}c${col}`,
+        row,
+        col,
+        occupancy: 'empty',
+        landLevel: 1,
+        unlockState: 'unlocked',
+        cropId: null,
+        cropStage: null,
+        mature: false,
+        buildingId: null,
+        buildingType: null,
+        buildingLevel: null,
+        buildingWorking: false,
+      })
+    }
+  }
+  return {
+    tiles,
+    pet: { visible: true, moodTier: null },
+    bird: { birdId: null, visible: false, claimBusy: false },
+    ...overrides,
   }
 }
 
@@ -208,7 +288,7 @@ test('mount is idempotent and creates the approved fixed layer stack', async () 
     applications[0].stage.children.map(layer => layer.label),
     ['background', 'ground', 'objects', 'characters', 'effects', 'interaction'],
   )
-  assert.equal(assetCalls.length, 14)
+  assert.equal(assetCalls.length, 3)
   assert.ok(assetCalls.every(src => (
     src.startsWith('file:')
     && src.includes('/src/renderer/assets/farm/bright-homestead/')
@@ -399,24 +479,24 @@ test('approved hit targets emit intents without mutating the snapshot', async ()
     onIntent: intent => intents.push(intent),
     now: () => 0,
   })
-  const snapshot = Object.freeze({
-    tiles: Object.freeze([{ tileId: 'r0c0' }]),
-    bird: Object.freeze({ birdId: 'bird:1', visible: true }),
+  const snapshot = sceneSnapshot({
+    bird: { birdId: 'bird:1', visible: true, claimBusy: false },
   })
+  const original = structuredClone(snapshot)
   await adapter.mount()
-  adapter.update(snapshot)
+  await adapter.update(snapshot)
 
   const interaction = applications[0].stage.children.at(-1)
   for (const target of interaction.children) target.emit('pointertap')
 
   assert.deepEqual(intents, [
-    { type: 'select-tile', tileId: 'r0c0' },
+    ...snapshot.tiles.map(tile => ({ type: 'select-tile', tileId: tile.tileId })),
     { type: 'open-processing' },
     { type: 'open-orders' },
     { type: 'claim-bird', birdId: 'bird:1' },
     { type: 'click-pet' },
   ])
-  assert.deepEqual(snapshot.tiles, [{ tileId: 'r0c0' }])
+  assert.deepEqual(snapshot, original)
 })
 
 test('optional texture failures stay mounted while every critical failure rejects mount', async () => {
@@ -478,12 +558,376 @@ test('playEffect keeps one bounded effect sprite and destroys the replaced sprit
   await adapter.mount()
   const effects = applications[0].stage.children.find(layer => layer.label === 'effects')
 
-  adapter.playEffect({ type: 'plant' })
+  await adapter.playEffect({ type: 'plant' })
   const first = effects.children[0]
-  adapter.playEffect({ type: 'harvest' })
+  await adapter.playEffect({ type: 'harvest' })
 
   assert.equal(first.destroyed, true)
   assert.equal(effects.children.length, 1)
   adapter.destroy()
   assert.equal(effects.children.length, 0)
+})
+
+test('effect cleanup failures do not escape or block idempotent app teardown', async () => {
+  for (const failure of ['remove', 'destroy']) {
+    const { PIXI, applications } = fakePixi({ loadAsset: async src => ({ src }) })
+    const container = createContainer()
+    const adapter = createFarmSceneAdapter({
+      PIXI, container, manifest: manifest(), onIntent() {}, now: () => 0,
+    })
+    await adapter.mount()
+    await adapter.playEffect({ type: 'plant' })
+    const effects = applications[0].stage.children.find(layer => layer.label === 'effects')
+    if (failure === 'remove') {
+      effects.removeChild = () => { throw new Error('effect remove failed') }
+    } else {
+      effects.children[0].destroy = () => { throw new Error('effect destroy failed') }
+    }
+
+    assert.doesNotThrow(() => adapter.destroy())
+    assert.doesNotThrow(() => adapter.destroy())
+    assert.equal(applications[0].destroyCalls, 1)
+    assert.equal(applications[0]._renderer.destroyCalls, 1)
+    assert.equal(container.children.length, 0)
+  }
+})
+
+test('snapshot update creates full keyed objects and reuses containers across texture changes', async () => {
+  const { PIXI, applications } = fakePixi({ loadAsset: async src => ({ src }) })
+  const adapter = createFarmSceneAdapter({
+    PIXI, container: createContainer(), manifest: manifest(), onIntent() {}, now: () => 0,
+  })
+  await adapter.mount()
+  const first = sceneSnapshot()
+  first.tiles[0].cropId = 'wheat'
+  first.tiles[0].cropStage = 1
+  first.tiles[1].occupancy = 'building'
+  first.tiles[1].buildingId = 'building:1'
+  first.tiles[1].buildingType = 'scarecrow'
+  first.tiles[1].buildingLevel = 1
+  first.tiles[1].buildingWorking = true
+  first.bird = { birdId: 'bird:1', visible: true, claimBusy: false }
+  await adapter.update(first)
+
+  const ground = applications[0].stage.children.find(layer => layer.label === 'ground')
+  const objects = applications[0].stage.children.find(layer => layer.label === 'objects')
+  const characters = applications[0].stage.children.find(layer => layer.label === 'characters')
+  assert.equal(ground.children.length, 16)
+  assert.equal(objects.children.length, 2)
+  assert.equal(characters.children.length, 2)
+  const cropContainer = objects.children.find(child => child.children[0].texture.src.includes('/wheat/'))
+  const buildingContainer = objects.children.find(child => child.children.length === 2)
+
+  const second = structuredClone(first)
+  second.tiles[0].cropStage = 2
+  second.tiles[1].buildingWorking = false
+  await adapter.update(second)
+
+  assert.equal(objects.children.includes(cropContainer), true)
+  assert.equal(objects.children.includes(buildingContainer), true)
+  assert.ok(cropContainer.children[0].texture.src.endsWith('/crops/wheat/stage-2.webp'))
+  assert.equal(buildingContainer.children[1].visible, false)
+})
+
+test('disappeared snapshot objects are destroyed precisely', async () => {
+  const { PIXI, applications } = fakePixi({ loadAsset: async src => ({ src }) })
+  const adapter = createFarmSceneAdapter({
+    PIXI, container: createContainer(), manifest: manifest(), onIntent() {}, now: () => 0,
+  })
+  await adapter.mount()
+  const first = sceneSnapshot()
+  first.tiles[0].cropId = 'wheat'
+  first.tiles[0].cropStage = 1
+  await adapter.update(first)
+  const objects = applications[0].stage.children.find(layer => layer.label === 'objects')
+  const crop = objects.children[0]
+
+  await adapter.update(sceneSnapshot())
+
+  assert.equal(crop.destroyed, true)
+  assert.equal(objects.children.includes(crop), false)
+})
+
+test('concurrent updates deduplicate the same in-flight texture source', async () => {
+  const pending = deferred()
+  let wheatLoads = 0
+  let deferWheat = false
+  const { PIXI } = fakePixi({
+    loadAsset: src => {
+      if (deferWheat && src.endsWith('/crops/wheat/stage-1.webp')) {
+        wheatLoads += 1
+        return pending.promise
+      }
+      return Promise.resolve({ src })
+    },
+  })
+  const adapter = createFarmSceneAdapter({
+    PIXI, container: createContainer(), manifest: manifest(), onIntent() {}, now: () => 0,
+  })
+  await adapter.mount()
+  deferWheat = true
+  const source = sceneSnapshot()
+  source.tiles[0].cropId = 'wheat'
+  source.tiles[0].cropStage = 1
+  const first = adapter.update(source)
+  const second = adapter.update(structuredClone(source))
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(wheatLoads, 1)
+  pending.resolve({ src: 'stage-1' })
+  await Promise.all([first, second])
+})
+
+test('a newer snapshot revision prevents stale async reconciliation', async () => {
+  const slow = deferred()
+  let deferWheat = false
+  const { PIXI, applications } = fakePixi({
+    loadAsset: src => (
+      deferWheat && src.endsWith('/crops/wheat/stage-1.webp')
+        ? slow.promise
+        : Promise.resolve({ src })
+    ),
+  })
+  const adapter = createFarmSceneAdapter({
+    PIXI, container: createContainer(), manifest: manifest(), onIntent() {}, now: () => 0,
+  })
+  await adapter.mount()
+  deferWheat = true
+  const stale = sceneSnapshot()
+  stale.tiles[0].cropId = 'wheat'
+  stale.tiles[0].cropStage = 1
+  const staleUpdate = adapter.update(stale)
+  const currentUpdate = adapter.update(sceneSnapshot())
+  await currentUpdate
+  slow.resolve({ src: 'late-wheat' })
+  await staleUpdate
+
+  const objects = applications[0].stage.children.find(layer => layer.label === 'objects')
+  assert.equal(objects.children.length, 0)
+})
+
+test('single crop, building, pet and bird failures render the neutral project fallback', async () => {
+  const { PIXI, applications } = fakePixi({
+    loadAsset: async src => {
+      if (
+        src.includes('/crops/wheat/')
+        || src.includes('/buildings/scarecrow/')
+        || src.includes('/pet/idle-')
+        || src.includes('/bird/frame-')
+      ) {
+        throw new Error('optional object missing')
+      }
+      return { src }
+    },
+  })
+  const adapter = createFarmSceneAdapter({
+    PIXI, container: createContainer(), manifest: manifest(), onIntent() {}, now: () => 0,
+  })
+  await adapter.mount()
+  const source = sceneSnapshot()
+  source.tiles[0].cropId = 'wheat'
+  source.tiles[0].cropStage = 1
+  source.tiles[1].occupancy = 'building'
+  source.tiles[1].buildingId = 'building:1'
+  source.tiles[1].buildingType = 'scarecrow'
+  source.tiles[1].buildingLevel = 1
+  source.bird = { birdId: 'bird:1', visible: true, claimBusy: false }
+  await adapter.update(source)
+
+  const fallbackSrc = 'fallbacks/object.webp'
+  const objects = applications[0].stage.children.find(layer => layer.label === 'objects')
+  const characters = applications[0].stage.children.find(layer => layer.label === 'characters')
+  for (const object of [...objects.children, ...characters.children]) {
+    assert.ok(object.children[0].texture.src.includes(fallbackSrc))
+  }
+})
+
+test('crop and building body fallback use the fallback asset anchor', async () => {
+  const sourceManifest = manifest()
+  sourceManifest.fallbacks.object.anchor = { x: 0.25, y: 0.75 }
+  const { PIXI, applications } = fakePixi({
+    loadAsset: async src => {
+      if (
+        src.endsWith('/crops/wheat/stage-1.webp')
+        || src.endsWith('/buildings/scarecrow/level-1.webp')
+      ) {
+        throw new Error('object body missing')
+      }
+      return { src }
+    },
+  })
+  const adapter = createFarmSceneAdapter({
+    PIXI, container: createContainer(), manifest: sourceManifest, onIntent() {}, now: () => 0,
+  })
+  await adapter.mount()
+  const source = sceneSnapshot()
+  source.tiles[0].cropId = 'wheat'
+  source.tiles[0].cropStage = 1
+  Object.assign(source.tiles[1], {
+    occupancy: 'building',
+    buildingId: 'building:1',
+    buildingType: 'scarecrow',
+    buildingLevel: 1,
+  })
+  await adapter.update(source)
+
+  const objects = applications[0].stage.children.find(layer => layer.label === 'objects')
+  assert.equal(objects.children.length, 2)
+  for (const object of objects.children) {
+    assert.ok(object.children[0].texture.src.endsWith('/fallbacks/object.webp'))
+    assert.deepEqual(object.children[0].anchorValue, { x: 0.25, y: 0.75 })
+  }
+})
+
+test('pet and bird use one static fallback when any animation frame fails', async () => {
+  const { PIXI, applications } = fakePixi({
+    loadAsset: async src => {
+      if (src.endsWith('/pet/idle-2.webp') || src.endsWith('/bird/frame-2.webp')) {
+        throw new Error('one animation frame missing')
+      }
+      return { src }
+    },
+  })
+  const adapter = createFarmSceneAdapter({
+    PIXI, container: createContainer(), manifest: manifest(), onIntent() {}, now: () => 0,
+  })
+  await adapter.mount()
+  const source = sceneSnapshot()
+  source.bird = { birdId: 'bird:1', visible: true, claimBusy: false }
+  await adapter.update(source)
+
+  const characters = applications[0].stage.children.find(layer => layer.label === 'characters')
+  assert.equal(characters.children.length, 2)
+  for (const object of characters.children) {
+    assert.ok(object.children[0].texture.src.endsWith('/fallbacks/object.webp'))
+    assert.deepEqual(object.children[0].anchorValue, { x: 0.5, y: 0.9 })
+  }
+  applications[0]._ticker.callbacks.forEach(callback => callback({ deltaMS: 1000 }))
+  for (const object of characters.children) {
+    assert.ok(object.children[0].texture.src.endsWith('/fallbacks/object.webp'))
+  }
+})
+
+test('work overlay failure omits the overlay while preserving the building body', async () => {
+  const { PIXI, applications } = fakePixi({
+    loadAsset: async src => {
+      if (src.endsWith('/buildings/scarecrow/work-overlay.webp')) {
+        throw new Error('overlay missing')
+      }
+      return { src }
+    },
+  })
+  const adapter = createFarmSceneAdapter({
+    PIXI, container: createContainer(), manifest: manifest(), onIntent() {}, now: () => 0,
+  })
+  await adapter.mount()
+  const source = sceneSnapshot()
+  Object.assign(source.tiles[0], {
+    occupancy: 'building',
+    buildingId: 'building:1',
+    buildingType: 'scarecrow',
+    buildingLevel: 1,
+    buildingWorking: true,
+  })
+  await adapter.update(source)
+
+  const objects = applications[0].stage.children.find(layer => layer.label === 'objects')
+  const building = objects.children[0]
+  assert.ok(building.children[0].texture.src.endsWith('/buildings/scarecrow/level-1.webp'))
+  assert.equal(building.children[1].visible, false)
+  assert.equal(building.children[1].texture, null)
+})
+
+test('visible land texture failure rejects update, tears down the scene and is handled if ignored', async () => {
+  const { PIXI, applications } = fakePixi({
+    loadAsset: async src => {
+      if (src.endsWith('/land/land-3.webp')) throw new Error('critical visible land')
+      return { src }
+    },
+  })
+  const container = createContainer()
+  const adapter = createFarmSceneAdapter({
+    PIXI, container, manifest: manifest(), onIntent() {}, now: () => 0,
+  })
+  await adapter.mount()
+  const source = sceneSnapshot()
+  source.tiles[0].landLevel = 3
+
+  await assert.rejects(adapter.update(source), /critical visible land/)
+  assert.equal(applications[0].destroyCalls, 1)
+  assert.equal(container.children.length, 0)
+
+  const ignored = fakePixi({
+    loadAsset: async src => {
+      if (src.endsWith('/land/land-3.webp')) throw new Error('ignored critical land')
+      return { src }
+    },
+  })
+  const ignoredAdapter = createFarmSceneAdapter({
+    PIXI: ignored.PIXI,
+    container: createContainer(),
+    manifest: manifest(),
+    onIntent() {},
+    now: () => 0,
+  })
+  await ignoredAdapter.mount()
+  ignoredAdapter.update(source)
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(ignored.applications[0].destroyCalls, 1)
+})
+
+test('object cleanup failure never replaces a visible-land critical failure or blocks app teardown', async () => {
+  const critical = new Error('critical land remains primary')
+  let failLand = false
+  const { PIXI, applications } = fakePixi({
+    loadAsset: async src => {
+      if (failLand && src.endsWith('/land/land-3.webp')) throw critical
+      return { src }
+    },
+  })
+  const container = createContainer()
+  const adapter = createFarmSceneAdapter({
+    PIXI, container, manifest: manifest(), onIntent() {}, now: () => 0,
+  })
+  await adapter.mount()
+  await adapter.update(sceneSnapshot())
+  const ground = applications[0].stage.children.find(layer => layer.label === 'ground')
+  ground.children[0].destroy = () => {
+    throw new Error('object cleanup failed')
+  }
+  const source = sceneSnapshot()
+  source.tiles[0].landLevel = 3
+  failLand = true
+
+  await assert.rejects(adapter.update(source), error => error === critical)
+  assert.equal(applications[0].destroyCalls, 1)
+  assert.equal(applications[0]._renderer.destroyCalls, 1)
+  assert.equal(container.children.length, 0)
+})
+
+test('eligible locked occupancy uses eligible land art and object children follow bottom sort order', async () => {
+  const { PIXI, applications } = fakePixi({ loadAsset: async src => ({ src }) })
+  const adapter = createFarmSceneAdapter({
+    PIXI, container: createContainer(), manifest: manifest(), onIntent() {}, now: () => 0,
+  })
+  await adapter.mount()
+  const source = sceneSnapshot()
+  source.tiles[0].occupancy = 'locked'
+  source.tiles[0].unlockState = 'eligible'
+  source.tiles[0].cropId = 'wheat'
+  source.tiles[0].cropStage = 1
+  source.tiles[15].occupancy = 'building'
+  source.tiles[15].buildingId = 'building:15'
+  source.tiles[15].buildingType = 'scarecrow'
+  source.tiles[15].buildingLevel = 1
+  await adapter.update(source)
+
+  const ground = applications[0].stage.children.find(layer => layer.label === 'ground')
+  const eligible = ground.children.find(child => child.positionValue.x === 600 && child.positionValue.y === 280)
+  assert.ok(eligible.children[0].texture.src.endsWith('/land/eligible.webp'))
+
+  const objects = applications[0].stage.children.find(layer => layer.label === 'objects')
+  assert.deepEqual(
+    objects.children.map(child => child.sortY),
+    [...objects.children.map(child => child.sortY)].sort((left, right) => left - right),
+  )
 })
