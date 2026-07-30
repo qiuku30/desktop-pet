@@ -568,3 +568,7 @@
 - ✅ 真实同 app.asar `dashboard.html → runtime → pixi.mjs → manifest → loader/adapter` 链路通过；WebGLRenderer、DPR 上限 2、最大 canvas 1600×1200，20 次 mount/resize/pause/reduced/destroy 均清理为 0 canvas，五类 Electron 输入意图全部命中。
 - ✅ ARCH-11 多轮独立 gate 修正非等价 `about:blank` 探针误诊、素材根路径、destroy-before-init、manifest 相对路径、init failure 回退、pending-init 控制、迟到 reject、skinId 越界、效果累积、partial-init renderer 泄漏及 cleanup-error 阻断回退。最终定向 43/43、全仓 GUI 393/393、`node --check`、`git diff --check`、Electron Forge package 和独立 reviewer 全部通过。
 - ✅ Task 3 十个批准文件已以 `6e2cd1c` 集成到 `main`；无事件、IPC、持久化、业务 schema、FarmService/PetState 或现有 UI 改动。既有 `MODULE_TYPELESS_PACKAGE_JSON` warning 与 npm audit 42 项未在本任务扩围处理。
+- ✅ `farm-art-02` 完成 Task 4 全场景资产：五类土地、六作物各四阶段、三建筑各三级与工作叠层、奶油星团四帧待机、小鸟四帧、八类反馈效果和项目自有对象 fallback；manifest 扩展为 62 条唯一运行时记录，保留 Task 3 所需旧定位合同。
+- ✅ ARCH-11 独立视觉 gate 先后退回土地半透明土芯、旧定位丢失、宠物待机帧缺失、候选母版包体膨胀及五类土地紫色键边缘；返修后五块土地洋红边审计均为 0，800×600/600×400 与白/黑/棋盘 review 通过，候选母版移出运行时目录，完整资产目录约 11 MiB。
+- ✅ Task 4 资产以 `c3725bc` 集成到 `main`；整合后全仓在 GUI 权限下 393/393 通过，`git diff --check` 通过。无事件、IPC、依赖、持久化、业务 schema 或 UI 代码改动；尚未 push。
+- 🔨 下一步：创建独立 `farm-visual-04`，把完整 manifest 资产接入 Pixi 场景运行时；不得改变现有 FarmService/PetState/事务、计时、提醒或三级回退语义。
