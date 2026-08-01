@@ -33,10 +33,11 @@ const { readFile } = require('node:fs/promises')
 app.commandLine.appendSwitch('disable-gpu')
 app.setPath('userData', process.env.FARM_LAYOUT_USER_DATA)
 
-const fieldMarkup = \`
+const fieldMarkup = selected => \`
   <div class="farm-toolbar"><span>建筑 1/2</span><span class="farm-feedback"></span><button class="farm-btn">收获全部</button></div>
-  <div class="farm-workspace">
-    <div class="farm-grid">\${Array.from({ length: 16 }, (_, index) => \`<button class="farm-tile">块\${index + 1}</button>\`).join('')}</div>
+  <div class="farm-workspace farm-scene--pixi\${selected ? ' farm-workspace--panel-open' : ''}">
+    <div class="farm-scene-slot"><div class="farm-scene-host"></div></div>
+    <div class="farm-grid farm-grid--mirror">\${Array.from({ length: 16 }, (_, index) => \`<button class="farm-tile">块\${index + 1}</button>\`).join('')}</div>
     <aside class="farm-actions"><div class="farm-action-title">田地操作</div></aside>
   </div>\`
 const childMarkup = {
@@ -68,25 +69,29 @@ async function main() {
   const results = {}
   for (const [width, height] of [[800, 600], [600, 400]]) {
     win.setContentSize(width, height)
-    await loadCase(win, css, fieldMarkup)
-    results[\`\${width}x\${height}\`] = await win.webContents.executeJavaScript(\`(() => {
+    results[\`\${width}x\${height}\`] = {}
+    for (const selected of [false, true]) {
+      await loadCase(win, css, fieldMarkup(selected))
+      results[\`\${width}x\${height}\`][selected ? 'selected' : 'unselected'] = await win.webContents.executeJavaScript(\`(() => {
       const content = document.querySelector('.farm-tab-content')
       const toolbar = document.querySelector('.farm-toolbar')
       const workspace = document.querySelector('.farm-workspace')
       const grid = document.querySelector('.farm-grid')
+      const scene = document.querySelector('.farm-scene-slot')
       const actions = document.querySelector('.farm-actions')
       return {
         flexDirection: getComputedStyle(content).flexDirection,
-        gridColumns: getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length,
         content: (\${rect.toString()})(content),
         toolbar: (\${rect.toString()})(toolbar),
         workspace: (\${rect.toString()})(workspace),
+        scene: (\${rect.toString()})(scene),
         grid: (\${rect.toString()})(grid),
         actions: (\${rect.toString()})(actions),
         contentScrollWidth: content.scrollWidth,
         contentClientWidth: content.clientWidth,
       }
     })()\`)
+    }
     for (const [name, markup] of Object.entries(childMarkup)) {
       await loadCase(win, css, markup)
       results[\`\${width}x\${height}\`][name] = await win.webContents.executeJavaScript(\`(() => {
@@ -167,14 +172,25 @@ test('farm tabs preserve responsive layout contracts in Chromium', { timeout: 35
 
   for (const viewport of ['800x600', '600x400']) {
     const layout = layouts[viewport]
-    assert.equal(layout.flexDirection, 'column', `${viewport}: tab content must stack vertically`)
-    assert.ok(layout.toolbar.bottom <= layout.workspace.top + epsilon, `${viewport}: toolbar must be above workspace`)
-    assert.ok(Math.abs(layout.grid.width - layout.grid.height) <= epsilon, `${viewport}: field grid must remain square`)
-    assert.equal(layout.gridColumns, 4, `${viewport}: field grid must keep four columns`)
-    assert.ok(layout.grid.right <= layout.actions.left + epsilon, `${viewport}: grid and actions must stay in the same row`)
-    assert.ok(layout.workspace.right <= layout.content.right + epsilon, `${viewport}: workspace must fit tab content`)
-    assert.ok(layout.actions.right <= layout.content.right + epsilon, `${viewport}: actions must fit tab content`)
-    assert.ok(layout.contentScrollWidth <= layout.contentClientWidth, `${viewport}: field tab must not overflow horizontally`)
+    const unselected = layout.unselected
+    const selected = layout.selected
+    assert.equal(unselected.flexDirection, 'column', `${viewport}: tab content must stack vertically`)
+    assert.ok(unselected.toolbar.bottom <= unselected.workspace.top + epsilon, `${viewport}: toolbar must be above workspace`)
+    assert.ok(unselected.scene.width > selected.scene.width || viewport === '600x400',
+      `${viewport}: wide selection narrows the scene`)
+    if (viewport === '800x600') {
+      assert.ok(selected.actions.left >= selected.scene.right - epsilon,
+        `${viewport}: side panel must not overlay scene`)
+    } else {
+      assert.ok(selected.actions.top >= selected.scene.top - epsilon,
+        `${viewport}: drawer must remain inside scene workspace`)
+      assert.ok(selected.actions.bottom <= selected.workspace.bottom + epsilon,
+        `${viewport}: drawer must be bounded`)
+    }
+    for (const field of [unselected, selected]) {
+      assert.ok(field.workspace.right <= field.content.right + epsilon, `${viewport}: workspace must fit content`)
+      assert.ok(field.contentScrollWidth <= field.contentClientWidth, `${viewport}: field tab must not overflow horizontally`)
+    }
 
     for (const childName of ['processing', 'orders']) {
       const child = layout[childName]

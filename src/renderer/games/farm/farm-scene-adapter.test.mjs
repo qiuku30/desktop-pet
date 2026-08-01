@@ -52,6 +52,10 @@ function fakePixi({
       this.children.push(child)
       return child
     }
+    addChildAt(child, index) {
+      this.children.splice(index, 0, child)
+      return child
+    }
     removeChild(child) {
       this.children = this.children.filter(entry => entry !== child)
       return child
@@ -128,6 +132,16 @@ function fakePixi({
   }
 
   class Container extends DisplayObject {}
+  class Graphics extends DisplayObject {
+    ellipse(x, y, width, height) {
+      this.ellipseValue = { x, y, width, height }
+      return this
+    }
+    stroke(options) {
+      this.strokeValue = options
+      return this
+    }
+  }
   class Sprite extends DisplayObject {}
   class Rectangle {
     constructor(x, y, width, height) {
@@ -139,6 +153,7 @@ function fakePixi({
     PIXI: {
       Application,
       Container,
+      Graphics,
       Rectangle,
       Sprite,
       Assets: {
@@ -151,6 +166,17 @@ function fakePixi({
     },
     applications,
     assetCalls,
+  }
+}
+
+function layerByName(application, name) {
+  return application.stage.children.find(child => child.label === name)
+}
+
+function tileCenter(row, col) {
+  return {
+    x: 600 + (col * 72) - (row * 72),
+    y: 280 + (col * 44) + (row * 44),
   }
 }
 
@@ -930,4 +956,91 @@ test('eligible locked occupancy uses eligible land art and object children follo
     objects.children.map(child => child.sortY),
     [...objects.children.map(child => child.sortY)].sort((left, right) => left - right),
   )
+})
+
+test('selection highlight is a reused non-interactive outline that follows the selected tile', async () => {
+  const { PIXI, applications } = fakePixi({ loadAsset: async src => ({ src }) })
+  const adapter = createFarmSceneAdapter({
+    PIXI, container: createContainer(), manifest: manifest(), onIntent() {}, now: () => 0,
+  })
+  await adapter.mount()
+  await adapter.update({
+    ...sceneSnapshot(),
+    selectedObject: { type: 'tile', id: 'r1c2' },
+  })
+
+  const interaction = layerByName(applications[0], 'interaction')
+  const highlight = interaction.children.find(child => child.label === 'farm-selection-highlight')
+  assert.ok(highlight)
+  assert.deepEqual(highlight.positionValue, tileCenter(1, 2))
+  assert.equal(highlight.visible, true)
+  assert.equal(highlight.eventMode, 'none')
+  assert.ok(highlight.strokeValue)
+
+  await adapter.update({
+    ...sceneSnapshot(),
+    selectedObject: { type: 'tile', id: 'r2c1' },
+  })
+  assert.equal(
+    interaction.children.filter(child => child.label === 'farm-selection-highlight').length,
+    1,
+  )
+  assert.deepEqual(highlight.positionValue, tileCenter(2, 1))
+
+  await adapter.update({ ...sceneSnapshot(), selectedObject: null })
+  assert.equal(highlight.visible, false)
+  await adapter.update({
+    ...sceneSnapshot(),
+    selectedObject: { type: 'tile', id: 'missing' },
+  })
+  assert.equal(highlight.visible, false)
+
+  adapter.destroy()
+  assert.equal(highlight.destroyed, true)
+})
+
+test('positioned effect prefers a current tile center, then an explicit logical position', async () => {
+  const { PIXI, applications } = fakePixi({ loadAsset: async src => ({ src }) })
+  const adapter = createFarmSceneAdapter({
+    PIXI, container: createContainer(), manifest: manifest(), onIntent() {}, now: () => 0,
+  })
+  await adapter.mount()
+  await adapter.update(sceneSnapshot())
+  const effects = layerByName(applications[0], 'effects')
+
+  await adapter.playEffect({ type: 'plant', tileId: 'r2c1' })
+  assert.deepEqual(effects.children[0].positionValue, tileCenter(2, 1))
+  const first = effects.children[0]
+
+  await adapter.playEffect({
+    type: 'harvest',
+    logicalPosition: { x: 600, y: 430 },
+  })
+  assert.deepEqual(effects.children[0].positionValue, { x: 600, y: 430 })
+  const current = effects.children[0]
+  assert.notEqual(current, first)
+
+  await adapter.playEffect({ type: 'harvest', tileId: 'missing' })
+  assert.equal(effects.children.length, 1)
+  assert.equal(effects.children[0], current)
+})
+
+test('positioned effect cannot appear after adapter destroy while its texture is loading', async () => {
+  const pending = deferred()
+  const { PIXI, applications } = fakePixi({
+    loadAsset: src => src.endsWith('/effects/plant.webp')
+      ? pending.promise
+      : Promise.resolve({ src }),
+  })
+  const adapter = createFarmSceneAdapter({
+    PIXI, container: createContainer(), manifest: manifest(), onIntent() {}, now: () => 0,
+  })
+  await adapter.mount()
+  await adapter.update(sceneSnapshot())
+  const effects = layerByName(applications[0], 'effects')
+  const effectPromise = adapter.playEffect({ type: 'plant', tileId: 'r0c0' })
+  adapter.destroy()
+  pending.resolve({ src: 'late-effect' })
+  await effectPromise
+  assert.equal(effects.children.length, 0)
 })

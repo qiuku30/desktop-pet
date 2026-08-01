@@ -14,6 +14,7 @@ import {
   renderOrdersTab,
 } from './farm-orders-ui.js'
 import { createBirdScheduler } from './farm-bird.mjs'
+import { buildFarmSceneSnapshot } from './farm-scene-model.mjs'
 
 const BUILDING_META = Object.freeze({
   'building:sprinkler': { name: '洒水器', emoji: '💦' },
@@ -267,11 +268,13 @@ export function renderFarmShell(vm, ui = {}) {
       <button type="button" class="farm-btn farm-btn--primary" data-action="harvest-all"${harvestDisabled}${ui.busy ? ' disabled' : ''}>收获全部</button>
       <button type="button" class="farm-btn" data-action="open-warehouse">前往仓库</button>
     </div>
-    <div class="farm-workspace">
-      <div class="farm-grid" role="grid" aria-label="4×4 农田">
+    <div class="farm-workspace farm-scene--${escapeHtml(ui.sceneMode || 'dom')}${ui.selectedTileId ? ' farm-workspace--panel-open' : ''}">
+      <div class="farm-scene-slot" aria-hidden="true"></div>
+      <div class="farm-grid farm-grid--mirror" role="grid" aria-label="4×4 农田">
         ${renderFieldGrid(vm, ui.mode, ui.selectedTileId)}
       </div>
       <aside class="farm-actions" aria-label="田地操作">
+        ${ui.selectedTileId || ui.mode ? '<button type="button" class="farm-actions-close" data-action="close-actions" aria-label="关闭田地操作">×</button>' : ''}
         ${renderActionPanel(vm, ui)}
       </aside>
     </div>`
@@ -413,6 +416,7 @@ export function mountFarm(container, {
   clearIntervalFn = clearInterval,
   createBirdSchedulerFn = createBirdScheduler,
   documentRef = globalThis.document,
+  sceneRuntime = null,
 } = {}) {
   let disposed = false
   let generation = 0
@@ -430,6 +434,15 @@ export function mountFarm(container, {
   let currentBird = null
   let birdClaimBusy = false
   let birdRewardText = ''
+  let sceneMode = sceneRuntime ? 'loading' : 'dom'
+  let sceneController = null
+  let sceneLoadPromise = null
+  let resizeObserver = null
+  let observedSceneSlot = null
+  let restoringTileFocus = false
+  let reducedMotion = sceneRuntime?.reducedMotionMedia?.matches === true
+  const sceneHost = sceneRuntime ? documentRef?.createElement?.('div') : null
+  sceneHost?.classList?.add?.('farm-scene-host')
 
   const snapshot = () => ({
     farm: petState.get('farm'),
@@ -438,6 +451,33 @@ export function mountFarm(container, {
     petLevel: petState.get('level') || 1,
   })
 
+  const resizeSceneToSlot = slot => {
+    const rect = slot?.getBoundingClientRect?.()
+    if (!rect || disposed) return
+    sceneController?.resize?.(
+      rect.width,
+      rect.height,
+      sceneRuntime?.getDevicePixelRatio?.() || 1,
+    )
+  }
+
+  const syncSceneSlotObservation = () => {
+    const nextSlot = activeTab === 'field'
+      ? container.querySelector?.('.farm-scene-slot') || null
+      : null
+    if (!resizeObserver) return
+    if (observedSceneSlot === nextSlot) {
+      if (nextSlot) resizeSceneToSlot(nextSlot)
+      return
+    }
+    if (observedSceneSlot) resizeObserver?.unobserve?.(observedSceneSlot)
+    observedSceneSlot = nextSlot
+    if (observedSceneSlot && resizeObserver) {
+      resizeObserver.observe?.(observedSceneSlot)
+      resizeSceneToSlot(observedSceneSlot)
+    }
+  }
+
   const render = () => {
     if (disposed) return
     activeTabCleanup?.()
@@ -445,6 +485,7 @@ export function mountFarm(container, {
     const vm = buildFarmViewModel(snapshot(), FARM_CONFIG, now())
     if (selectedTileId && !vm.tiles.some(tile => tile.id === selectedTileId)) selectedTileId = null
     container.className = 'page page--farm'
+    sceneHost?.remove?.()
     container.innerHTML = renderFarmShell(vm, {
       selectedTileId,
       mode,
@@ -454,7 +495,26 @@ export function mountFarm(container, {
       bird: currentBird,
       birdClaimBusy,
       birdRewardText,
+      sceneMode,
     })
+    if (sceneHost) container.querySelector?.('.farm-scene-slot')?.appendChild?.(sceneHost)
+    if (sceneController) {
+      const visualSnapshot = buildFarmSceneSnapshot({
+        viewModel: vm,
+        activeTab,
+        selectedObject: selectedTileId ? { type: 'tile', id: selectedTileId } : null,
+        reducedMotion,
+        bird: {
+          birdId: currentBird?.birdId || null,
+          visible: Boolean(currentBird),
+          claimBusy: birdClaimBusy,
+        },
+      })
+      void Promise.resolve(sceneController.update?.(visualSnapshot)).catch(() => {})
+      sceneController.setPaused?.(activeTab !== 'field' || documentRef?.hidden === true)
+      sceneController.setReducedMotion?.(reducedMotion)
+    }
+    syncSceneSlotObservation()
     const childContainer = container.querySelector?.('.farm-tab-content')
     if (!childContainer || activeTab === 'field') return
     const childActions = {
@@ -489,7 +549,12 @@ export function mountFarm(container, {
     }
   }
 
-  const execute = async command => {
+  const playSceneEffect = effect => {
+    if (!effect || disposed || !sceneController) return
+    void Promise.resolve(sceneController.playEffect?.(effect)).catch(() => {})
+  }
+
+  const execute = async (command, effect = null) => {
     if (disposed || mutationBusy) return
     mutationBusy = true
     const callGeneration = generation
@@ -503,6 +568,7 @@ export function mountFarm(container, {
       feedback = result.ok
         ? (result.uiSuccessMessage || '操作成功')
         : (ERROR_MESSAGES[result.error] || '操作失败，请重试。')
+      if (result.ok) playSceneEffect(effect)
     } catch (error) {
       if (!disposed && callGeneration === generation) {
         console.error('[Farm UI] mutation failed:', error)
@@ -517,7 +583,7 @@ export function mountFarm(container, {
     }
   }
 
-  const confirmThen = async (options, command) => {
+  const confirmThen = async (options, command, effect = null) => {
     const callGeneration = generation
     const callTabGeneration = tabGeneration
     const result = await showOverlay({
@@ -529,7 +595,7 @@ export function mountFarm(container, {
     })
     if (disposed || callGeneration !== generation || callTabGeneration !== tabGeneration
         || result !== 'confirm') return
-    await execute(command)
+    await execute(command, effect)
   }
 
   function requestSettlement() {
@@ -590,40 +656,62 @@ export function mountFarm(container, {
     }, () => service.abandonOrder({ slotIndex }))
   }
 
+  function changeTab(nextTab) {
+    if (!['field', 'processing', 'orders'].includes(nextTab) || nextTab === activeTab) return
+    tabGeneration += 1
+    activeTab = nextTab
+    selectedTileId = null
+    mode = null
+    feedback = ''
+    render()
+  }
+
+  function selectTile(tileId) {
+    if (typeof tileId !== 'string') return
+    if (mode?.type === 'move-building') {
+      const vm = buildFarmViewModel(snapshot(), FARM_CONFIG, now())
+      const tile = vm.tiles.find(entry => entry.id === tileId)
+      if (tile?.occupancy === 'field' && !tile.crop) {
+        const buildingId = mode.buildingId
+        mode = null
+        execute(
+          () => service.moveBuilding({ buildingId, targetTileId: tileId }),
+          { type: 'building-change', tileId },
+        )
+      } else {
+        feedback = '请选择没有作物的开放田地。'
+        render()
+      }
+      return
+    }
+    if (selectedTileId === tileId) return
+    selectedTileId = tileId
+    feedback = ''
+    render()
+  }
+
+  function handleSceneIntent(intent) {
+    if (disposed || !intent) return
+    if (intent.type === 'select-tile') selectTile(intent.tileId)
+    else if (intent.type === 'open-processing') changeTab('processing')
+    else if (intent.type === 'open-orders') changeTab('orders')
+    else if (intent.type === 'claim-bird') claimCurrentBird(intent.birdId)
+    else if (intent.type === 'click-pet') {
+      feedback = '奶油星团正在陪你照看农场。'
+      render()
+    }
+  }
+
   const onClick = event => {
     const tabButton = event.target.closest('[data-farm-tab]')
     if (tabButton) {
-      const nextTab = tabButton.dataset.farmTab
-      if (['field', 'processing', 'orders'].includes(nextTab) && nextTab !== activeTab) {
-        tabGeneration += 1
-        activeTab = nextTab
-        selectedTileId = null
-        mode = null
-        feedback = ''
-        render()
-      }
+      changeTab(tabButton.dataset.farmTab)
       return
     }
     const tileButton = event.target.closest('[data-tile-id].farm-tile')
     const action = event.target.closest('[data-action]')
     if (tileButton && !action) {
-      const tileId = tileButton.dataset.tileId
-      if (mode?.type === 'move-building') {
-        const vm = buildFarmViewModel(snapshot(), FARM_CONFIG, now())
-        const tile = vm.tiles.find(entry => entry.id === tileId)
-        if (tile?.occupancy === 'field' && !tile.crop) {
-          const buildingId = mode.buildingId
-          mode = null
-          execute(() => service.moveBuilding({ buildingId, targetTileId: tileId }))
-        } else {
-          feedback = '请选择没有作物的开放田地。'
-          render()
-        }
-        return
-      }
-      selectedTileId = tileId
-      feedback = ''
-      render()
+      selectTile(tileButton.dataset.tileId)
       return
     }
     if (!action || action.disabled) return
@@ -634,7 +722,10 @@ export function mountFarm(container, {
         claimCurrentBird(data.birdId)
         break
       case 'harvest-all':
-        execute(() => service.harvestAll())
+        execute(
+          () => service.harvestAll(),
+          { type: 'harvest', logicalPosition: { x: 600, y: 430 } },
+        )
         break
       case 'open-warehouse':
         onNavigateWarehouse()
@@ -644,10 +735,13 @@ export function mountFarm(container, {
           tileId: data.tileId,
           cropId: data.cropId,
           quickBuy: data.quickBuy === 'true',
-        }))
+        }), { type: 'plant', tileId: data.tileId })
         break
       case 'harvest':
-        execute(() => service.harvest({ tileId: data.tileId }))
+        execute(
+          () => service.harvest({ tileId: data.tileId }),
+          { type: 'harvest', tileId: data.tileId },
+        )
         break
       case 'remove-crop':
         confirmThen({
@@ -657,13 +751,22 @@ export function mountFarm(container, {
         }, () => service.removeCrop({ tileId: data.tileId }))
         break
       case 'unlock':
-        execute(() => service.unlockTile({ tileId: data.tileId }))
+        execute(
+          () => service.unlockTile({ tileId: data.tileId }),
+          { type: 'unlock-land', tileId: data.tileId },
+        )
         break
       case 'upgrade-land':
-        execute(() => service.upgradeLand({ tileId: data.tileId }))
+        execute(
+          () => service.upgradeLand({ tileId: data.tileId }),
+          { type: 'upgrade-land', tileId: data.tileId },
+        )
         break
       case 'build':
-        execute(() => service.build({ tileId: data.tileId, typeId: data.buildingType }))
+        execute(
+          () => service.build({ tileId: data.tileId, typeId: data.buildingType }),
+          { type: 'building-change', tileId: data.tileId },
+        )
         break
       case 'move-building':
         mode = { type: 'move-building', buildingId: data.buildingId }
@@ -675,10 +778,26 @@ export function mountFarm(container, {
         feedback = ''
         render()
         break
+      case 'close-actions':
+        selectedTileId = null
+        mode = null
+        feedback = ''
+        render()
+        break
       case 'upgrade-building':
-        execute(() => service.upgradeBuilding({ buildingId: data.buildingId }))
+        {
+          const tileId = buildFarmViewModel(snapshot(), FARM_CONFIG, now()).tiles
+            .find(tile => tile.building?.id === data.buildingId)?.id
+          execute(
+            () => service.upgradeBuilding({ buildingId: data.buildingId }),
+            tileId ? { type: 'building-change', tileId } : null,
+          )
+        }
         break
       case 'demolish-building':
+        {
+          const tileId = buildFarmViewModel(snapshot(), FARM_CONFIG, now()).tiles
+            .find(tile => tile.building?.id === data.buildingId)?.id
         confirmThen({
           title: `拆除${data.buildingName}`,
           body: `预计返还 ${data.refund} 金币（累计投入的 50%，向下取整）。确定要拆除吗？`,
@@ -688,7 +807,8 @@ export function mountFarm(container, {
           return result.ok
             ? { ...result, uiSuccessMessage: `已返还 ${result.refund} 金币。` }
             : result
-        })
+        }, tileId ? { type: 'building-change', tileId } : null)
+        }
         break
     }
   }
@@ -713,6 +833,10 @@ export function mountFarm(container, {
         birdId,
         dailyCount: birdDailyCount(),
       })
+      playSceneEffect({
+        type: 'coins',
+        logicalPosition: { x: 930, y: 160 },
+      })
       render()
     } catch (error) {
       if (!disposed && callGeneration === generation) {
@@ -725,6 +849,23 @@ export function mountFarm(container, {
   }
 
   container.addEventListener('click', onClick)
+  const onFocusIn = event => {
+    if (restoringTileFocus) return
+    const tile = event.target?.closest?.('[data-tile-id].farm-tile')
+    if (!tile) return
+    const tileId = tile.dataset.tileId
+    if (selectedTileId === tileId) return
+    selectTile(tileId)
+    const replacement = container.querySelector?.(`[data-tile-id="${tileId}"].farm-tile`)
+    if (!replacement || replacement === event.target) return
+    restoringTileFocus = true
+    try {
+      replacement.focus?.({ preventScroll: true })
+    } finally {
+      restoringTileFocus = false
+    }
+  }
+  container.addEventListener('focusin', onFocusIn)
   const unsubscribeFarm = eventBus?.on?.(EVENTS.FARM_STATE_CHANGED, () => render()) || (() => {})
   const unsubscribePet = petState.subscribe(EVENTS.PET_STATE_CHANGED, ({ key }) => {
     if (['farm', 'inventory', 'coins', 'level'].includes(key)) render()
@@ -762,13 +903,80 @@ export function mountFarm(container, {
   }
   const onVisibilityChange = () => {
     birdScheduler?.setVisible(!documentRef.hidden, { dailyCount: birdDailyCount() })
+    sceneController?.setPaused?.(activeTab !== 'field' || documentRef.hidden === true)
+  }
+  const onReducedMotionChange = event => {
+    reducedMotion = event.matches === true
+    sceneController?.setReducedMotion?.(reducedMotion)
+    render()
   }
   documentRef?.addEventListener?.('visibilitychange', onVisibilityChange)
+  sceneRuntime?.reducedMotionMedia?.addEventListener?.('change', onReducedMotionChange)
   if (documentRef?.hidden) {
     birdScheduler?.setVisible(false, { dailyCount: birdDailyCount() })
   }
   birdScheduler?.start({ dailyCount: birdDailyCount() })
   render()
+
+  if (sceneRuntime && sceneHost) {
+    const loadGeneration = generation
+    sceneLoadPromise = Promise.resolve(sceneRuntime.loadScene({
+      manifestUrl: sceneRuntime.manifestUrl,
+      fetchJson: sceneRuntime.fetchJson,
+      trustedBackgroundSrc: sceneRuntime.trustedBackgroundSrc,
+      staticAvailable: sceneRuntime.staticAvailable,
+      createAdapter: ({ PIXI, manifest }) => sceneRuntime.createAdapter({
+        PIXI,
+        container: sceneHost,
+        manifest,
+        onIntent: handleSceneIntent,
+        now,
+      }),
+    })).then(result => {
+      if (disposed || loadGeneration !== generation) {
+        result?.adapter?.destroy?.()
+        return
+      }
+      if (result?.mode === 'pixi' && result.adapter) {
+        sceneMode = 'pixi'
+        sceneController = result.adapter
+      } else if (result?.mode === 'static') {
+        sceneMode = 'static'
+        sceneController = sceneRuntime.createStatic({
+          container: sceneHost,
+          backgroundSrc: result.backgroundSrc,
+          hitTargets: [],
+          onIntent: handleSceneIntent,
+        })
+        sceneController.mount?.()
+      } else {
+        sceneMode = 'dom'
+      }
+      render()
+      resizeObserver = sceneRuntime.createResizeObserver?.(entries => {
+        if (disposed) return
+        const candidates = Array.from(entries || [])
+        const hasTargetedEntries = candidates.some(candidate => candidate && 'target' in candidate)
+        const entry = hasTargetedEntries
+          ? candidates.find(candidate => candidate.target === observedSceneSlot)
+          : candidates[0]
+        if (hasTargetedEntries && !entry) return
+        const rect = entry?.contentRect || observedSceneSlot?.getBoundingClientRect?.()
+        if (!rect) return
+        sceneController?.resize?.(
+          rect.width,
+          rect.height,
+          sceneRuntime.getDevicePixelRatio?.() || 1,
+        )
+      }) || null
+      syncSceneSlotObservation()
+    }).catch(() => {
+      if (disposed || loadGeneration !== generation) return
+      sceneMode = 'dom'
+      render()
+    })
+    void sceneLoadPromise
+  }
 
   return () => {
     if (disposed) return
@@ -779,9 +987,17 @@ export function mountFarm(container, {
     activeTabCleanup = null
     clearIntervalFn(tick)
     container.removeEventListener('click', onClick)
+    container.removeEventListener('focusin', onFocusIn)
     unsubscribeFarm()
     unsubscribePet()
     documentRef?.removeEventListener?.('visibilitychange', onVisibilityChange)
+    sceneRuntime?.reducedMotionMedia?.removeEventListener?.('change', onReducedMotionChange)
+    resizeObserver?.disconnect?.()
+    resizeObserver = null
+    observedSceneSlot = null
+    sceneController?.destroy?.()
+    sceneController = null
+    sceneHost?.remove?.()
     birdScheduler?.destroy()
     closeOverlay()
   }

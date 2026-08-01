@@ -91,8 +91,10 @@ export function createFarmSceneAdapter({ PIXI, container, manifest, onIntent, no
   let currentSnapshot = null
   let pendingResize = null
   let activeEffect = null
+  let selectionHighlight = null
   let backgroundSprite = null
   let fallbackTexture = null
+  const tileCenters = new Map()
 
   const texturePromises = new Map()
   const landObjects = new Map()
@@ -237,6 +239,23 @@ export function createFarmSceneAdapter({ PIXI, container, manifest, onIntent, no
     return created
   }
 
+  function createSelectionHighlight() {
+    const highlight = PIXI.Graphics ? new PIXI.Graphics() : new PIXI.Container()
+    highlight.label = 'farm-selection-highlight'
+    highlight.eventMode = 'none'
+    if (typeof highlight.ellipse === 'function' && typeof highlight.stroke === 'function') {
+      highlight.ellipse(0, 0, 66, 41)
+      highlight.stroke({ color: 0xfff0a0, width: 4, alpha: 0.95 })
+    }
+    highlight.visible = false
+    if (typeof layers.interaction.addChildAt === 'function') {
+      layers.interaction.addChildAt(highlight, 0)
+    } else {
+      layers.interaction.addChild(highlight)
+    }
+    return highlight
+  }
+
   function loadTexture(record) {
     if (!record?.src) return Promise.reject(new Error('MISSING_FARM_SCENE_TEXTURE'))
     if (!texturePromises.has(record.src)) {
@@ -281,6 +300,7 @@ export function createFarmSceneAdapter({ PIXI, container, manifest, onIntent, no
 
   function addIntentTarget(intent, { x, y, width = 132, height = 82 }) {
     const target = new PIXI.Container()
+    target.label = 'farm-intent-target'
     target.eventMode = 'static'
     target.position.set(x, y)
     target.hitArea = new PIXI.Rectangle(-width / 2, -height / 2, width, height)
@@ -291,8 +311,11 @@ export function createFarmSceneAdapter({ PIXI, container, manifest, onIntent, no
   }
 
   function rebuildHitTargets(layout) {
-    for (const child of layers.interaction.children || []) child.destroy?.()
-    layers.interaction.children.length = 0
+    for (const child of [...(layers.interaction.children || [])]) {
+      if (child.label !== 'farm-intent-target') continue
+      layers.interaction.removeChild?.(child)
+      child.destroy?.()
+    }
     for (const tile of layout.tiles) {
       addIntentTarget(
         { type: 'select-tile', tileId: tile.tileId },
@@ -322,6 +345,18 @@ export function createFarmSceneAdapter({ PIXI, container, manifest, onIntent, no
       { type: 'click-pet' },
       { x: layout.pet.x, y: layout.pet.y, width: 140, height: 140 },
     )
+  }
+
+  function updateSelection(layout, selectedObject) {
+    tileCenters.clear()
+    for (const tile of layout.tiles) {
+      tileCenters.set(tile.tileId, Object.freeze({ x: tile.center.x, y: tile.center.y }))
+    }
+    const center = selectedObject?.type === 'tile'
+      ? tileCenters.get(selectedObject.id)
+      : null
+    selectionHighlight.visible = Boolean(center)
+    if (center) selectionHighlight.position.set(center.x, center.y)
   }
 
   function reconcileMap({ map, desired, layer, factory }) {
@@ -520,6 +555,7 @@ export function createFarmSceneAdapter({ PIXI, container, manifest, onIntent, no
       birdObject = null
     }
     rebuildHitTargets(layout)
+    updateSelection(layout, snapshot.selectedObject)
   }
 
   async function mount() {
@@ -550,6 +586,7 @@ export function createFarmSceneAdapter({ PIXI, container, manifest, onIntent, no
         return
       }
       layers = createLayers()
+      selectionHighlight = createSelectionHighlight()
       try {
         const backgroundTexture = await loadTexture(manifest.background)
         const level1Texture = await loadTexture(manifest.land?.level1)
@@ -620,6 +657,15 @@ export function createFarmSceneAdapter({ PIXI, container, manifest, onIntent, no
     }
     const record = manifest.effects?.[effect.type]
     if (!record) return Promise.resolve()
+    const position = typeof effect.tileId === 'string'
+      ? tileCenters.get(effect.tileId) || null
+      : (
+          Number.isFinite(effect.logicalPosition?.x)
+          && Number.isFinite(effect.logicalPosition?.y)
+            ? { x: effect.logicalPosition.x, y: effect.logicalPosition.y }
+            : record.logicalPosition || null
+        )
+    if (typeof effect.tileId === 'string' && !position) return Promise.resolve()
     const token = generation
     const operation = loadOptional(record).then(texture => {
       if (!isCurrent(token) || !layers) return
@@ -633,6 +679,7 @@ export function createFarmSceneAdapter({ PIXI, container, manifest, onIntent, no
       }
       activeEffect = new PIXI.Sprite(texture)
       applyRecord(activeEffect, record)
+      if (position) activeEffect.position?.set(position.x, position.y)
       layers.effects.addChild(activeEffect)
     })
     return observed(operation)
@@ -644,6 +691,14 @@ export function createFarmSceneAdapter({ PIXI, container, manifest, onIntent, no
     generation += 1
     snapshotRevision += 1
     destroySceneObjects()
+    if (selectionHighlight && layers) {
+      try {
+        layers.interaction.removeChild?.(selectionHighlight)
+        selectionHighlight.destroy?.()
+      } catch {
+        // Selection cleanup must not block renderer teardown.
+      }
+    }
     if (activeEffect && layers) {
       try {
         layers.effects.removeChild(activeEffect)
@@ -664,7 +719,9 @@ export function createFarmSceneAdapter({ PIXI, container, manifest, onIntent, no
     layers = null
     currentSnapshot = null
     texturePromises.clear()
+    tileCenters.clear()
     activeEffect = null
+    selectionHighlight = null
     backgroundSprite = null
     fallbackTexture = null
   }
