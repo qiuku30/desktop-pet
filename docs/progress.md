@@ -579,4 +579,8 @@
 - ✅ 布局采用批准的方案 C：默认 scene-first；800×600 选中后场景缩窄并打开右栏；600×400 使用有界底部抽屉；loading 使用可信背景，关键失败依次降级为 static + 原生 4×4 网格、完整 DOM。原生镜像保留 AX/键盘能力，焦点、`aria-pressed` 与 Canvas 轮廓同步。
 - ✅ ARCH-11 两轮独立 gate 修正 `sceneRuntime=null` 的 `appendChild(null)`、重渲染后 observer 盯旧 slot、focusin 后焦点丢失、重复 Enter/Space 再次丢焦及迟到旧 observer entry 污染当前尺寸。最终场景定向 59/59、GUI 全仓 436/436、Electron Forge package、同 app.asar 20 次循环、五类输入、三级回退与迟到异步均通过。
 - ✅ Task 5 七个批准文件以 `c6b1204` 集成到本地 `main`；无新事件、IPC、依赖、持久化、业务 schema，未改变 FarmService/PetState、计时、事务、奖励或宠物动作语义。
-- ⏳ 后续候选：加工/订单界面换肤及其完成反馈、跨页图标和最终视觉复验；尚未立项，不属于本轮遗留缺陷。
+- ✅ 加工坊/订单板后续设计已获用户批准：机器英雄区 + 三槽生产轨道 + 配方架；连续木质订单板；800×600 三纸并排、600×400 单列滚动；18 类物品图标；低频四帧 spritesheet；DOM 继续承载语义和业务。
+- ✅ 正式设计以 `742b453` 提交；按独立 gate 拆分的 `farm-art-03` 美术计划与 `farm-visual-06` UI 计划以 `46bd9fc` 提交。
+- 🔄 用户已明确批准创建 `farm-art-03`；独立 Codex worktree 正在创建，仅授权 `src/renderer/assets/farm/bright-homestead/**`。收到动工报告并经 ARCH-11 明确确认前不得生成或修改素材。
+- ⏸ `farm-visual-06` 尚未创建，必须等待 `farm-art-03` 交付、ARCH-11 独立视觉/manifest gate、用户批准集成及基线提交完成。
+- ⏳ 跨页图标与最终视觉复验仍未立项，不属于当前实现范围。

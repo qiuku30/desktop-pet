@@ -94,7 +94,7 @@ Phase 1 宠物核心系统 + 番茄钟 + 2048 + 桌宠形象化 Phase 2 全部�
 
 ### 🔨 进行中
 
-当前没有已立项且未完成的实现窗口；ARCH-09 尚未分配具体任务。
+`farm-art-03` 已获用户批准并进入独立 Codex worktree 创建流程；范围仅为 Bright Homestead 加工坊、订单板、18 类物品图标、spritesheet、manifest 纯表现扩展和视觉审计。实现窗口必须先提交动工报告并等待 ARCH-11 明确确认。`farm-visual-06` 尚未创建，必须等待美术 gate 与集成完成。ARCH-09 尚未分配具体任务。
 
 ### ⏳ 待实现
 
@@ -102,7 +102,7 @@ Phase 1 宠物核心系统 + 番茄钟 + 2048 + 桌宠形象化 Phase 2 全部�
 |------|------|
 | 📝 英语单词 | spec 占位，待细化需求 |
 | 🌾 农场经营 | ✅ farm-01～06 与 farm-fix-01 均已验收、提交并推送 |
-| 🎨 农场视觉升级 | ✅ Task 1～5 已完成：完整资产、snapshot 驱动 Pixi 场景及正式农场 UI 接入；后续加工/订单换肤另行立项 |
+| 🎨 农场视觉升级 | ✅ Task 1～5 已完成；加工坊/订单板换肤设计与双计划已批准，`farm-art-03` 创建中，后续串行 `farm-visual-06` |
 | 活动监视 | 设计文档已完成，隐私敏感 |
 | 躲避光标 | 搁置，需主进程侧方案 |
 | 面板透明度设置 | 搁置，CSS 变量无法穿透 transparent:false 窗口 |
@@ -673,4 +673,4 @@ main 分支，67 commits 领先 origin/main（未推送）
 - `docs/superpowers/specs/2026-07-29-farm-visual-upgrade-design.md`
 - `docs/superpowers/plans/2026-07-29-farm-visual-upgrade.md`
 
-**当前状态**：设计已获用户批准，八任务实施计划已完成自查；`farm-art-01` 已完成 21 文件垂直样张，并经 ARCH-11 退回一次“运行时背景烘焙田块”结构返修后独立复验通过。当前美术包为约 4.0 MiB，包含无田运行时背景、独立土地、小麦四阶段、洒水器三级、奶油星团、效果/UI 样张及两档 review；资产、视觉升级设计、实施计划与首轮追踪记录已以 `dd24d1e` 纳入 `main` 并推送至 `origin/main`。`farm-visual-02` 已完成 Task 2 的纯 manifest 校验和不可变视觉快照合同；ARCH-11 经多轮安全/不可变性复验，修正输入反向冻结、URL 规范化绕过、显式/编码 scheme 及错误顺序后通过最终 gate，并以 `75cef09` 纳入 `main`。`farm-visual-03` 已完成 Task 3：精确引入 `pixi.js@8.19.0`，建立唯一 ESM runtime boundary、固定六层 Pixi 垂直样张、9 个 critical/5 个 optional 资源分类及 Pixi → 静态场景 + DOM → 既有 DOM 的三级回退。ARCH-11 多轮独立复验修正 app.asar 探针来源模型、素材根路径、初始化/销毁竞态、manifest 相对路径、init failure 回退、迟到 Promise、skinId 越界、效果累积、partial-init renderer 清理及 cleanup-error 回退；最终定向 43/43、全仓 GUI 393/393、Electron Forge 打包和同 app.asar 页面来源探针通过。Task 3 实现已以 `6e2cd1c` 集成到 `main`。`farm-art-02` 已完成 Task 4 全场景资产：五类土地、六作物四阶段、三建筑三级及工作叠层、奶油星团四帧待机、小鸟四帧、八类反馈和对象 fallback；62 条唯一运行时记录保留旧定位合同。ARCH-11 独立 gate 修正土地透明土芯、旧定位丢失、宠物帧缺失、候选母版包体及紫色键边缘后通过；完整目录约 11 MiB，以 `c3725bc` 集成到 `main`。`farm-visual-04` 已把完整 manifest 升级为 snapshot 驱动 Pixi 场景能力：严格 `4×4` 布局、五类对象工厂、键控 reconciliation、按需纹理加载、整体对象 fallback、工作叠层局部降级、稳定深度排序及完整竞态/清理保护。ARCH-11 集中 gate 修正越界网格、输入反向冻结、动画混入 fallback、错误锚点、overlay 木牌、cleanup 主因覆盖和效果销毁阻断；最终相关测试 70/70、GUI 全仓 419/419、同 app.asar 20 次生命周期、五类真实输入和迟到 Promise 均通过，以 `0d60c0b` 集成到本地 `main`。`farm-visual-05` 已以方案 C 将完整场景正式接入农场页，保留 Pixi → static → DOM 回退、原生键盘镜像与既有业务命令；两轮独立 gate 后场景定向 59/59、GUI 全仓 436/436、package 和同 app.asar 20 次循环/五类输入通过，以 `c6b1204` 集成到本地 `main`。Task 1～5 已完成；加工/订单换肤等后续任务尚未立项。上述本地视觉升级提交尚未 push。
+**当前状态**：设计已获用户批准，八任务实施计划已完成自查；`farm-art-01` 已完成 21 文件垂直样张，并经 ARCH-11 退回一次“运行时背景烘焙田块”结构返修后独立复验通过。当前美术包为约 4.0 MiB，包含无田运行时背景、独立土地、小麦四阶段、洒水器三级、奶油星团、效果/UI 样张及两档 review；资产、视觉升级设计、实施计划与首轮追踪记录已以 `dd24d1e` 纳入 `main` 并推送至 `origin/main`。`farm-visual-02` 已完成 Task 2 的纯 manifest 校验和不可变视觉快照合同；ARCH-11 经多轮安全/不可变性复验，修正输入反向冻结、URL 规范化绕过、显式/编码 scheme 及错误顺序后通过最终 gate，并以 `75cef09` 纳入 `main`。`farm-visual-03` 已完成 Task 3：精确引入 `pixi.js@8.19.0`，建立唯一 ESM runtime boundary、固定六层 Pixi 垂直样张、9 个 critical/5 个 optional 资源分类及 Pixi → 静态场景 + DOM → 既有 DOM 的三级回退。ARCH-11 多轮独立复验修正 app.asar 探针来源模型、素材根路径、初始化/销毁竞态、manifest 相对路径、init failure 回退、迟到 Promise、skinId 越界、效果累积、partial-init renderer 清理及 cleanup-error 回退；最终定向 43/43、全仓 GUI 393/393、Electron Forge 打包和同 app.asar 页面来源探针通过。Task 3 实现已以 `6e2cd1c` 集成到 `main`。`farm-art-02` 已完成 Task 4 全场景资产：五类土地、六作物四阶段、三建筑三级及工作叠层、奶油星团四帧待机、小鸟四帧、八类反馈和对象 fallback；62 条唯一运行时记录保留旧定位合同。ARCH-11 独立 gate 修正土地透明土芯、旧定位丢失、宠物帧缺失、候选母版包体及紫色键边缘后通过；完整目录约 11 MiB，以 `c3725bc` 集成到 `main`。`farm-visual-04` 已把完整 manifest 升级为 snapshot 驱动 Pixi 场景能力：严格 `4×4` 布局、五类对象工厂、键控 reconciliation、按需纹理加载、整体对象 fallback、工作叠层局部降级、稳定深度排序及完整竞态/清理保护。ARCH-11 集中 gate 修正越界网格、输入反向冻结、动画混入 fallback、错误锚点、overlay 木牌、cleanup 主因覆盖和效果销毁阻断；最终相关测试 70/70、GUI 全仓 419/419、同 app.asar 20 次生命周期、五类真实输入和迟到 Promise 均通过，以 `0d60c0b` 集成到本地 `main`。`farm-visual-05` 已以方案 C 将完整场景正式接入农场页，保留 Pixi → static → DOM 回退、原生键盘镜像与既有业务命令；两轮独立 gate 后场景定向 59/59、GUI 全仓 436/436、package 和同 app.asar 20 次循环/五类输入通过，以 `c6b1204` 集成到本地 `main`。Task 1～5 已完成。加工坊/订单板后续采用机器英雄区与连续木质订单板、600×400 纵向滚动、模块化 2D spritesheet；设计以 `742b453`、美术/UI 双计划以 `46bd9fc` 提交。用户已批准创建 `farm-art-03`，仅授权 `src/renderer/assets/farm/bright-homestead/**`，当前等待其 worktree 就绪和动工报告；`farm-visual-06` 必须串行等待美术 gate。上述本地视觉升级提交尚未 push。
