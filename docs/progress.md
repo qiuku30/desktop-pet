@@ -584,5 +584,7 @@
 - ✅ `farm-art-03` 完成 18 类物品图标、项目 fallback、工坊机器与四帧齿轮/蒸汽、五位配方架、三槽、连续订单板与订单状态资产；manifest 仅 additive 扩展 `ui`，36 个运行时资产共 2,670,064 bytes。
 - ✅ ARCH-11 首轮独立 gate 退回蓝莓式星露果、只有四位的配方架及审计证据不足；集中返修后星露果身份与成熟株一致，两档 review 五配方无重叠，专用白/黑/棋盘通过，旧三张全场景 alpha 哈希保持不变，两位只读 reviewer 均 Ready。
 - ✅ `farm-art-03` 以 `92ce4a1` 集成到本地 `main`；集成后沙箱内 435/436（唯一 Electron `SIGABRT`），GUI 权限全仓 436/436。无生产 JS/CSS、事件、IPC、依赖、持久化或业务 schema 改动，尚未 push。
-- 🔄 用户已明确批准创建 `farm-visual-06`；独立 Codex worktree 已从 `185fd0e` 基线启动，仅授权 UI 计划列出的 12 个 farm UI/测试/CSS 文件。当前等待动工报告与 ARCH-11 明确放行，收到确认前不得编码。
+- ✅ `farm-visual-06` 完成加工坊机器英雄区、三槽生产轨道、五位配方架、连续订单板、18 类真实图标、纯 UI catalog、安全 URL、四帧 CSS 动效、一次性反馈、文本/项目资源回退与两档纵向响应式；无事件、IPC、依赖、持久化、业务 schema 或 FarmService/PetState 语义改动。
+- ✅ ARCH-11 多轮独立 gate 修正 file authority/编码路径绕过、反馈绘制前消失与长期残留、同步 `loadUiSkin` 异常、CSS fallback shorthand、四帧定位、旧两列/多重滚动级联、浅纸面正文与缺料色对比度；最终 Chromium 30/30、GUI 全仓 455/455、主线隔离 darwin/arm64 Forge package、语法与 `git diff --check` 通过。
+- ✅ 精确 12 个批准文件已以 `01acf67` 集成到本地 `main`；既有 `MODULE_TYPELESS_PACKAGE_JSON` warning 保留，未 push。
 - ⏳ 跨页图标与最终视觉复验仍未立项，不属于当前实现范围。
