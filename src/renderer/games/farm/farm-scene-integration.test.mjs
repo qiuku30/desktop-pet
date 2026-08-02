@@ -198,6 +198,30 @@ test('production scene runtime handles fetch and trusted static background bound
   assert.equal(await unavailable, false)
 })
 
+test('production runtime shares one manifest request with immutable UI skin loading', async () => {
+  const manifest = JSON.parse(await readFile(new URL('../../assets/farm/bright-homestead/farm.json', import.meta.url), 'utf8'))
+  let fetchCalls = 0
+  const runtime = createFarmSceneRuntime({
+    fetchFn: async () => {
+      fetchCalls += 1
+      return { ok: true, json: async () => manifest }
+    },
+    ImageClass: null,
+    ResizeObserverClass: null,
+    matchMediaFn: null,
+  })
+  const [loaded, skin, again] = await Promise.all([
+    runtime.fetchJson(runtime.manifestUrl),
+    runtime.loadUiSkin(),
+    runtime.loadUiSkin(),
+  ])
+  assert.equal(loaded, manifest)
+  assert.equal(fetchCalls, 1)
+  assert.equal(skin, again)
+  assert.equal(Object.isFrozen(skin.catalog), true)
+  assert.match(skin.catalog.itemIcons['crop:wheat'].src, /crop-wheat\.webp$/)
+})
+
 test('repeated production runtime factories do not touch PetState or DOM', () => {
   const beforeDocument = globalThis.document
   const first = createFarmSceneRuntime({
@@ -679,4 +703,16 @@ test('scene-first CSS defines wide panel, narrow drawer and accessible fallback 
   assert.match(css, /\.farm-scene--loading\s+\.farm-grid--mirror[\s\S]*clip-path:\s*inset\(50%\)/)
   assert.match(css, /\.farm-scene--static\s+\.farm-grid--mirror[\s\S]*clip-path:\s*none/)
   assert.match(css, /@media[\s\S]*\.farm-workspace--panel-open\s+\.farm-actions\s*\{[^}]*position:\s*absolute/s)
+})
+
+test('farm controller owns guarded UI skin, bounded feedback and motion propagation contracts', async () => {
+  const source = await readFile(new URL('./farm-ui.js', import.meta.url), 'utf8')
+  assert.match(source, /sceneRuntime\?\.loadUiSkin\?\.\(\)/)
+  assert.match(source, /pendingUiFeedback/)
+  assert.match(source, /consumeUiFeedback/)
+  assert.match(source, /FARM_PROCESSING_COMPLETED/)
+  assert.match(source, /FARM_ORDER_COMPLETED/)
+  assert.match(source, /uiEffectType/)
+  assert.doesNotMatch(source, /completeOrder\(\{ slotIndex \}\)\), null, 'order-complete'/)
+  assert.match(source, /\.farm-workshop-view, \.farm-orders-board/)
 })

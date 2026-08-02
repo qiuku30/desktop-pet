@@ -414,6 +414,8 @@ export function mountFarm(container, {
   now = () => new Date().toISOString(),
   setIntervalFn = setInterval,
   clearIntervalFn = clearInterval,
+  setTimeoutFn = setTimeout,
+  clearTimeoutFn = clearTimeout,
   createBirdSchedulerFn = createBirdScheduler,
   documentRef = globalThis.document,
   sceneRuntime = null,
@@ -441,6 +443,10 @@ export function mountFarm(container, {
   let observedSceneSlot = null
   let restoringTileFocus = false
   let reducedMotion = sceneRuntime?.reducedMotionMedia?.matches === true
+  let uiSkin = Object.freeze({})
+  let uiSkinPromise = null
+  let nextUiFeedbackId = 1
+  let pendingUiFeedback = null
   const sceneHost = sceneRuntime ? documentRef?.createElement?.('div') : null
   sceneHost?.classList?.add?.('farm-scene-host')
 
@@ -523,6 +529,15 @@ export function mountFarm(container, {
       requestSettlement,
       setIntervalFn,
       clearIntervalFn,
+      setTimeoutFn,
+      clearTimeoutFn,
+      uiSkin,
+      reducedMotion,
+      hidden: documentRef?.hidden === true,
+      uiFeedback: pendingUiFeedback,
+      consumeUiFeedback(id) {
+        if (pendingUiFeedback?.id === id) pendingUiFeedback = null
+      },
     }
     if (activeTab === 'processing') {
       activeTabCleanup = renderProcessingTab(
@@ -531,7 +546,7 @@ export function mountFarm(container, {
         {
           ...childActions,
           boundaryTracker: processingBoundaries,
-          onEnqueue: recipeId => execute(() => service.enqueue({ recipeId })),
+          onEnqueue: recipeId => execute(() => service.enqueue({ recipeId }), null, 'enqueue'),
           onCancel: taskId => confirmCancelProcessing(taskId),
         },
       )
@@ -554,7 +569,7 @@ export function mountFarm(container, {
     void Promise.resolve(sceneController.playEffect?.(effect)).catch(() => {})
   }
 
-  const execute = async (command, effect = null) => {
+  const execute = async (command, effect = null, uiEffectType = null) => {
     if (disposed || mutationBusy) return
     mutationBusy = true
     const callGeneration = generation
@@ -568,7 +583,10 @@ export function mountFarm(container, {
       feedback = result.ok
         ? (result.uiSuccessMessage || '操作成功')
         : (ERROR_MESSAGES[result.error] || '操作失败，请重试。')
-      if (result.ok) playSceneEffect(effect)
+      if (result.ok) {
+        playSceneEffect(effect)
+        if (uiEffectType) pendingUiFeedback = { id: nextUiFeedbackId++, type: uiEffectType }
+      }
     } catch (error) {
       if (!disposed && callGeneration === generation) {
         console.error('[Farm UI] mutation failed:', error)
@@ -583,7 +601,7 @@ export function mountFarm(container, {
     }
   }
 
-  const confirmThen = async (options, command, effect = null) => {
+  const confirmThen = async (options, command, effect = null, uiEffectType = null) => {
     const callGeneration = generation
     const callTabGeneration = tabGeneration
     const result = await showOverlay({
@@ -595,7 +613,7 @@ export function mountFarm(container, {
     })
     if (disposed || callGeneration !== generation || callTabGeneration !== tabGeneration
         || result !== 'confirm') return
-    await execute(command, effect)
+    await execute(command, effect, uiEffectType)
   }
 
   function requestSettlement() {
@@ -653,7 +671,7 @@ export function mountFarm(container, {
       title: '放弃订单',
       bodyHtml: `订单需求：${details}。放弃后本槽进入 30 分钟冷却，期间无订单。`,
       confirmLabel: '确认放弃',
-    }, () => service.abandonOrder({ slotIndex }))
+    }, () => service.abandonOrder({ slotIndex }), null, 'order-abandon')
   }
 
   function changeTab(nextTab) {
@@ -663,6 +681,7 @@ export function mountFarm(container, {
     selectedTileId = null
     mode = null
     feedback = ''
+    pendingUiFeedback = null
     render()
   }
 
@@ -867,6 +886,16 @@ export function mountFarm(container, {
   }
   container.addEventListener('focusin', onFocusIn)
   const unsubscribeFarm = eventBus?.on?.(EVENTS.FARM_STATE_CHANGED, () => render()) || (() => {})
+  const unsubscribeProcessingComplete = eventBus?.on?.(EVENTS.FARM_PROCESSING_COMPLETED, () => {
+    if (activeTab !== 'processing' || disposed) return
+    pendingUiFeedback = { id: nextUiFeedbackId++, type: 'processing-complete' }
+    render()
+  }) || (() => {})
+  const unsubscribeOrderComplete = eventBus?.on?.(EVENTS.FARM_ORDER_COMPLETED, () => {
+    if (activeTab !== 'orders' || disposed) return
+    pendingUiFeedback = { id: nextUiFeedbackId++, type: 'order-complete' }
+    render()
+  }) || (() => {})
   const unsubscribePet = petState.subscribe(EVENTS.PET_STATE_CHANGED, ({ key }) => {
     if (['farm', 'inventory', 'coins', 'level'].includes(key)) render()
   })
@@ -904,6 +933,9 @@ export function mountFarm(container, {
   const onVisibilityChange = () => {
     birdScheduler?.setVisible(!documentRef.hidden, { dailyCount: birdDailyCount() })
     sceneController?.setPaused?.(activeTab !== 'field' || documentRef.hidden === true)
+    const motionRoot = container.querySelector?.('.farm-workshop-view, .farm-orders-board')
+    motionRoot?.setAttribute?.('data-motion-paused', String(documentRef.hidden || reducedMotion))
+    motionRoot?.setAttribute?.('data-hidden', String(documentRef.hidden === true))
   }
   const onReducedMotionChange = event => {
     reducedMotion = event.matches === true
@@ -917,6 +949,21 @@ export function mountFarm(container, {
   }
   birdScheduler?.start({ dailyCount: birdDailyCount() })
   render()
+
+  const uiLoadGeneration = generation
+  uiSkinPromise = Promise.resolve()
+    .then(() => sceneRuntime?.loadUiSkin?.())
+    .then(result => {
+      if (disposed || uiLoadGeneration !== generation || !result?.catalog) return
+      uiSkin = result.catalog
+      render()
+    })
+    .catch(() => {
+      if (disposed || uiLoadGeneration !== generation) return
+      uiSkin = Object.freeze({})
+      render()
+    })
+  void uiSkinPromise
 
   if (sceneRuntime && sceneHost) {
     const loadGeneration = generation
@@ -989,6 +1036,8 @@ export function mountFarm(container, {
     container.removeEventListener('click', onClick)
     container.removeEventListener('focusin', onFocusIn)
     unsubscribeFarm()
+    unsubscribeProcessingComplete()
+    unsubscribeOrderComplete()
     unsubscribePet()
     documentRef?.removeEventListener?.('visibilitychange', onVisibilityChange)
     sceneRuntime?.reducedMotionMedia?.removeEventListener?.('change', onReducedMotionChange)

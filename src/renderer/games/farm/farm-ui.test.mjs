@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -20,6 +20,8 @@ import { FARM_CONFIG } from './farm-config.mjs'
 
 const NOW = '2026-07-26T08:00:00.000Z'
 const FARM_CSS_PATH = fileURLToPath(new URL('./farm.css', import.meta.url))
+const FARM_WORKSHOP_CSS_PATH = fileURLToPath(new URL('./farm-workshop.css', import.meta.url))
+const FARM_ORDERS_CSS_PATH = fileURLToPath(new URL('./farm-orders.css', import.meta.url))
 
 async function measureFarmLayouts() {
   const tempRoot = await mkdtemp(path.join(tmpdir(), 'desktop-pet-farm-layout-'))
@@ -41,8 +43,8 @@ const fieldMarkup = selected => \`
     <aside class="farm-actions"><div class="farm-action-title">田地操作</div></aside>
   </div>\`
 const childMarkup = {
-  processing: '<div class="farm-processing-view"><div class="farm-processing-recipes"><article class="farm-recipe-card">配方</article></div><aside class="farm-processing-queue">队列</aside></div>',
-  orders: '<div class="farm-orders-view"><article class="farm-order-card">订单一</article><article class="farm-order-card">订单二</article><article class="farm-order-card">订单三</article></div>',
+  processing: '<div class="farm-workshop-view farm-processing-view"><section class="farm-workshop-hero">加工机器</section><aside class="farm-workshop-track farm-processing-queue"><h2>加工队列</h2><div class="farm-workshop-slots">' + Array.from({ length: 3 }, (_, index) => '<article class="farm-workshop-slot farm-queue-slot"><div>槽位' + (index + 1) + '</div><small>材料详情</small><button>操作</button></article>').join('') + '</div></aside><section class="farm-workshop-shelf farm-processing-recipes">' + Array.from({ length: 5 }, (_, index) => '<article class="farm-workshop-recipe"><div class="farm-card-title">配方' + (index + 1) + '</div><div class="farm-material-list"><span class="farm-material--missing">材料不足</span></div><div class="farm-card-footer"><small>耗时</small><button>加入队列</button></div></article>').join('') + '</section></div>',
+  orders: '<div class="farm-orders-board farm-orders-view">' + Array.from({ length: 3 }, (_, index) => index === 2 ? '<article class="farm-orders-paper farm-order-card--cooldown"><div class="farm-card-title">订单3</div><div class="farm-order-cooldown">冷却中</div><div class="farm-card-footer"><button>刷新</button></div></article>' : '<article class="farm-orders-paper"><div class="farm-card-title">订单' + (index + 1) + '</div><ul class="farm-order-requirements"><li>普通材料</li><li class="farm-material--missing">材料不足</li></ul><div class="farm-order-rewards">奖励</div><div class="farm-card-footer"><button>完整交付</button></div></article>').join('') + '</div>',
 }
 const rect = element => {
   const value = element.getBoundingClientRect()
@@ -64,7 +66,7 @@ async function loadCase(win, css, markup) {
 
 async function main() {
   await app.whenReady()
-  const css = await readFile(process.env.FARM_LAYOUT_CSS, 'utf8')
+  const css = (await Promise.all(JSON.parse(process.env.FARM_LAYOUT_CSS_PATHS).map(file => readFile(file, 'utf8')))).join('\\n')
   const win = new BrowserWindow({ show: false, useContentSize: true, webPreferences: { sandbox: true } })
   const results = {}
   for (const [width, height] of [[800, 600], [600, 400]]) {
@@ -97,6 +99,14 @@ async function main() {
       results[\`\${width}x\${height}\`][name] = await win.webContents.executeJavaScript(\`(() => {
         const content = document.querySelector('.farm-tab-content')
         const child = content.firstElementChild
+        const buttons = [...child.querySelectorAll('button')]
+        buttons.at(-1)?.focus()
+        const childRect = child.getBoundingClientRect()
+        const focusedRect = document.activeElement?.getBoundingClientRect()
+        const hero = child.querySelector('.farm-workshop-hero')
+        const track = child.querySelector('.farm-workshop-track')
+        const shelf = child.querySelector('.farm-workshop-shelf')
+        const colorOf = selector => getComputedStyle(child.querySelector(selector)).color
         return {
           content: (\${rect.toString()})(content),
           child: (\${rect.toString()})(child),
@@ -104,8 +114,36 @@ async function main() {
           contentClientWidth: content.clientWidth,
           childScrollWidth: child.scrollWidth,
           childClientWidth: child.clientWidth,
+          childScrollHeight: child.scrollHeight,
+          childClientHeight: child.clientHeight,
+          slotCount: child.querySelectorAll('.farm-workshop-slot').length,
+          recipeCount: child.querySelectorAll('.farm-workshop-recipe').length,
+          orderCount: child.querySelectorAll('.farm-orders-paper').length,
+          shelfColumns: child.querySelector('.farm-workshop-shelf') ? getComputedStyle(child.querySelector('.farm-workshop-shelf')).gridTemplateColumns.split(' ').length : null,
+          orderColumns: child.matches('.farm-orders-board') ? getComputedStyle(child).gridTemplateColumns.split(' ').length : null,
+          fallbackColor: getComputedStyle(child.matches('.farm-orders-board') ? child : child.querySelector('.farm-workshop-hero')).backgroundColor,
+          focusInsideHorizontal: focusedRect ? focusedRect.left - 3 >= childRect.left && focusedRect.right + 3 <= childRect.right : false,
+          rootColumns: getComputedStyle(child).gridTemplateColumns,
+          rootOverflowX: getComputedStyle(child).overflowX,
+          rootOverflowY: getComputedStyle(child).overflowY,
+          heroRect: hero ? (\${rect.toString()})(hero) : null,
+          trackRect: track ? (\${rect.toString()})(track) : null,
+          shelfRect: shelf ? (\${rect.toString()})(shelf) : null,
+          trackOverflowY: track ? getComputedStyle(track).overflowY : null,
+          shelfOverflowY: shelf ? getComputedStyle(shelf).overflowY : null,
+          titleColor: colorOf('.farm-card-title'),
+          detailColor: colorOf(child.matches('.farm-orders-board') ? '.farm-order-requirements li:not(.farm-material--missing)' : '.farm-material-list'),
+          footerColor: colorOf('.farm-card-footer'),
+          slotTitleColor: hero ? colorOf('.farm-workshop-slot > div') : null,
+          slotDetailColor: hero ? colorOf('.farm-workshop-slot > small') : null,
+          cooldownColor: child.matches('.farm-orders-board') ? colorOf('.farm-order-cooldown') : null,
+          trackBackground: track ? getComputedStyle(track).backgroundColor : null,
+          trackHeadingColor: track ? colorOf('.farm-workshop-track h2') : null,
+          missingColor: colorOf('.farm-material--missing'),
+          missingBackground: getComputedStyle(child.querySelector(child.matches('.farm-orders-board') ? '.farm-orders-paper' : '.farm-workshop-recipe')).backgroundColor,
         }
       })()\`)
+      results[\`\${width}x\${height}\`][name].screenshotBytes = (await win.webContents.capturePage()).toPNG().byteLength
     }
   }
   process.stdout.write('FARM_LAYOUT_RESULT:' + JSON.stringify(results) + '\\n')
@@ -127,7 +165,7 @@ main().catch(error => {
       child = spawn(electronPath, [entryPath], {
         env: {
           ...process.env,
-          FARM_LAYOUT_CSS: FARM_CSS_PATH,
+          FARM_LAYOUT_CSS_PATHS: JSON.stringify([FARM_CSS_PATH, FARM_WORKSHOP_CSS_PATH, FARM_ORDERS_CSS_PATH]),
           FARM_LAYOUT_USER_DATA: userDataPath,
         },
         stdio: ['ignore', 'pipe', 'pipe'],
@@ -169,6 +207,15 @@ test('farm tabs preserve responsive layout contracts in Chromium', { timeout: 35
   const layouts = await measureFarmLayouts()
   if (process.env.FARM_LAYOUT_DIAGNOSTICS === '1') t.diagnostic(JSON.stringify(layouts))
   const epsilon = 1
+  const contrast = (foreground, background) => {
+    const luminance = color => {
+      const channels = color.match(/\d+/g).slice(0, 3).map(value => Number(value) / 255)
+        .map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
+      return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+    }
+    const values = [luminance(foreground), luminance(background)].sort((a, b) => b - a)
+    return (values[0] + 0.05) / (values[1] + 0.05)
+  }
 
   for (const viewport of ['800x600', '600x400']) {
     const layout = layouts[viewport]
@@ -199,6 +246,40 @@ test('farm tabs preserve responsive layout contracts in Chromium', { timeout: 35
       assert.ok(child.child.bottom <= child.content.bottom + epsilon, `${viewport} ${childName}: child must fit content height`)
       assert.ok(child.contentScrollWidth <= child.contentClientWidth, `${viewport} ${childName}: content must not overflow horizontally`)
       assert.ok(child.childScrollWidth <= child.childClientWidth, `${viewport} ${childName}: child must not be horizontally clipped`)
+      assert.equal(child.focusInsideHorizontal, true, `${viewport} ${childName}: focus ring must not be clipped horizontally`)
+      assert.notEqual(child.fallbackColor, 'rgba(0, 0, 0, 0)', `${viewport} ${childName}: fallback surface must remain opaque`)
+      assert.ok(child.screenshotBytes > 0, `${viewport} ${childName}: Chromium screenshot must be non-empty`)
+    }
+    assert.equal(layout.processing.slotTitleColor, 'rgb(75, 46, 32)')
+    assert.equal(layout.processing.slotDetailColor, 'rgb(75, 46, 32)')
+    assert.equal(layout.processing.trackHeadingColor, 'rgb(75, 46, 32)')
+    assert.equal(layout.processing.trackBackground, 'rgb(243, 217, 164)')
+    assert.equal(layout.orders.cooldownColor, 'rgb(75, 46, 32)')
+    for (const childName of ['processing', 'orders']) {
+      assert.equal(layout[childName].missingColor, 'rgb(163, 63, 63)')
+      assert.ok(contrast(layout[childName].missingColor, layout[childName].missingBackground) >= 4.5,
+        `${viewport} ${childName}: missing material contrast`)
+    }
+    assert.equal(layout.processing.slotCount, 3)
+    assert.equal(layout.processing.recipeCount, 5)
+    assert.equal(layout.orders.orderCount, 3)
+    assert.equal(layout.processing.shelfColumns, viewport === '800x600' ? 5 : 1)
+    assert.equal(layout.orders.orderColumns, viewport === '800x600' ? 3 : 1)
+    assert.equal(layout.processing.rootColumns.split(' ').length, 1, `${viewport}: workshop root is one column`)
+    assert.ok(layout.processing.heroRect.bottom <= layout.processing.trackRect.top, `${viewport}: hero precedes track`)
+    assert.ok(layout.processing.trackRect.bottom <= layout.processing.shelfRect.top, `${viewport}: track precedes shelf`)
+    assert.equal(layout.processing.rootOverflowX, 'hidden')
+    assert.equal(layout.processing.rootOverflowY, 'auto')
+    assert.equal(layout.processing.trackOverflowY, 'visible')
+    assert.equal(layout.processing.shelfOverflowY, 'visible')
+    for (const childName of ['processing', 'orders']) {
+      for (const key of ['titleColor', 'detailColor', 'footerColor']) {
+        assert.equal(layout[childName][key], 'rgb(75, 46, 32)', `${viewport} ${childName}: ${key}`)
+      }
+    }
+    if (viewport === '600x400') {
+      assert.ok(layout.processing.childScrollHeight > layout.processing.childClientHeight, '600x400: workshop must scroll vertically')
+      assert.ok(layout.orders.childScrollHeight > layout.orders.childClientHeight, '600x400: orders must scroll vertically')
     }
   }
 })
@@ -1005,4 +1086,169 @@ test('processing cancellation and order abandonment confirmations show escaped e
   await new Promise(resolve => setImmediate(resolve))
   assert.equal(harness.calls.some(([name]) => name === 'abandonOrder'), false)
   harness.cleanup()
+})
+
+test('controller keeps UI catalog and feedback visual-only and generation guarded', async () => {
+  const source = await readFile(new URL('./farm-ui.js', import.meta.url), 'utf8')
+  assert.match(source, /uiSkinPromise/)
+  assert.match(source, /uiLoadGeneration !== generation/)
+  assert.match(source, /pendingUiFeedback\?\.id === id/)
+  assert.match(source, /activeTab !== 'processing'/)
+  assert.match(source, /activeTab !== 'orders'/)
+  assert.doesNotMatch(source, /petState\.(?:set|setMany)\(/)
+})
+
+test('synchronous UI skin loader failure stays inside fallback lifecycle and returns cleanup', async () => {
+  const farm = createDefaultFarmState(NOW, () => 0.5)
+  const child = { innerHTML: '', addEventListener() {}, removeEventListener() {} }
+  let clickHandler = null
+  let removed = 0
+  let cleared = 0
+  const host = { classList: { add() {} }, remove() {} }
+  const container = {
+    className: '', innerHTML: '',
+    addEventListener(type, handler) { if (type === 'click') clickHandler = handler },
+    removeEventListener() { removed += 1 },
+    querySelector(selector) { return selector === '.farm-tab-content' ? child : null },
+  }
+  let cleanup
+  assert.doesNotThrow(() => {
+    cleanup = mountFarm(container, {
+      service: { settle: async () => ({ ok: true }) },
+      petState: {
+        get(key) { return structuredClone({ farm, inventory: {}, coins: 0, level: 1 }[key]) },
+        subscribe() { return () => { removed += 1 } },
+      },
+      eventBus: { on() { return () => { removed += 1 } } },
+      documentRef: { createElement() { return host } },
+      sceneRuntime: {
+        loadUiSkin() { throw new Error('synchronous skin failure') },
+        loadScene: async () => ({ mode: 'dom' }),
+      },
+      setIntervalFn: () => 1,
+      clearIntervalFn() { cleared += 1 },
+      closeOverlay() {},
+    })
+  })
+  await new Promise(resolve => setImmediate(resolve))
+  clickHandler({ target: { closest(selector) {
+    return selector === '[data-farm-tab]' ? { dataset: { farmTab: 'processing' } } : null
+  } } })
+  assert.match(child.innerHTML, /加工机器/)
+  assert.doesNotMatch(child.innerHTML, /<img class="farm-workshop-visual"/)
+  cleanup()
+  cleanup()
+  assert.ok(removed >= 6)
+  assert.equal(cleared >= 2, true)
+})
+
+test('order completion emitted inside mutation survives final render for one bounded visual period', async () => {
+  const farm = createDefaultFarmState(NOW, () => 0.5)
+  farm.orders.slots[0] = {
+    order: {
+      id: 'order:gate', requirements: { 'crop:wheat': 1 },
+      rewards: { coins: 2, farmExp: 1, seedReward: null }, createdAt: NOW,
+    },
+    regenerateAt: null,
+  }
+  const listeners = new Map()
+  const eventBus = {
+    on(type, handler) { listeners.set(type, handler); return () => listeners.delete(type) },
+  }
+  let clickHandler = null
+  let childClickHandler = null
+  const child = {
+    innerHTML: '',
+    addEventListener(type, handler) { if (type === 'click') childClickHandler = handler },
+    removeEventListener(type, handler) { if (type === 'click' && childClickHandler === handler) childClickHandler = null },
+  }
+  const container = {
+    className: '', innerHTML: '',
+    addEventListener(type, handler) { if (type === 'click') clickHandler = handler },
+    removeEventListener() {},
+    querySelector(selector) { return selector === '.farm-tab-content' ? child : null },
+  }
+  const visualTimers = new Map()
+  let nextTimer = 1
+  const cleanup = mountFarm(container, {
+    service: {
+      settle: async () => ({ ok: true }),
+      completeOrder: async () => {
+        listeners.get('farm:order:completed')?.()
+        listeners.get('farm:state:changed')?.()
+        return { ok: true }
+      },
+    },
+    petState: {
+      get(key) { return structuredClone({ farm, inventory: { 'crop:wheat': 1 }, coins: 0, level: 1 }[key]) },
+      subscribe() { return () => {} },
+    },
+    eventBus,
+    documentRef: null,
+    setIntervalFn: () => 1,
+    clearIntervalFn() {},
+    setTimeoutFn(callback) { const id = nextTimer++; visualTimers.set(id, callback); return id },
+    clearTimeoutFn(id) { visualTimers.delete(id) },
+    closeOverlay() {},
+  })
+  clickHandler({ target: { closest: selector => selector === '[data-farm-tab]' ? { dataset: { farmTab: 'orders' } } : null } })
+  childClickHandler({ target: { closest: selector => selector === '[data-action]'
+    ? { dataset: { action: 'complete-order', slotIndex: '0' }, disabled: false } : null } })
+  await new Promise(resolve => setImmediate(resolve))
+  assert.match(child.innerHTML, /farm-orders-board--order-complete/)
+  assert.equal(visualTimers.size, 1)
+  ;[...visualTimers.values()][0]()
+  assert.doesNotMatch(child.innerHTML, /farm-orders-board--order-complete/)
+  cleanup()
+  assert.equal(visualTimers.size, 0)
+})
+
+test('processing completion emitted inside settlement survives settlement-final render then expires', async () => {
+  const farm = createDefaultFarmState(NOW, () => 0.5)
+  const listeners = new Map()
+  let clickHandler = null
+  let childClickHandler = null
+  const child = {
+    innerHTML: '',
+    addEventListener(type, handler) { if (type === 'click') childClickHandler = handler },
+    removeEventListener(type, handler) { if (type === 'click' && childClickHandler === handler) childClickHandler = null },
+  }
+  const container = {
+    className: '', innerHTML: '',
+    addEventListener(type, handler) { if (type === 'click') clickHandler = handler },
+    removeEventListener() {},
+    querySelector(selector) { return selector === '.farm-tab-content' ? child : null },
+  }
+  const intervals = []
+  const visualTimers = new Map()
+  let nextTimer = 1
+  const cleanup = mountFarm(container, {
+    service: {
+      settle: async () => {
+        listeners.get('farm:processing:completed')?.()
+        listeners.get('farm:state:changed')?.()
+        return { ok: true }
+      },
+    },
+    petState: {
+      get(key) { return structuredClone({ farm, inventory: {}, coins: 0, level: 1 }[key]) },
+      subscribe() { return () => {} },
+    },
+    eventBus: { on(type, handler) { listeners.set(type, handler); return () => listeners.delete(type) } },
+    documentRef: null,
+    setIntervalFn(callback, delay) { intervals.push({ callback, delay }); return intervals.length },
+    clearIntervalFn() {},
+    setTimeoutFn(callback) { const id = nextTimer++; visualTimers.set(id, callback); return id },
+    clearTimeoutFn(id) { visualTimers.delete(id) },
+    closeOverlay() {},
+  })
+  clickHandler({ target: { closest: selector => selector === '[data-farm-tab]' ? { dataset: { farmTab: 'processing' } } : null } })
+  intervals.find(entry => entry.delay === 30_000).callback()
+  await new Promise(resolve => setImmediate(resolve))
+  assert.match(child.innerHTML, /farm-workshop-view--processing-complete/)
+  assert.equal(visualTimers.size, 1)
+  ;[...visualTimers.values()][0]()
+  assert.doesNotMatch(child.innerHTML, /farm-workshop-view--processing-complete/)
+  cleanup()
+  assert.equal(visualTimers.size, 0)
 })

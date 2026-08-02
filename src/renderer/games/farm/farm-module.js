@@ -5,16 +5,23 @@ import { mountFarm } from './farm-ui.js'
 import { createFarmSceneAdapter } from './farm-scene-adapter.js'
 import { loadFarmScene } from './farm-scene-loader.js'
 import { createFarmSceneStatic } from './farm-scene-static.js'
+import { buildFarmUiSkin } from './farm-ui-skin.mjs'
 
-const STYLE_ID = 'farm-module-style'
+const STYLES = Object.freeze([
+  ['farm-module-style', './farm.css'],
+  ['farm-workshop-style', './farm-workshop.css'],
+  ['farm-orders-style', './farm-orders.css'],
+])
 
 function ensureStyle() {
-  if (document.getElementById(STYLE_ID)) return
-  const link = document.createElement('link')
-  link.id = STYLE_ID
-  link.rel = 'stylesheet'
-  link.href = new URL('./farm.css', import.meta.url).href
-  document.head.appendChild(link)
+  for (const [id, path] of STYLES) {
+    if (document.getElementById(id)) continue
+    const link = document.createElement('link')
+    link.id = id
+    link.rel = 'stylesheet'
+    link.href = new URL(path, import.meta.url).href
+    document.head.appendChild(link)
+  }
 }
 
 export function createFarmSceneRuntime({
@@ -31,18 +38,30 @@ export function createFarmSceneRuntime({
     '../../assets/farm/bright-homestead/background/base.webp',
     import.meta.url,
   ).href
+  const jsonCache = new Map()
+  let uiSkinPromise = null
+  const fetchJson = url => {
+    if (!jsonCache.has(url)) {
+      jsonCache.set(url, Promise.resolve().then(async () => {
+        const response = await fetchFn(url)
+        if (!response || (response.ok === false && response.status !== 0)) {
+          throw new Error(`FARM_SCENE_MANIFEST_HTTP_${response?.status ?? 'FAILED'}`)
+        }
+        return response.json()
+      }))
+    }
+    return jsonCache.get(url)
+  }
   return Object.freeze({
     manifestUrl,
     trustedBackgroundSrc,
     loadScene: loadFarmScene,
     createAdapter: createFarmSceneAdapter,
     createStatic: createFarmSceneStatic,
-    fetchJson: async url => {
-      const response = await fetchFn(url)
-      if (!response || (response.ok === false && response.status !== 0)) {
-        throw new Error(`FARM_SCENE_MANIFEST_HTTP_${response?.status ?? 'FAILED'}`)
-      }
-      return response.json()
+    fetchJson,
+    loadUiSkin: () => {
+      uiSkinPromise ||= fetchJson(manifestUrl).then(manifest => buildFarmUiSkin(manifest, manifestUrl))
+      return uiSkinPromise
     },
     staticAvailable: ({ backgroundSrc }) => new Promise(resolve => {
       if (!ImageClass || backgroundSrc !== trustedBackgroundSrc) {

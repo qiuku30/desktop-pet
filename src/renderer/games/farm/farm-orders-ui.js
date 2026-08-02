@@ -55,28 +55,39 @@ export function buildOrdersViewModel(snapshot, now) {
   return { slots, now }
 }
 
-export function renderOrdersHtml(vm, { busy = false } = {}) {
+const itemIcon = (entry, uiSkin) => {
+  const src = uiSkin?.itemIcons?.[entry.id]?.src || uiSkin?.itemFallback?.src
+  return src ? `<img class="farm-orders-item-icon" src="${escapeHtml(src)}"${uiSkin?.itemFallback?.src ? ` data-fallback-src="${escapeHtml(uiSkin.itemFallback.src)}"` : ''} alt="">` : ''
+}
+
+export function renderOrdersHtml(vm, { busy = false, uiSkin, reducedMotion = false, hidden = false, uiFeedback = null } = {}) {
   const cards = vm.slots.map(slot => {
     if (!slot.order) {
       const status = slot.regenerateAt
         ? `冷却中 ${formatDuration(slot.remainingMs)}`
         : '等待生成'
-      return `<article class="farm-order-card farm-order-card--cooldown">
+      const paper = uiSkin?.orders?.cooldownPaper?.src
+      return `<article class="farm-orders-paper farm-order-card farm-order-card--cooldown" data-order-state="${slot.regenerateAt ? 'cooldown' : 'waiting'}"${paper ? ` style="--farm-orders-paper-image:url('${escapeHtml(paper)}')"` : ''}>
         <div class="farm-card-title">订单槽 ${slot.index + 1}</div>
         <div class="farm-order-cooldown" data-order-countdown="${slot.index}">${status}</div>
       </article>`
     }
     const requirements = slot.requirements.map(entry =>
       `<li class="${entry.owned >= entry.required ? '' : 'farm-material--missing'}">
-        <span>${entry.emoji} ${escapeHtml(entry.name)}</span><strong>${entry.owned} / ${entry.required}</strong>
+        <span>${itemIcon(entry, uiSkin)} ${escapeHtml(entry.name)}</span><strong>${entry.owned} / ${entry.required}</strong>
       </li>`).join('')
     const seed = slot.rewards.seedReward
-      ? `　${ITEMS[slot.rewards.seedReward.itemId]?.emoji || '🌱'} ${escapeHtml(ITEMS[slot.rewards.seedReward.itemId]?.name || slot.rewards.seedReward.itemId)} ×${slot.rewards.seedReward.count}`
+      ? `　${itemIcon({ id: slot.rewards.seedReward.itemId }, uiSkin)} ${escapeHtml(ITEMS[slot.rewards.seedReward.itemId]?.name || slot.rewards.seedReward.itemId)} ×${slot.rewards.seedReward.count}`
       : ''
-    return `<article class="farm-order-card">
+    const state = slot.canComplete ? 'ready' : 'incomplete'
+    const stamp = slot.canComplete && uiSkin?.orders?.readyStamp?.src
+      ? `<img class="farm-orders-ready-stamp" src="${escapeHtml(uiSkin.orders.readyStamp.src)}" alt="">` : ''
+    const paper = uiSkin?.orders?.paper?.src
+    const pin = uiSkin?.orders?.pin?.src ? `<img class="farm-orders-visual farm-orders-pin" src="${escapeHtml(uiSkin.orders.pin.src)}" alt="">` : ''
+    return `<article class="farm-orders-paper farm-order-card" data-order-state="${state}"${paper ? ` style="--farm-orders-paper-image:url('${escapeHtml(paper)}')"` : ''}>${pin}${stamp}
       <div class="farm-card-title">订单槽 ${slot.index + 1}</div>
       <ul class="farm-order-requirements">${requirements}</ul>
-      <div class="farm-order-rewards">${slot.rewards.coins}🪙　农场经验 +${slot.rewards.farmExp}${seed}</div>
+      <div class="farm-order-rewards">金币 ${slot.rewards.coins}　农场经验 +${slot.rewards.farmExp}${seed}</div>
       <div class="farm-card-footer">
         <button type="button" class="farm-btn farm-btn--ghost" data-action="abandon-order"
           data-slot-index="${slot.index}"${busy ? ' disabled' : ''}>放弃</button>
@@ -85,12 +96,18 @@ export function renderOrdersHtml(vm, { busy = false } = {}) {
       </div>
     </article>`
   }).join('')
-  return `<div class="farm-orders-view" aria-label="订单板">${cards}</div>`
+  const style = uiSkin?.orders?.board?.src ? ` style="--farm-orders-board-image:url('${escapeHtml(uiSkin.orders.board.src)}')"` : ''
+  const effect = ['order-complete', 'order-abandon'].includes(uiFeedback?.type) ? ` farm-orders-board--${uiFeedback.type}` : ''
+  const overlayRecord = uiFeedback?.type === 'order-complete' ? uiSkin?.orders?.completionOverlay : uiFeedback?.type === 'order-abandon' ? uiSkin?.orders?.abandonPaper : null
+  const overlay = overlayRecord?.src ? `<img class="farm-orders-visual farm-orders-${uiFeedback.type === 'order-complete' ? 'completion-overlay' : 'abandon-overlay'}" src="${escapeHtml(overlayRecord.src)}" alt="">` : ''
+  return `<div class="farm-orders-board farm-orders-view${effect}" aria-label="订单板" data-motion-paused="${hidden || reducedMotion}" data-hidden="${hidden}" data-reduced-motion="${reducedMotion}"${style}>${cards}${overlay}</div>`
 }
 
 export function renderOrdersTab(container, initialViewModel, actions = {}) {
   let disposed = false
   let vm = initialViewModel
+  let feedbackExpired = false
+  let feedbackTimer = null
   const requestedBoundaries = actions.boundaryTracker || new Set()
   const currentBoundaries = new Set(vm.slots.map(slot => slot.regenerateAt).filter(Boolean))
   for (const boundary of requestedBoundaries) {
@@ -99,8 +116,25 @@ export function renderOrdersTab(container, initialViewModel, actions = {}) {
   const now = actions.now || (() => new Date().toISOString())
   const setIntervalFn = actions.setIntervalFn || setInterval
   const clearIntervalFn = actions.clearIntervalFn || clearInterval
+  const setTimeoutFn = actions.setTimeoutFn || setTimeout
+  const clearTimeoutFn = actions.clearTimeoutFn || clearTimeout
+  const activeFeedback = ['order-complete', 'order-abandon'].includes(actions.uiFeedback?.type)
+    ? actions.uiFeedback : null
   const render = () => {
-    if (!disposed) container.innerHTML = renderOrdersHtml(vm, { busy: actions.isBusy?.() })
+    if (!disposed) {
+      container.innerHTML = renderOrdersHtml(vm, {
+        busy: actions.isBusy?.(),
+        ...actions,
+        uiFeedback: feedbackExpired ? null : activeFeedback,
+      })
+    }
+  }
+  const onError = event => {
+    const image = event.target?.closest?.('.farm-orders-item-icon, .farm-orders-visual, .farm-orders-ready-stamp')
+    if (!image) return
+    const fallback = image.dataset?.fallbackSrc
+    if (image.classList?.contains?.('farm-orders-item-icon') && fallback && image.src !== fallback) image.src = fallback
+    else image.hidden = true
   }
   const onClick = event => {
     const target = event.target.closest('[data-action]')
@@ -136,12 +170,23 @@ export function renderOrdersTab(container, initialViewModel, actions = {}) {
   }
 
   container.addEventListener('click', onClick)
+  container.addEventListener('error', onError, true)
   const timer = setIntervalFn(tick, 1_000)
   render()
+  if (activeFeedback) {
+    feedbackTimer = setTimeoutFn(() => {
+      if (disposed || feedbackExpired) return
+      feedbackExpired = true
+      actions.consumeUiFeedback?.(activeFeedback.id)
+      render()
+    }, 500)
+  }
   return () => {
     if (disposed) return
     disposed = true
     clearIntervalFn(timer)
+    if (feedbackTimer !== null) clearTimeoutFn(feedbackTimer)
     container.removeEventListener('click', onClick)
+    container.removeEventListener('error', onError, true)
   }
 }
