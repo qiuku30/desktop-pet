@@ -226,6 +226,52 @@
       "src": "ui/order-paper.webp",
       "anchor": { "x": 0.5, "y": 0.5 },
       "logicalPosition": { "x": 1060, "y": 365 }
+    },
+    "itemIcons": {
+      "seed:wheat": { "src": "ui/items/seed-wheat.webp" },
+      "seed:carrot": { "src": "ui/items/seed-carrot.webp" },
+      "seed:corn": { "src": "ui/items/seed-corn.webp" },
+      "seed:strawberry": { "src": "ui/items/seed-strawberry.webp" },
+      "seed:pumpkin": { "src": "ui/items/seed-pumpkin.webp" },
+      "seed:star-dew-fruit": { "src": "ui/items/seed-star-dew-fruit.webp" },
+      "crop:wheat": { "src": "ui/items/crop-wheat.webp" },
+      "crop:carrot": { "src": "ui/items/crop-carrot.webp" },
+      "crop:corn": { "src": "ui/items/crop-corn.webp" },
+      "crop:strawberry": { "src": "ui/items/crop-strawberry.webp" },
+      "crop:pumpkin": { "src": "ui/items/crop-pumpkin.webp" },
+      "crop:star-dew-fruit": { "src": "ui/items/crop-star-dew-fruit.webp" },
+      "food:cookie": { "src": "ui/items/food-cookie.webp" },
+      "food:popcorn": { "src": "ui/items/food-popcorn.webp" },
+      "food:carrot-juice": { "src": "ui/items/food-carrot-juice.webp" },
+      "food:strawberry-milkshake": { "src": "ui/items/food-strawberry-milkshake.webp" },
+      "food:pumpkin-pie": { "src": "ui/items/food-pumpkin-pie.webp" },
+      "food:milk": { "src": "ui/items/food-milk.webp" }
+    },
+    "itemFallback": { "src": "ui/items/fallback.webp" },
+    "workshop": {
+      "machine": {
+        "base": { "src": "ui/workshop/machine-base.webp" },
+        "gearSheet": { "src": "ui/workshop/gear-sheet.webp", "frameWidth": 256, "frameHeight": 256, "frameCount": 4, "durationMs": 800 },
+        "steamSheet": { "src": "ui/workshop/steam-sheet.webp", "frameWidth": 256, "frameHeight": 256, "frameCount": 4, "durationMs": 1200 },
+        "workGlow": { "src": "ui/workshop/work-glow.webp" },
+        "completionFlash": { "src": "ui/workshop/completion-flash.webp" }
+      },
+      "recipeShelf": { "src": "ui/workshop/recipe-shelf.webp" },
+      "slots": {
+        "running": { "src": "ui/workshop/slot-running.webp" },
+        "queued": { "src": "ui/workshop/slot-queued.webp" },
+        "empty": { "src": "ui/workshop/slot-empty.webp" }
+      },
+      "lockedMask": { "src": "ui/workshop/locked-mask.webp" }
+    },
+    "orders": {
+      "board": { "src": "ui/orders/board.webp" },
+      "paper": { "src": "ui/orders/paper.webp" },
+      "readyStamp": { "src": "ui/orders/ready-stamp.webp" },
+      "cooldownPaper": { "src": "ui/orders/cooldown-paper.webp" },
+      "pin": { "src": "ui/orders/pin.webp" },
+      "completionOverlay": { "src": "ui/orders/completion-overlay.webp" },
+      "abandonPaper": { "src": "ui/orders/abandon-paper.webp" }
     }
   }
 }

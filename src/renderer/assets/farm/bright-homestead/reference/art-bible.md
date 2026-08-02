@@ -64,3 +64,14 @@
 ## Family gate record
 
 The accepted full-scene sources are listed in `family-map.md`. Every family passed transparent white/black/checker inspection and the exact `800×600` / `600×400` composite check. Generated structure was never corrected by warping, painting, or crop-based concealment; deterministic post-processing was limited to chroma removal, land-matte opacity restoration, land-soil color correction, cell separation, scale-to-fit, fixed-anchor placement, color-profile export, and compositing. Processing masters were removed after the gate and are not part of the runtime skin.
+
+## Workshop and order-board contracts
+
+- All first-release item icons use a `192×192` transparent canvas, a common `152×152` safe content box, centered optical mass, and a silhouette readable at 32 logical pixels.
+- Seeds, harvested crops, processed foods, and milk keep distinct identities without relying on labels. The neutral item fallback is an original empty wooden produce crate.
+- The workshop machine uses honey wood, brass, cream, and restrained teal enamel. Machine base, work glow, completion flash, gear, and steam share the upper-left light and fixed overlay alignment.
+- Gear and steam sheets each contain four horizontal `256×256` frames in a `1024×256` lossless WebP. Gear motion preserves one exact structure; steam shares one bottom-center origin.
+- Running, queued, and empty slots share one footprint, scale, perspective, and anchor. Their state difference is structural rather than color-only.
+- The order board is one continuous wide wooden surface suitable for three-column layout and center-cropped single-column layout. Paper, cooldown, ready, completion, and abandonment states remain distinguishable by silhouette or treatment.
+- Text, item names, owned/required counts, rewards, countdowns, and button labels are always live DOM content and never rasterized into the art.
+- Workshop/order alpha evidence uses dedicated `workshop-orders-alpha-*` files; the prior full-scene `alpha-*` reviews are immutable historical evidence.

@@ -1,0 +1,752 @@
+{
+  "schemaVersion": 1,
+  "window": "farm-art-03",
+  "families": {
+    "items": 19,
+    "workshop": 10,
+    "orders": 7
+  },
+  "spritesheets": {
+    "ui/workshop/gear-sheet.webp": {
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "frameCount": 4,
+      "durationMs": 800,
+      "sheetWidth": 1024,
+      "sheetHeight": 256
+    },
+    "ui/workshop/steam-sheet.webp": {
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "frameCount": 4,
+      "durationMs": 1200,
+      "sheetWidth": 1024,
+      "sheetHeight": 256
+    }
+  },
+  "reviews": [
+    {
+      "path": "review/workshop-orders-alpha-white.webp",
+      "expectedSize": [
+        1200,
+        1760
+      ],
+      "actualSize": [
+        1200,
+        1760
+      ],
+      "status": "PASS",
+      "manualCheck": "All 36 assets inspected; edges clean and new dark star-fruit silhouette readable."
+    },
+    {
+      "path": "review/workshop-orders-alpha-black.webp",
+      "expectedSize": [
+        1200,
+        1760
+      ],
+      "actualSize": [
+        1200,
+        1760
+      ],
+      "status": "PASS",
+      "manualCheck": "All 36 assets inspected; no visible key halo and dark star-fruit outline remains separated."
+    },
+    {
+      "path": "review/workshop-orders-alpha-checker.webp",
+      "expectedSize": [
+        1200,
+        1760
+      ],
+      "actualSize": [
+        1200,
+        1760
+      ],
+      "status": "PASS",
+      "manualCheck": "All 36 assets inspected; transparent boundaries and partial-alpha effects read correctly."
+    },
+    {
+      "path": "review/workshop-orders-800x600.webp",
+      "expectedSize": [
+        800,
+        600
+      ],
+      "actualSize": [
+        800,
+        600
+      ],
+      "status": "PASS",
+      "manualCheck": "Working machine, running/queued/empty slots, five recipes on five supports, and ready/incomplete/cooldown orders are unobscured."
+    },
+    {
+      "path": "review/workshop-orders-600x400.webp",
+      "expectedSize": [
+        600,
+        400
+      ],
+      "actualSize": [
+        600,
+        400
+      ],
+      "status": "PASS",
+      "manualCheck": "Single-column workshop and order stacks plus vertical continuation are readable; shelf, pie, and empty slot do not overlap."
+    }
+  ],
+  "stateCoverage": {
+    "workshopWorking": true,
+    "slots": [
+      "running",
+      "queued",
+      "empty"
+    ],
+    "fiveRecipesOnShelf": true,
+    "orders": [
+      "ready",
+      "incomplete",
+      "cooldown"
+    ],
+    "narrowLayout": [
+      "vertical-continuation",
+      "single-column-workshop",
+      "single-column-orders"
+    ]
+  },
+  "knownIssues": [],
+  "assets": [
+    {
+      "path": "ui/items/crop-carrot.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        38,
+        20,
+        154,
+        172
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 22312,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/crop-corn.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        30,
+        20,
+        162,
+        172
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 25988,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/crop-pumpkin.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        22,
+        20,
+        169,
+        172
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 30674,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/crop-star-dew-fruit.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        20,
+        27,
+        172,
+        165
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 31052,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/crop-strawberry.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        20,
+        24,
+        172,
+        167
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 38538,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/crop-wheat.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        29,
+        20,
+        162,
+        172
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 31014,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/fallback.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        20,
+        26,
+        172,
+        165
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 27058,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/food-carrot-juice.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        35,
+        20,
+        157,
+        172
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 26750,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/food-cookie.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        20,
+        29,
+        172,
+        163
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 28434,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/food-milk.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        58,
+        20,
+        134,
+        172
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 16232,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/food-popcorn.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        21,
+        20,
+        171,
+        172
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 35408,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/food-pumpkin-pie.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        20,
+        31,
+        172,
+        160
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 25368,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/food-strawberry-milkshake.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        39,
+        20,
+        153,
+        172
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 23648,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/seed-carrot.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        20,
+        34,
+        172,
+        158
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 29940,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/seed-corn.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        20,
+        33,
+        172,
+        159
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 29210,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/seed-pumpkin.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        20,
+        34,
+        172,
+        157
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 27824,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/seed-star-dew-fruit.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        20,
+        36,
+        172,
+        155
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 28014,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/seed-strawberry.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        20,
+        35,
+        172,
+        157
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 33172,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/items/seed-wheat.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        20,
+        34,
+        172,
+        157
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 32590,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/workshop/completion-flash.webp",
+      "width": 512,
+      "height": 384,
+      "mode": "RGBA",
+      "alphaBounds": [
+        98,
+        32,
+        414,
+        352
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 79842,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/workshop/gear-sheet.webp",
+      "width": 1024,
+      "height": 256,
+      "mode": "RGBA",
+      "alphaBounds": [
+        34,
+        30,
+        993,
+        227
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 182262,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/workshop/locked-mask.webp",
+      "width": 384,
+      "height": 256,
+      "mode": "RGBA",
+      "alphaBounds": [
+        46,
+        18,
+        337,
+        238
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 89424,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/workshop/machine-base.webp",
+      "width": 512,
+      "height": 384,
+      "mode": "RGBA",
+      "alphaBounds": [
+        73,
+        22,
+        438,
+        362
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 155992,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/workshop/recipe-shelf.webp",
+      "width": 768,
+      "height": 256,
+      "mode": "RGBA",
+      "alphaBounds": [
+        24,
+        24,
+        744,
+        231
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 169408,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/workshop/slot-empty.webp",
+      "width": 384,
+      "height": 256,
+      "mode": "RGBA",
+      "alphaBounds": [
+        48,
+        18,
+        336,
+        238
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 82984,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/workshop/slot-queued.webp",
+      "width": 384,
+      "height": 256,
+      "mode": "RGBA",
+      "alphaBounds": [
+        45,
+        18,
+        339,
+        238
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 85132,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/workshop/slot-running.webp",
+      "width": 384,
+      "height": 256,
+      "mode": "RGBA",
+      "alphaBounds": [
+        51,
+        18,
+        332,
+        238
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 105272,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/workshop/steam-sheet.webp",
+      "width": 1024,
+      "height": 256,
+      "mode": "RGBA",
+      "alphaBounds": [
+        43,
+        18,
+        948,
+        238
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 101692,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/workshop/work-glow.webp",
+      "width": 512,
+      "height": 384,
+      "mode": "RGBA",
+      "alphaBounds": [
+        31,
+        44,
+        481,
+        339
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 117390,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/orders/abandon-paper.webp",
+      "width": 384,
+      "height": 448,
+      "mode": "RGBA",
+      "alphaBounds": [
+        37,
+        24,
+        346,
+        424
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 98548,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/orders/board.webp",
+      "width": 1152,
+      "height": 480,
+      "mode": "RGBA",
+      "alphaBounds": [
+        26,
+        38,
+        1126,
+        441
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 476862,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/orders/completion-overlay.webp",
+      "width": 384,
+      "height": 384,
+      "mode": "RGBA",
+      "alphaBounds": [
+        27,
+        36,
+        357,
+        347
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 72548,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/orders/cooldown-paper.webp",
+      "width": 384,
+      "height": 448,
+      "mode": "RGBA",
+      "alphaBounds": [
+        27,
+        45,
+        357,
+        403
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 119302,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/orders/paper.webp",
+      "width": 384,
+      "height": 448,
+      "mode": "RGBA",
+      "alphaBounds": [
+        27,
+        47,
+        357,
+        400
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 118126,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/orders/pin.webp",
+      "width": 192,
+      "height": 192,
+      "mode": "RGBA",
+      "alphaBounds": [
+        27,
+        21,
+        165,
+        171
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 28100,
+      "residualChromaPixels": 0
+    },
+    {
+      "path": "ui/orders/ready-stamp.webp",
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "alphaBounds": [
+        24,
+        23,
+        232,
+        233
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "bytes": 43954,
+      "residualChromaPixels": 0
+    }
+  ],
+  "runtimeBytes": 2670064,
+  "deliveryBytes": 5509983,
+  "deliveryBytesDefinition": "Sum of current full file sizes for all farm-art-03 modified or added runtime, review, manifest, and documentation files, excluding this self-referential audit JSON.",
+  "verificationEnvironment": {
+    "date": "2026-08-02",
+    "platform": "macOS arm64",
+    "python": "3.12.13 (bundled Codex runtime)",
+    "imageLibrary": "Pillow 12.2.0",
+    "node": "v24.18.0",
+    "nodeModulesAvailable": false
+  },
+  "verification": [
+    {
+      "command": "node /tmp/farm-art-03-audit.mjs",
+      "result": "PASS: 36 additive records and spritesheet metadata"
+    },
+    {
+      "command": "node --test src/renderer/games/farm/farm-scene-manifest.test.mjs",
+      "result": "PASS: 11/11"
+    },
+    {
+      "command": "node --test",
+      "result": "ENVIRONMENT_BLOCKED: 409/411 passed; pixi.js and electron imports unavailable because this worktree has no node_modules"
+    },
+    {
+      "command": "python verify_delivery.py",
+      "result": "PASS: dimensions, alpha corners, ICC, green/magenta chroma, 152px item safe boxes, sheets, review sizes, historical hashes, runtime bytes"
+    },
+    {
+      "command": "node verify_manifest_unchanged.mjs",
+      "result": "PASS: all pre-existing manifest records deep-equal after removing additive UI keys"
+    },
+    {
+      "command": "git diff --check",
+      "result": "PASS: no output"
+    },
+    {
+      "command": "view_image on star fruit, shelf, 800x600, 600x400, white, black, checker",
+      "result": "PASS: manual visual gate performed on all seven affected views"
+    }
+  ],
+  "historicalAlphaHashes": {
+    "alpha-white.webp": {
+      "expected": "074a5cd2a422a5d5c24939beabdb29d4575712ae3c745e564386f7e8975a1854",
+      "actual": "074a5cd2a422a5d5c24939beabdb29d4575712ae3c745e564386f7e8975a1854",
+      "unchanged": true
+    },
+    "alpha-black.webp": {
+      "expected": "a1f9a9d87cbb2e1524aa65b6f4b5f276c1900f780984b372c2c6458c023ee88b",
+      "actual": "a1f9a9d87cbb2e1524aa65b6f4b5f276c1900f780984b372c2c6458c023ee88b",
+      "unchanged": true
+    },
+    "alpha-checker.webp": {
+      "expected": "163a91fca387561eb6d0b9a70ee044b8d5b0bc7458ee854f8aeb071b1aa80ddf",
+      "actual": "163a91fca387561eb6d0b9a70ee044b8d5b0bc7458ee854f8aeb071b1aa80ddf",
+      "unchanged": true
+    }
+  },
+  "candidateMastersRemoved": true,
+  "generationBoardsInRuntimeSkin": []
+}

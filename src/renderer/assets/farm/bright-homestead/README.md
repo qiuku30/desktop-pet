@@ -40,3 +40,15 @@ Object assets use the same fixed three-quarter top-down camera, warm-neutral upp
 - `review/full-scene-audit.json` records dimensions, modes, alpha bounds, ICC presence, bytes, family canvases, and baselines.
 
 AI-assisted outputs were independently gated, chroma-keyed, split without reshaping, aligned, checked at both target sizes, and inspected against white, black, and checker backgrounds. The land matte received a 1 px contraction, restored opaque subject cores, and a deterministic warm-soil color correction without changing structure. No family required a second structural generation attempt.
+
+## Workshop and order-board UI extension
+
+The schema-v1 manifest now includes additive presentation-only records for the workshop, order board, eighteen first-release farm item icons, and a neutral project-owned item fallback. Existing `ui.recipeCookie` and `ui.orderPaper` records remain available unchanged for the scene loader contract.
+
+- Item icons use transparent `192×192` lossless WebP canvases with a common `152×152` safe content box.
+- Gear and steam loops use horizontal `1024×256` sheets with four exact `256×256` frames.
+- Workshop static surfaces, order papers, stamps, pins, and feedback overlays contain no baked text, quantities, timers, rewards, or button labels.
+- `review/workshop-orders-audit.json` records dimensions, alpha bounds, ICC presence, bytes, residual-chroma counts, spritesheet geometry, and the immutable hashes of the prior full-scene alpha reviews.
+- The dedicated `workshop-orders-alpha-{white,black,checker}.webp` sheets and exact `800×600` / `600×400` composites use the delivered runtime layers.
+
+The accepted generation boards and all temporary extraction scripts live outside the skin during production and are not shipped in `app.asar`.
