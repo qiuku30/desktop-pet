@@ -581,6 +581,8 @@
 - ✅ Task 5 七个批准文件以 `c6b1204` 集成到本地 `main`；无新事件、IPC、依赖、持久化、业务 schema，未改变 FarmService/PetState、计时、事务、奖励或宠物动作语义。
 - ✅ 加工坊/订单板后续设计已获用户批准：机器英雄区 + 三槽生产轨道 + 配方架；连续木质订单板；800×600 三纸并排、600×400 单列滚动；18 类物品图标；低频四帧 spritesheet；DOM 继续承载语义和业务。
 - ✅ 正式设计以 `742b453` 提交；按独立 gate 拆分的 `farm-art-03` 美术计划与 `farm-visual-06` UI 计划以 `46bd9fc` 提交。
-- 🔄 用户已明确批准创建 `farm-art-03`；独立 Codex worktree 正在创建，仅授权 `src/renderer/assets/farm/bright-homestead/**`。收到动工报告并经 ARCH-11 明确确认前不得生成或修改素材。
-- ⏸ `farm-visual-06` 尚未创建，必须等待 `farm-art-03` 交付、ARCH-11 独立视觉/manifest gate、用户批准集成及基线提交完成。
+- ✅ `farm-art-03` 完成 18 类物品图标、项目 fallback、工坊机器与四帧齿轮/蒸汽、五位配方架、三槽、连续订单板与订单状态资产；manifest 仅 additive 扩展 `ui`，36 个运行时资产共 2,670,064 bytes。
+- ✅ ARCH-11 首轮独立 gate 退回蓝莓式星露果、只有四位的配方架及审计证据不足；集中返修后星露果身份与成熟株一致，两档 review 五配方无重叠，专用白/黑/棋盘通过，旧三张全场景 alpha 哈希保持不变，两位只读 reviewer 均 Ready。
+- ✅ `farm-art-03` 以 `92ce4a1` 集成到本地 `main`；集成后沙箱内 435/436（唯一 Electron `SIGABRT`），GUI 权限全仓 436/436。无生产 JS/CSS、事件、IPC、依赖、持久化或业务 schema 改动，尚未 push。
+- ⏸ `farm-visual-06` 尚未创建；美术前置条件已满足，需用户明确批准后按既定 UI 计划启动。
 - ⏳ 跨页图标与最终视觉复验仍未立项，不属于当前实现范围。
