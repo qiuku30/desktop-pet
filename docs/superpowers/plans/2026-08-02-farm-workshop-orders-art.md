@@ -103,7 +103,11 @@ Expected: manifest shape passes; file-existence assertions remain RED.
 
 **Files:**
 - Create: `src/renderer/assets/farm/bright-homestead/ui/items/*.webp` (18 icons plus `fallback.webp`)
-- Create/Modify: `src/renderer/assets/farm/bright-homestead/review/alpha-{white,black,checker}.webp`
+- Create: `src/renderer/assets/farm/bright-homestead/review/workshop-orders-alpha-{white,black,checker}.webp`
+
+The existing `review/alpha-white.webp`, `review/alpha-black.webp`, and
+`review/alpha-checker.webp` are evidence for the complete farm asset pack and
+must remain byte-for-byte unchanged.
 
 **Interfaces:**
 - All runtime icons: transparent 192×192 lossless WebP, common optical center, safe content box 152×152.
