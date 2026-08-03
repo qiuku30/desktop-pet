@@ -1,7 +1,7 @@
 # 架构窗口交接文档
 
-> 最后更新：2026-08-02（ARCH-11 完成 farm-visual-06 最终 gate、集成与主线验证）
-> Phase 1、番茄钟、2048、桌宠形象化 Phase 2 与农场首发均已交付；农场视觉升级 Task 1～6 已完成，下一阶段为跨页图标接入与最终综合复验。
+> 最后更新：2026-08-03（ARCH-11 完成 farm-art-04 独立验收与主线集成）
+> Phase 1、番茄钟、2048、桌宠形象化 Phase 2 与农场首发均已交付；农场视觉升级 Task 1～6 已完成，三张旧食物图标已集成，下一步为 farm-visual-07。
 
 ---
 
@@ -54,6 +54,9 @@ GitHub：https://github.com/qiuku30/desktop-pet
 | `docs/superpowers/specs/2026-08-02-farm-workshop-orders-redesign-design.md` | 加工坊机器英雄区、五位配方架、三槽轨道与连续订单板视觉设计 |
 | `docs/superpowers/plans/2026-08-02-farm-workshop-orders-art.md` | `farm-art-03` 物品图标、工坊/订单资产与审计计划 |
 | `docs/superpowers/plans/2026-08-02-farm-workshop-orders-ui.md` | `farm-visual-06` 加工/订单 UI 换肤与响应式接入计划 |
+| `docs/superpowers/specs/2026-08-03-farm-cross-page-icons-design.md` | 21 项跨页面物品图标、Dashboard 两级回退与桌宠成熟数图标设计 |
+| `docs/superpowers/plans/2026-08-03-farm-legacy-food-icons-art.md` | `farm-art-04` 苹果、蛋糕、小鱼干美术与审计计划 |
+| `docs/superpowers/plans/2026-08-03-farm-cross-page-icons.md` | `farm-visual-07` shared/Dashboard/pet 跨页面图标接入计划 |
 | `docs/session-log.md` | 窗口会话日志（编号、改动文件、越界授权、追溯 bug） |
 | `specs/pet-system.md` | 宠物 Phase 1 + Phase 2 形象化需求与验收标准 |
 
@@ -97,7 +100,7 @@ Phase 1 宠物核心系统 + 番茄钟 + 2048 + 桌宠形象化 Phase 2 全部�
 
 ### 🔨 进行中
 
-`farm-visual-06` 已完成加工坊机器英雄区、三槽生产轨道、五位配方架、连续订单板、18 类真实图标、UI catalog、安全回退、四帧 CSS 动效与一次性反馈接入。ARCH-11 多轮独立 gate 修正 URL authority/编码绕过、反馈绘制与清理、同步 loader 异常、spritesheet 帧定位、旧 CSS 两列与滚动冲突、浅纸面文字及缺料语义色对比度；最终主线 GUI 全仓 455/455、darwin/arm64 Forge package 与 `git diff --check` 通过，以 `01acf67` 集成到本地 `main`。ARCH-09 尚未分配具体任务。
+`farm-visual-06` 已以 `01acf67` 完成并集成。跨页面图标设计与双计划分别以 `06d93af`、`ea459da` 提交：先由 `farm-art-04` 补齐苹果、蛋糕、小鱼干三张项目图标，再由 `farm-visual-07` 接入 shared/Dashboard/pet。`farm-art-04` 的 11 文件交付已通过 ARCH-11 独立视觉/像素/范围 gate，并以 `a70f1ef` 集成到本地 `main`；`farm-visual-07` 尚未创建。ARCH-09 尚未分配具体任务。
 
 ### ⏳ 待实现
 
@@ -105,7 +108,7 @@ Phase 1 宠物核心系统 + 番茄钟 + 2048 + 桌宠形象化 Phase 2 全部�
 |------|------|
 | 📝 英语单词 | spec 占位，待细化需求 |
 | 🌾 农场经营 | ✅ farm-01～06 与 farm-fix-01 均已验收、提交并推送 |
-| 🎨 农场视觉升级 | ✅ Task 1～6 已完成；待立项跨页图标接入与最终综合复验 |
+| 🎨 农场视觉升级 | ✅ Task 1～6 与 `farm-art-04` 已完成并集成；待创建 `farm-visual-07`，随后执行最终综合复验 |
 | 活动监视 | 设计文档已完成，隐私敏感 |
 | 躲避光标 | 搁置，需主进程侧方案 |
 | 面板透明度设置 | 搁置，CSS 变量无法穿透 transparent:false 窗口 |
@@ -329,7 +332,7 @@ Phase 1 宠物核心系统 + 番茄钟 + 2048 + 桌宠形象化 Phase 2 全部�
 ### 当前全局状态
 
 ```
-main 分支，67 commits 领先 origin/main（未推送）
+main 分支，21 commits 领先 origin/main（未推送）
 工作区干净，37 测试全部通过
 22 个窗口全部登记在 session-log.md
 ```
@@ -676,4 +679,4 @@ main 分支，67 commits 领先 origin/main（未推送）
 - `docs/superpowers/specs/2026-07-29-farm-visual-upgrade-design.md`
 - `docs/superpowers/plans/2026-07-29-farm-visual-upgrade.md`
 
-**当前状态**：设计已获用户批准，八任务实施计划已完成自查；`farm-art-01` 已完成 21 文件垂直样张，并经 ARCH-11 退回一次“运行时背景烘焙田块”结构返修后独立复验通过。当前美术包为约 4.0 MiB，包含无田运行时背景、独立土地、小麦四阶段、洒水器三级、奶油星团、效果/UI 样张及两档 review；资产、视觉升级设计、实施计划与首轮追踪记录已以 `dd24d1e` 纳入 `main` 并推送至 `origin/main`。`farm-visual-02` 已完成 Task 2 的纯 manifest 校验和不可变视觉快照合同；ARCH-11 经多轮安全/不可变性复验，修正输入反向冻结、URL 规范化绕过、显式/编码 scheme 及错误顺序后通过最终 gate，并以 `75cef09` 纳入 `main`。`farm-visual-03` 已完成 Task 3：精确引入 `pixi.js@8.19.0`，建立唯一 ESM runtime boundary、固定六层 Pixi 垂直样张、9 个 critical/5 个 optional 资源分类及 Pixi → 静态场景 + DOM → 既有 DOM 的三级回退。ARCH-11 多轮独立复验修正 app.asar 探针来源模型、素材根路径、初始化/销毁竞态、manifest 相对路径、init failure 回退、迟到 Promise、skinId 越界、效果累积、partial-init renderer 清理及 cleanup-error 回退；最终定向 43/43、全仓 GUI 393/393、Electron Forge 打包和同 app.asar 页面来源探针通过。Task 3 实现已以 `6e2cd1c` 集成到 `main`。`farm-art-02` 已完成 Task 4 全场景资产：五类土地、六作物四阶段、三建筑三级及工作叠层、奶油星团四帧待机、小鸟四帧、八类反馈和对象 fallback；62 条唯一运行时记录保留旧定位合同。ARCH-11 独立 gate 修正土地透明土芯、旧定位丢失、宠物帧缺失、候选母版包体及紫色键边缘后通过；完整目录约 11 MiB，以 `c3725bc` 集成到 `main`。`farm-visual-04` 已把完整 manifest 升级为 snapshot 驱动 Pixi 场景能力：严格 `4×4` 布局、五类对象工厂、键控 reconciliation、按需纹理加载、整体对象 fallback、工作叠层局部降级、稳定深度排序及完整竞态/清理保护。ARCH-11 集中 gate 修正越界网格、输入反向冻结、动画混入 fallback、错误锚点、overlay 木牌、cleanup 主因覆盖和效果销毁阻断；最终相关测试 70/70、GUI 全仓 419/419、同 app.asar 20 次生命周期、五类真实输入和迟到 Promise 均通过，以 `0d60c0b` 集成到本地 `main`。`farm-visual-05` 已以方案 C 将完整场景正式接入农场页，保留 Pixi → static → DOM 回退、原生键盘镜像与既有业务命令；两轮独立 gate 后场景定向 59/59、GUI 全仓 436/436、package 和同 app.asar 20 次循环/五类输入通过，以 `c6b1204` 集成到本地 `main`。加工坊/订单板后续采用机器英雄区与连续木质订单板、600×400 纵向滚动、模块化 2D spritesheet；设计以 `742b453`、美术/UI 双计划以 `46bd9fc` 提交。`farm-art-03` 已交付 18 类物品图标、项目 fallback、五位配方架、机器与四帧齿轮/蒸汽、三槽、连续订单板和三状态纸张；首轮独立 gate 退回蓝莓式星露果、四位架和审计证据不足，集中返修后两位 reviewer 均 Ready。36 个运行时资产共 2,670,064 bytes，完整交付口径 5,509,983 bytes，manifest 纯 additive 且旧记录深度相等；集成后 GUI 全仓 436/436，以 `92ce4a1` 纳入本地 `main`。`farm-visual-06` 在精确 12 文件内完成 UI catalog、安全 URL、工坊/订单语义 DOM、18 类图标、响应式滚动、四帧 CSS 动效、一次性反馈和回退；多轮 gate 关闭 URL、生命周期、CSS 级联与文字对比度问题，最终主线 GUI 全仓 455/455、darwin/arm64 package 和差异检查通过，以 `01acf67` 纳入本地 `main`。Task 1～6 已完成；跨页图标与最终复验尚未立项。上述本地视觉升级提交尚未 push。
+**当前状态**：农场视觉升级 Task 1～6 已完成并集成；最新主线验证为 GUI 全仓 455/455 与 darwin/arm64 Forge package。用户随后批准跨页面物品图标方案：补齐苹果、蛋糕、小鱼干，使 21 项物品在仓库、商店和 Dashboard 首页库存使用项目图标；Dashboard 回退为主图→项目 fallback→隐藏图片，桌宠成熟指示器使用小麦 CSS 图标且失败后保留纯数字，不修改 `pet.js`/`pet.html`。中文设计与双计划已以 `06d93af`、`ea459da` 提交。`farm-art-04` 已交付三张 192×192 lossless WebP、白/黑/棋盘和 32px 证据及确定性审计；ARCH-11 独立检查身份、家族、透明边缘、单连通主体、ICC、VP8L、范围和 manifest 11/11 后判定 READY，并以 `a70f1ef` 集成到本地 `main`。下一步为获得用户明确确认后创建 `farm-visual-07`，最后执行 `farm-visual-08` 综合复验。上述本地视觉升级提交尚未 push。

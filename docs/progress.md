@@ -587,4 +587,7 @@
 - ✅ `farm-visual-06` 完成加工坊机器英雄区、三槽生产轨道、五位配方架、连续订单板、18 类真实图标、纯 UI catalog、安全 URL、四帧 CSS 动效、一次性反馈、文本/项目资源回退与两档纵向响应式；无事件、IPC、依赖、持久化、业务 schema 或 FarmService/PetState 语义改动。
 - ✅ ARCH-11 多轮独立 gate 修正 file authority/编码路径绕过、反馈绘制前消失与长期残留、同步 `loadUiSkin` 异常、CSS fallback shorthand、四帧定位、旧两列/多重滚动级联、浅纸面正文与缺料色对比度；最终 Chromium 30/30、GUI 全仓 455/455、主线隔离 darwin/arm64 Forge package、语法与 `git diff --check` 通过。
 - ✅ 精确 12 个批准文件已以 `01acf67` 集成到本地 `main`；既有 `MODULE_TYPELESS_PACKAGE_JSON` warning 保留，未 push。
-- ⏳ 跨页图标与最终视觉复验仍未立项，不属于当前实现范围。
+- ✅ 用户批准补齐苹果、蛋糕、小鱼干并统一 21 项跨页面物品图标；Dashboard 锁定主图→项目 fallback→隐藏图片，桌宠成熟指示器锁定项目小麦图标失败后保留纯数字，不修改 `pet.js`/`pet.html`。
+- ✅ 中文设计与 `farm-art-04`/`farm-visual-07` 双计划分别以 `06d93af`、`ea459da` 提交；英文工坊/订单设计同步翻译为中文，技术语义不变。
+- ✅ `farm-art-04` 完成苹果、蛋糕、小鱼干三张 192×192 项目图标、白/黑/棋盘与 32px 证据和审计；ARCH-11 独立复验确认身份、家族、透明边缘、单连通主体、ICC、VP8L、范围及 manifest 11/11，结论 READY，已以 `a70f1ef` 集成到本地 `main`。
+- ⏳ `farm-visual-07` 的前置资产 gate 与集成已完成；待用户明确确认后创建实现窗口。`farm-visual-08` 负责最终综合复验与文档收尾。
