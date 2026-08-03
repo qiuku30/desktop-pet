@@ -590,4 +590,6 @@
 - ✅ 用户批准补齐苹果、蛋糕、小鱼干并统一 21 项跨页面物品图标；Dashboard 锁定主图→项目 fallback→隐藏图片，桌宠成熟指示器锁定项目小麦图标失败后保留纯数字，不修改 `pet.js`/`pet.html`。
 - ✅ 中文设计与 `farm-art-04`/`farm-visual-07` 双计划分别以 `06d93af`、`ea459da` 提交；英文工坊/订单设计同步翻译为中文，技术语义不变。
 - ✅ `farm-art-04` 完成苹果、蛋糕、小鱼干三张 192×192 项目图标、白/黑/棋盘与 32px 证据和审计；ARCH-11 独立复验确认身份、家族、透明边缘、单连通主体、ICC、VP8L、范围及 manifest 11/11，结论 READY，已以 `a70f1ef` 集成到本地 `main`。
-- ⏳ `farm-visual-07` 的前置资产 gate 与集成已完成；待用户明确确认后创建实现窗口。`farm-visual-08` 负责最终综合复验与文档收尾。
+- ✅ `farm-visual-07` 完成精确 10 文件交付：21 项不可变项目图标、Dashboard 主图→项目 fallback→隐藏图片、三消费方、首页 aria-label、单 document 监听边界、桌宠小麦 + 纯数字回退与两档响应式；无事件/IPC/依赖/持久化/schema 改动。
+- ✅ ARCH-11 独立定向 28/28、shared+Dashboard+pet 269/269、GUI 全仓 463/463、Forge package、22 个入包图标及同 `app.asar` 的 800×600/600×400、两级失败、detached、20 次往返和桌宠缺图探针均通过；精确 10 文件已以 `ca26e54` 集成到本地 `main`，未 push。
+- ⏳ 待创建 `farm-visual-08`，负责最终综合复验与文档收尾。
