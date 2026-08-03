@@ -1,256 +1,258 @@
-# Farm Workshop and Order Board Visual Redesign
+# 农场工坊与订单板视觉重设计
 
-**Date:** 2026-08-02
-**Status:** Approved design
-**Architecture window:** ARCH-11
+**日期：** 2026-08-02
 
-## 1. Goal
+**状态：** 设计已批准
 
-Bring the existing processing and order tabs up to the visual quality of the completed Bright Homestead Pixi farm scene. The result must feel like a rounded, bright, volumetric 2D management game rather than Emoji and text cards, while preserving every current processing, order, transaction, timing, accessibility, fallback, and cleanup contract.
+**架构窗口：** ARCH-11
 
-The approved direction is **A: scene hero area**. The workshop centers a large processing machine, with recipes and the three-slot production track arranged around it. The order page is one continuous wooden board carrying three physical order papers.
+## 1. 目标
 
-## 2. Fixed Scope
+把现有加工页和订单页提升到已经完成的「明亮家园」Pixi 农场场景的视觉品质。最终效果应像圆润、明亮、带体积感的高质量 2D 经营游戏，而不是 Emoji 与文字卡片的组合；同时完整保留当前加工、订单、事务、计时、无障碍、回退和清理合同。
 
-This phase includes:
+已批准方向为 **A：场景英雄区**。工坊以大型加工机器为中心，配方和三槽生产轨道围绕机器组织；订单页使用一块连续木质订单板承载三张实体感订单纸。
 
-- a complete built-in workshop and order-board art set;
-- 18 item icons used by first-release farm processing and orders;
-- modular 2D spritesheet animation for the workshop and one-shot feedback;
-- an immutable UI visual catalog derived from the farm skin manifest;
-- semantic DOM redesign of the processing and order tabs;
-- responsive layouts for 800×600 and 600×400 Dashboard content sizes;
-- local visual feedback for enqueue, processing completion, order completion, and abandonment;
-- visual, lifecycle, accessibility, packaging, and regression verification.
+## 2. 固定范围
 
-This phase excludes:
+本阶段包含：
 
-- changes to processing, order, inventory, reward, unlock, transaction, reminder, or persistence rules;
-- new EventBus events, IPC channels, runtime dependencies, or business schema fields;
-- warehouse, shop, feed menu, Dashboard inventory, or desktop-pet reminder icon integration;
-- Pixi conversion of the processing or order tabs;
-- Godot, Unity, Spine, or Rive;
-- processing and order expansion beyond the existing five recipes, three queue slots, and three order slots.
+- 一套完整的内置工坊与订单板美术资产；
+- 首发农场加工和订单使用的 18 种物品图标；
+- 工坊模块化 2D spritesheet 动画和一次性反馈；
+- 从农场皮肤 manifest 派生的不可变 UI 视觉目录；
+- 加工页和订单页的语义化 DOM 重设计；
+- Dashboard 内容区域 800×600 和 600×400 两档响应式布局；
+- 入队、加工完成、订单完成和放弃订单的局部视觉反馈；
+- 视觉、生命周期、无障碍、打包和回归验证。
 
-The new item assets intentionally prepare for later cross-page reuse, but no cross-module consumer changes are authorized here.
+本阶段不包含：
 
-## 3. Visual Direction
+- 修改加工、订单、库存、奖励、解锁、事务、提醒或持久化规则；
+- 新增 EventBus 事件、IPC 通道、运行时依赖或业务 schema 字段；
+- 接入仓库、商店、喂食菜单、Dashboard 库存或桌宠提醒图标；
+- 把加工页或订单页转换为 Pixi；
+- 引入 Godot、Unity、Spine 或 Rive；
+- 在现有五种配方、三个加工队列槽和三个订单槽之外扩展加工或订单内容。
 
-All assets follow the approved Bright Homestead art bible:
+新物品资产会为后续跨页面复用做好准备，但本阶段不授权修改其他模块的消费方。
 
-- rounded, bright, high-quality 2D cartoon rendering;
-- visible volume, warm neutral upper-left key light, soft lower-right shadow;
-- warm dark-brown outlines rather than pure black;
-- consistent scale, perspective, material language, and color temperature with the farm scene;
-- readable silhouettes and state differences at 600×400;
-- no copied or reconstructed assets from QQ Farm, Hay Day, or another commercial game.
+## 3. 视觉方向
 
-Text, quantities, countdowns, names, rewards, and button labels must remain live DOM content. They must never be baked into raster assets.
+全部资产遵循已经批准的「明亮家园」美术规范：
 
-## 4. Workshop Composition
+- 圆润、明亮、带体积感的高质量 2D 卡通；
+- 左上暖中性主光，右下柔和阴影；
+- 使用暖深棕描边，不使用纯黑描边；
+- 与农场场景保持一致的比例、透视、材质语言和色温；
+- 在 600×400 下仍能辨认轮廓与状态差异；
+- 不复制或重构 QQ 农场、Hay Day 或其他商业游戏素材。
 
-The processing tab becomes a vertically scrollable workshop surface.
+名称、数量、倒计时、奖励和按钮标签必须始终由实时 DOM 提供，不能烘焙到栅格资产中。
 
-1. The upper hero area contains the processing machine and occupies roughly one third of the first visible screen.
-2. The machine communicates `idle`, `working`, and transient `completed` states.
-3. Immediately below it, a fixed three-slot production track shows running, queued, and empty positions.
-4. The recipe shelf follows the track and contains all five existing recipes.
-5. Each recipe continues to expose output, ingredients, owned/required counts, duration or lock reason, and the existing enqueue action.
-6. The existing farm-level, coin, inventory, and cross-tab summary remains authoritative; the workshop does not duplicate a second HUD.
+## 4. 工坊构图
 
-At 800×600 the hero, production track, and the first portion of the recipe shelf are visible without crowding. At 600×400 the content scrolls vertically. The machine and current task retain priority; essential text and controls are not shrunk to force all recipes into one viewport.
+加工页变为纵向可滚动的工坊界面。
 
-## 5. Order Board Composition
+1. 上方英雄区放置加工机器，约占首屏可见区域的三分之一。
+2. 机器需要表达 `idle`、`working` 和短暂 `completed` 状态。
+3. 机器下方紧接固定三槽生产轨道，分别展示 running、queued 和 empty 位置。
+4. 配方架位于生产轨道之后，承载现有五种配方。
+5. 每张配方继续展示产物、材料、持有/需求数量、耗时或锁定原因，以及现有入队操作。
+6. 现有农场等级、金币、库存和跨页 summary 继续作为权威信息；工坊不复制第二套 HUD。
 
-The order tab becomes one continuous wooden order board.
+在 800×600 下，英雄区、生产轨道和配方架首段应在不拥挤的情况下可见。在 600×400 下，内容改为纵向滚动，机器和当前任务优先显示，不能为了把全部配方塞进一个视口而缩小关键文字和控件。
 
-- At 800×600, the three papers are arranged in three columns.
-- At 600×400, the same board changes to one vertical column and scrolls.
-- Each live order paper retains requirements, owned/required values, rewards, abandon, and complete actions.
-- A deliverable order displays a clear ready stamp in addition to its button state.
-- Incomplete, cooldown, and waiting slots have distinct but restrained paper states.
-- Cooldown remains a live native countdown element.
-- Buttons remain native buttons with the existing disabled behavior and data attributes.
+## 5. 订单板构图
 
-The board and papers are decorative surfaces. The DOM remains the source of accessible names, status, focus, and actions.
+订单页变为一块连续木质订单板。
 
-## 6. Asset Package
+- 800×600 下，三张订单纸按三列排列。
+- 600×400 下，同一订单板变为单列并允许纵向滚动。
+- 每张有效订单纸继续展示需求、持有/需求数量、奖励、放弃和完成操作。
+- 可交付订单除按钮状态外，还显示明确的 ready 印章。
+- incomplete、cooldown 和 waiting 槽使用克制但可区分的纸张状态。
+- cooldown 继续使用实时原生倒计时元素。
+- 按钮继续使用原生 button，并保留现有 disabled 行为和 data 属性。
 
-The art window produces only files under `src/renderer/assets/farm/bright-homestead/**`.
+订单板和纸张只是装饰表面。DOM 继续作为无障碍名称、状态、焦点和操作的事实来源。
 
-### 6.1 Workshop assets
+## 6. 资产包
 
-- machine base;
-- four-frame gear loop;
-- four-frame steam loop;
-- working light overlay;
-- completion flash;
-- recipe shelf;
-- running, queued, and empty production-slot surfaces;
-- locked recipe mask.
+美术窗口只在 `src/renderer/assets/farm/bright-homestead/**` 下交付文件。
 
-### 6.2 Order assets
+### 6.1 工坊资产
 
-- continuous wooden board;
-- base order paper;
-- ready stamp;
-- cooldown paper treatment;
-- pin decoration;
-- completion and abandonment overlay elements where required by the approved one-shot feedback.
+- 机器主体；
+- 四帧齿轮循环；
+- 四帧蒸汽循环；
+- 工作灯光 overlay；
+- 完成闪光；
+- 配方架；
+- running、queued 和 empty 三种生产槽表面；
+- 锁定配方 mask。
 
-### 6.3 Item icons
+### 6.2 订单资产
 
-The exact first-release set is:
+- 连续木质订单板；
+- 基础订单纸；
+- ready 印章；
+- cooldown 纸张处理；
+- 图钉装饰；
+- 已批准一次性反馈需要的完成和放弃 overlay 元素。
 
-- six seeds: wheat, carrot, corn, strawberry, pumpkin, star-dew fruit;
-- six crops: wheat, carrot, corn, strawberry, pumpkin, star-dew fruit;
-- five processed foods: cookie, popcorn, carrot juice, strawberry milkshake, pumpkin pie;
-- milk, because it is a current recipe input;
-- one project-owned neutral UI item fallback, separate from Emoji.
+### 6.3 物品图标
 
-Every icon uses one transparent canvas size, one optical center rule, sRGB, lossless WebP, and a common safe minimum. Similar items must remain distinguishable without relying on labels alone.
+首发精确集合为：
 
-### 6.4 Animation export
+- 六种种子：小麦、胡萝卜、玉米、草莓、南瓜、星露果；
+- 六种作物：小麦、胡萝卜、玉米、草莓、南瓜、星露果；
+- 五种加工食物：饼干、爆米花、胡萝卜汁、草莓奶昔、南瓜派；
+- 牛奶，因为它是现有配方材料；
+- 一个项目自有的中性 UI 物品 fallback，与 Emoji 分离。
 
-Runtime loops are deterministic spritesheets with explicit frame width, frame height, frame count, and duration metadata. Individual source frames may be used during review, but candidate masters and oversized generation boards are removed before delivery. The same sheets must be sliceable later by Godot without re-authoring.
+所有图标使用统一透明画布尺寸、统一光学中心规则、sRGB、lossless WebP 和共同安全最小尺寸。相近物品不能只依赖文字标签才能区分。
 
-The art gate includes transparent-edge inspection on white, black, and checker backgrounds plus real 800×600 and 600×400 composites for every required state.
+### 6.4 动画导出
 
-## 7. Manifest Contract
+运行时循环采用具有明确帧宽、帧高、帧数和时长元数据的确定性 spritesheet。审查期间可以使用单独源帧，但交付前必须删除候选母版和超大生成板。相同 spritesheet 后续应能被 Godot 直接切分，无需重新制作。
 
-`farm.json` remains schema version 1 and receives additive presentation-only records beneath `ui`:
+美术 gate 包含白底、黑底、棋盘底透明边缘检查，以及覆盖全部必要状态的真实 800×600 和 600×400 合成图。
 
-- `ui.itemIcons[itemId]` and `ui.itemFallback`;
-- `ui.workshop.machine.base`, `gearSheet`, `steamSheet`, `workGlow`, and `completionFlash`;
-- `ui.workshop.recipeShelf`, `slots.running`, `slots.queued`, `slots.empty`, and `lockedMask`;
-- `ui.orders.board`, `paper`, `readyStamp`, `cooldownPaper`, `pin`, and approved feedback overlays.
+## 7. Manifest 合同
 
-A simple image record contains a safe relative `src`. A spritesheet record additionally contains positive finite `frameWidth`, `frameHeight`, `frameCount`, and `durationMs`. No record may contain price, output, input, reward, unlock eligibility, queue, order, inventory, persistence, or other business values.
+`farm.json` 保持 schema version 1，只在 `ui` 下增加纯表现记录：
 
-All paths resolve relative to the manifest directory and must remain inside the skin root. Missing or invalid optional UI records produce a local visual fallback and never invalidate the farm business page.
+- `ui.itemIcons[itemId]` 和 `ui.itemFallback`；
+- `ui.workshop.machine.base`、`gearSheet`、`steamSheet`、`workGlow` 和 `completionFlash`；
+- `ui.workshop.recipeShelf`、`slots.running`、`slots.queued`、`slots.empty` 和 `lockedMask`；
+- `ui.orders.board`、`paper`、`readyStamp`、`cooldownPaper`、`pin` 和已批准反馈 overlay。
 
-## 8. Runtime Architecture
+普通图片记录包含安全相对 `src`。Spritesheet 记录额外包含正有限的 `frameWidth`、`frameHeight`、`frameCount` 和 `durationMs`。任何记录都不得包含价格、产出、材料、奖励、解锁资格、队列、订单、库存、持久化或其他业务数值。
 
-Processing and orders remain DOM interfaces. Pixi remains responsible only for the farm field scene.
+全部路径相对 manifest 所在目录解析，并且必须留在皮肤根目录内。缺失或非法的可选 UI 记录只触发局部视觉回退，不能让农场业务页面失效。
 
-### 8.1 UI skin catalog
+## 8. 运行时架构
 
-A new pure UI-skin module:
+加工页和订单页继续使用 DOM；Pixi 只负责农田场景。
 
-- validates and extracts only the approved `ui` records;
-- resolves safe in-skin asset URLs against `manifestUrl`;
-- returns a deeply frozen catalog;
-- never reads FarmService, PetState, inventory, order, or processing state;
-- never performs network or filesystem access itself;
-- returns stable validation errors rather than throwing for content errors.
+### 8.1 UI 皮肤目录
 
-### 8.2 Manifest loading
+新增纯 UI 皮肤模块，职责为：
 
-`createFarmSceneRuntime()` owns a per-mount cached manifest Promise. The scene loader and UI-skin loader consume the same fetch result, avoiding duplicate requests while keeping their validation and fallback decisions independent.
+- 校验并提取已批准的 `ui` 记录；
+- 相对 `manifestUrl` 解析安全的皮肤内资源 URL；
+- 返回深度冻结的目录；
+- 不读取 FarmService、PetState、库存、订单或加工状态；
+- 自身不执行网络或文件系统访问；
+- 内容错误返回稳定校验错误，不抛异常。
 
-The initial processing or order DOM renders immediately with semantic text. A valid catalog may enhance the current tab after it resolves. Every continuation is guarded by the current mount generation and disposed state. A late resolve or reject after cleanup cannot rerender, append assets, restart animation, or create an unhandled rejection.
+### 8.2 Manifest 加载
 
-### 8.3 UI boundaries
+`createFarmSceneRuntime()` 持有每次 mount 共用的 manifest Promise 缓存。场景 loader 和 UI 皮肤 loader 消费同一次 fetch 结果，避免重复请求，同时保持各自独立的校验与回退决策。
 
-- `renderProcessingTab(container, viewModel, actions) -> cleanup` remains the public processing contract.
-- `renderOrdersTab(container, viewModel, actions) -> cleanup` remains the public order contract.
-- The optional visual catalog and reduced-motion state travel through the existing `actions` options object.
-- The HTML helpers may accept optional presentation parameters but must preserve current semantic data attributes and native button behavior.
-- Dedicated CSS files use only `.farm-workshop-*` or `.farm-orders-*` selectors. They add no generic Dashboard, button, or card rules.
-- The module loader attaches the two scoped styles once, alongside the existing farm stylesheet.
+加工页或订单页先立即渲染语义文本。有效目录解析完成后，可以增强当前页。所有 continuation 都必须受当前 mount generation 和 disposed 状态保护；cleanup 后的迟到 resolve 或 reject 不能重绘、追加资产、重启动画或产生未处理 rejection。
 
-Images are presentation only. If one fails at decode or display time, its text alternative and surrounding action remain available. The normal success path never substitutes an Emoji icon.
+### 8.3 UI 边界
 
-## 9. Motion and Feedback
+- `renderProcessingTab(container, viewModel, actions) -> cleanup` 继续作为加工页公共合同。
+- `renderOrdersTab(container, viewModel, actions) -> cleanup` 继续作为订单页公共合同。
+- 可选视觉目录和 reduced-motion 状态通过现有 `actions` options 对象传递。
+- HTML helper 可以接收可选表现参数，但必须保留现有语义 data 属性和原生按钮行为。
+- 独立 CSS 文件只使用 `.farm-workshop-*` 或 `.farm-orders-*` 选择器，不增加通用 Dashboard、button 或 card 规则。
+- 模块 loader 在现有农场 stylesheet 旁边一次性加载这两份 scoped 样式。
 
-The approved animation route is modular 2D frame animation with no new runtime dependency.
+图片只负责表现。如果单张图片在解码或显示阶段失败，其文字等价信息和外围操作仍然可用。正常成功路径不得用 Emoji 替代图标。
 
-- While a task is running, gear and steam spritesheets use low-frequency CSS `steps()` loops.
-- Idle and queued states do not run unnecessary continuous animation.
-- A successful enqueue gives the new production slot one short entry transition.
-- `FARM_PROCESSING_COMPLETED`, an existing event, triggers one machine completion flash when the processing page is current.
-- `FARM_ORDER_COMPLETED`, an existing event, triggers one board-level stamp and reward flash after commit.
-- A confirmed successful abandonment uses a decorative paper-ghost fade; the business state updates immediately and never waits for the animation.
-- Failed commands never play a success effect.
+## 9. 动效与反馈
 
-One-shot feedback is represented by a local monotonically increasing presentation token, consumed once by the current child renderer. It is not persisted and is not added to PetState or FarmService. Effects are bounded to one active overlay per tab; replacement and cleanup remove the prior owned node safely.
+已批准动画路线为模块化 2D 帧动画，不增加运行时依赖。
 
-CSS spritesheet animation supplies the runtime loop. No new JavaScript interval is added; the existing one-second interval remains solely responsible for processing and cooldown countdown display.
+- 加工任务运行时，齿轮和蒸汽 spritesheet 使用低频 CSS `steps()` 循环。
+- idle 和 queued 状态不运行不必要的连续动画。
+- 成功入队时，新生产槽播放一次短进入反馈。
+- 现有事件 `FARM_PROCESSING_COMPLETED` 在加工页当前可见时触发一次机器完成闪光。
+- 现有事件 `FARM_ORDER_COMPLETED` 在事务提交后触发一次订单板印章与奖励闪光。
+- 确认并成功放弃订单时播放装饰性纸张淡出；业务状态立即更新，不等待动画。
+- 失败命令不得播放成功反馈。
 
-When `prefers-reduced-motion` is active, loop animation is paused and one-shot movement becomes a static highlight or short opacity transition. Leaving the tab destroys its child DOM and stops all local motion.
+一次性反馈使用本地单调递增的表现 token，由当前子 renderer 精确消费一次。它不持久化，也不写入 PetState 或 FarmService。每个页签最多存在一个活动 overlay；替换和 cleanup 必须安全移除上一个自有节点。
 
-## 10. Error and Fallback Behavior
+运行时循环由 CSS spritesheet 动画提供，不增加新的 JavaScript interval；现有一秒 interval 继续只负责加工和 cooldown 倒计时显示。
 
-Visual enhancement follows a local degradation chain:
+启用 `prefers-reduced-motion` 时，循环动画暂停，一次性移动反馈改为静态高亮或短透明度变化。离开页签时销毁其子 DOM，并停止所有局部动画。
 
-1. complete Bright Homestead UI asset;
-2. neutral project-owned item fallback or text-only surface;
-3. current semantic DOM structure and native controls.
+## 10. 错误与回退行为
 
-This chain is separate from the field scene's `pixi -> static -> DOM` fallback. A field-scene failure must not remove workshop or order visuals when their validated UI catalog is available; a UI visual failure must not change field-scene mode.
+视觉增强使用以下局部降级链：
 
-Manifest fetch, parsing, validation, image, spritesheet, animation, and cleanup errors are observed and contained. Cleanup errors never replace the primary business or load error. No visual error can suppress transaction feedback, countdown settlement, keyboard access, or native button state.
+1. 完整「明亮家园」UI 资产；
+2. 项目自有中性物品 fallback 或纯文本表面；
+3. 当前语义 DOM 结构和原生控件。
 
-## 11. Accessibility
+该链路与农田场景的 `pixi -> static -> DOM` 回退相互独立。农田场景失败时，只要 UI 视觉目录有效，就不能移除工坊或订单视觉；UI 视觉失败也不能改变农田场景模式。
 
-- Every icon has an accessible text equivalent already present in the DOM; decorative images are hidden from the accessibility tree.
-- State is expressed by text and native disabled/pressed semantics, never by color, animation, or imagery alone.
-- Recipe and order reading order matches visual order at both sizes.
-- The three production slots and three order papers remain semantic articles or equivalent labelled regions.
-- Existing keyboard focus, confirmation overlays, action labels, and countdown ownership remain intact.
-- Reduced-motion behavior is verified independently of the operating system animation throttle.
+manifest fetch、解析、校验、图片、spritesheet、动画和 cleanup 错误都必须被观察并限制在局部。Cleanup 错误不能覆盖主要业务错误或加载错误。任何视觉错误都不能阻止事务反馈、倒计时结算、键盘访问或原生按钮状态。
 
-## 12. Implementation Windows
+## 11. 无障碍
 
-The work is sequential because both windows depend on the same final asset contract.
+- 每张图标的文字等价信息已经存在于 DOM；装饰图片从无障碍树中隐藏。
+- 状态通过文字和原生 disabled/pressed 语义表达，不能只依赖颜色、动画或图片。
+- 两档尺寸下，配方和订单的阅读顺序都必须与视觉顺序一致。
+- 三个生产槽和三张订单纸继续使用语义 article 或等价的带标签区域。
+- 现有键盘焦点、确认浮层、操作标签和倒计时归属保持不变。
+- reduced-motion 行为必须独立于操作系统动画节流进行验证。
+
+## 12. 实现窗口
+
+两窗口必须串行，因为它们依赖同一份最终资产合同。
 
 ### `farm-art-03`
 
-Creates and validates the art package, manifest additions, family map, alpha audit, and two-size review composites. It does not change production JavaScript, CSS, business code, dependencies, trackers, or architecture documents.
+创建并验证美术资产包、manifest 增量、家族映射、alpha 审计和两档合成图。不得修改生产 JavaScript、CSS、业务代码、依赖、tracker 或架构文档。
 
 ### `farm-visual-06`
 
-Starts only after `farm-art-03` passes the ARCH-11 visual and manifest gate and is integrated. It implements the UI-skin catalog, cached manifest access, semantic DOM redesign, scoped CSS, feedback bridge, responsive behavior, and tests. It does not regenerate art or change business rules.
+只有在 `farm-art-03` 通过 ARCH-11 独立视觉与 manifest gate 并完成集成后才能开始。负责实现 UI 皮肤目录、共用 manifest 缓存、语义 DOM 重设计、scoped CSS、反馈桥接、响应式行为和测试。不得重新生成美术或修改业务规则。
 
-The later cross-page icon phase, if approved, receives a separate design, exact shared/dashboard/pet file authorization, and its own implementation window.
+后续跨页面图标阶段如果获得批准，必须另写设计，明确 shared、Dashboard 和 pet 文件授权，并使用独立实现窗口。
 
-## 13. Acceptance and Verification
+## 13. 验收与验证
 
-### 13.1 Art gate
+### 13.1 美术 gate
 
-- all required sources exist and are unique manifest paths;
-- transparent WebP, sRGB, common icon canvas and optical alignment;
-- no chroma-key fringe, unintended component, broken silhouette, baked text, or inconsistent light;
-- spritesheet frame geometry and duration metadata are exact;
-- running, queued, empty, locked, missing-material, ready, cooldown, and waiting states remain readable at 600×400;
-- white, black, checker, 800×600, and 600×400 review outputs pass visual inspection;
-- candidate masters and dead build artifacts are absent from the final runtime package.
+- 所有必要资源都存在，并使用唯一 manifest 路径；
+- 透明 WebP、sRGB、统一图标画布与光学对齐；
+- 没有色键边缘、意外组件、破损轮廓、烘焙文字或不一致光源；
+- spritesheet 帧几何和时长元数据精确；
+- running、queued、empty、locked、缺料、ready、cooldown 和 waiting 状态在 600×400 下仍可读；
+- 白、黑、棋盘、800×600 和 600×400 审查输出全部通过视觉检查；
+- 最终运行时包中不存在候选母版和无用构建产物。
 
-### 13.2 Contract and behavior gate
+### 13.2 合同与行为 gate
 
-- exactly three processing slots and three order slots;
-- current action names, IDs, slot indices, owned/required text, native disabled states, and countdown attributes remain present;
-- enqueue, queued cancellation, full delivery, abandonment confirmation, cooldown regeneration, and settlement behavior are unchanged;
-- processing and order cleanup remain idempotent;
-- no visual code imports or mutates FarmService, PetState, storage, transaction, or reminder state.
+- 精确三个加工槽和三个订单槽；
+- 当前 action 名称、ID、槽位索引、持有/需求文本、原生 disabled 状态和倒计时属性全部保留；
+- 入队、queued 取消、整单交付、放弃确认、cooldown 再生成和 settlement 行为不变；
+- 加工页和订单页 cleanup 继续幂等；
+- 视觉代码不得 import 或修改 FarmService、PetState、storage、transaction 或 reminder 状态。
 
-### 13.3 Lifecycle and responsive gate
+### 13.3 生命周期与响应式 gate
 
-- 20 rapid field/processing/orders cycles leave one farm mount and no stale child intervals or animation nodes;
-- hidden page, restored page, reduced motion, normal motion, late catalog resolve/reject, missing image, and cleanup races are covered;
-- 800×600 uses the wide compositions without overlap or horizontal overflow;
-- 600×400 uses vertical scrolling, readable native controls, and no horizontal overflow;
-- keyboard traversal and confirmation overlays remain usable in complete-asset and text-only fallback modes.
+- 快速执行 20 次 field/processing/orders 循环后只保留一个农场 mount，不残留子 interval 或动画节点；
+- 覆盖页面隐藏、页面恢复、reduced motion、正常 motion、目录迟到 resolve/reject、图片缺失和 cleanup 竞态；
+- 800×600 使用宽版构图，无重叠和横向溢出；
+- 600×400 使用纵向滚动，原生控件可读且无横向溢出；
+- 完整资产与纯文本 fallback 两种模式下，键盘遍历和确认浮层都可用。
 
-### 13.4 Final regression gate
+### 13.4 最终回归 gate
 
-- focused processing, order, UI-skin, farm UI, scene integration, and Dashboard tests;
-- GUI full-repository test suite;
-- production JavaScript syntax checks and `git diff --check`;
-- scope and forbidden-import scans;
-- Electron Forge package;
-- same-`app.asar` visible verification of both sizes, normal and fallback assets, live countdowns, interactions, reduced motion, and cleanup.
+- 加工、订单、UI 皮肤、farm UI、scene integration 和 Dashboard 定向测试；
+- GUI 全仓测试；
+- 生产 JavaScript 语法检查和 `git diff --check`；
+- 范围和禁止 import 扫描；
+- Electron Forge 打包；
+- 同一 `app.asar` 下可见验证两档尺寸、正常与 fallback 资产、实时倒计时、交互、reduced motion 和 cleanup。
 
-## 14. Long-Term Compatibility
+## 14. 长期兼容性
 
-The DOM/Pixi separation, manifest-backed UI catalog, safe relative asset records, fixed spritesheet metadata, and text-over-art rule keep this phase compatible with later external skin packs. The same raster sheets can also be imported into a possible Godot farm implementation. This phase does not commit the project to Godot and introduces no engine-specific business dependency.
+DOM/Pixi 分离、manifest 驱动的 UI 目录、安全相对资源记录、固定 spritesheet 元数据和文字覆盖美术的原则，使本阶段能够兼容未来外部皮肤包。相同栅格 spritesheet 也可以导入未来可能采用的 Godot 农场实现。本阶段不承诺采用 Godot，也不增加任何引擎专属业务依赖。
