@@ -39,3 +39,13 @@ All twelve candidate masters were inspected. No master was assumed valid before 
 | Order states | paper, ready, cooldown, pin, completion, abandon | grouped green-key order board | Adopted on structural attempt 1; second alpha pass used the official helper with 1 px edge contraction to remove one residual chroma pixel |
 
 All accepted boards were generated with the built-in image tool, processed with the official `remove_chroma_key.py`, and exported with bundled Pillow. No CLI/native-transparency model, third-party asset, warp, paint-over, or crop-based structural concealment was used. Candidate boards and temporary scripts are not present under the runtime skin.
+
+## Legacy cross-page food extension (`farm-art-04`)
+
+| Gate | Runtime family | Source | Result |
+|---|---|---|---|
+| Legacy food icon | `food-apple.webp` | grouped magenta-key legacy-food board | Structural attempt 1 adopted: fresh red apple with short stem and leaf, distinct from a tomato at 32 px |
+| Legacy food icon | `food-cake.webp` | grouped magenta-key legacy-food board | Structural attempt 1 adopted: individual layered cake slice with cream and strawberry garnish, distinct from bread or pie at 32 px |
+| Legacy food icon | `food-fish.webp` | grouped magenta-key legacy-food board | Structural attempt 1 adopted: tied golden-tan dried-fish bundle with preserved-food texture and no live-fish motion cues |
+
+The three accepted cells were processed once with the official `remove_chroma_key.py` soft-matte/despill path and required no edge contraction. Bundled Pillow separated the cells without reshaping, fit each alpha extent into the common `152×152` safe box, aligned the optical centers, embedded sRGB ICC, and exported transparent `192×192` lossless WebP files. White, black, checker, and exact 32 px reviews passed with zero detected green or magenta key pixels. These cross-page assets are not `farm.json` records; the later shared item catalog references them directly. The accepted board and temporary scripts remain outside the shipped skin.

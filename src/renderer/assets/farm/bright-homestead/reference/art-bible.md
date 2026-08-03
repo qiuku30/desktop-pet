@@ -75,3 +75,11 @@ The accepted full-scene sources are listed in `family-map.md`. Every family pass
 - The order board is one continuous wide wooden surface suitable for three-column layout and center-cropped single-column layout. Paper, cooldown, ready, completion, and abandonment states remain distinguishable by silhouette or treatment.
 - Text, item names, owned/required counts, rewards, countdowns, and button labels are always live DOM content and never rasterized into the art.
 - Workshop/order alpha evidence uses dedicated `workshop-orders-alpha-*` files; the prior full-scene `alpha-*` reviews are immutable historical evidence.
+
+## Legacy cross-page food icon contracts
+
+- Apple, cake, and dried-fish icons belong to the same first-release item family and use transparent `192×192` lossless WebP canvases with embedded sRGB profiles and alpha content contained within the common `152×152` safe box.
+- The apple reads as a fresh red apple through its short stem, leaf, and apple-specific silhouette; the cake reads as an individual layered slice; the dried fish read as a tied preserved-food bundle rather than live or swimming fish.
+- All three retain the family optical center, fixed front-facing slight top-down view, warm-neutral upper-left light, lower-right soft shading, and warm dark-brown outline. Their silhouettes remain distinct at 32 logical pixels without labels.
+- The icons contain no baked text, quantity, price, state, plate, packaging, badge, or background card. They are cross-page assets consumed directly by the shared item catalog and are deliberately excluded from `farm.json`.
+- Dedicated `legacy-food-icons-alpha-*` evidence and the `legacy-food-icons-32px.webp` contact sheet are composed only from the delivered runtime files. The accepted candidate board and temporary extraction scripts are not part of the skin.

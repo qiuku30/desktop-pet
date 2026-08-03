@@ -52,3 +52,9 @@ The schema-v1 manifest now includes additive presentation-only records for the w
 - The dedicated `workshop-orders-alpha-{white,black,checker}.webp` sheets and exact `800×600` / `600×400` composites use the delivered runtime layers.
 
 The accepted generation boards and all temporary extraction scripts live outside the skin during production and are not shipped in `app.asar`.
+
+## Legacy food icon extension
+
+Three project-owned cross-page food icons complete the first-release item family: `food-apple.webp`, `food-cake.webp`, and `food-fish.webp`. They use the same transparent `192×192` lossless WebP canvas, embedded sRGB profile, common `152×152` safe content box, optical center, warm upper-left light, lower-right soft shading, and warm dark-brown outline as the workshop item icons.
+
+These assets are intentionally not listed in `farm.json`. A later shared item catalog consumes them directly for inventory-facing UI while the farm scene and workshop manifest remain unchanged. The accepted first-round chroma-key board was processed with the official removal helper and bundled Pillow; the generation board and temporary scripts were removed from the shipped skin. `review/legacy-food-icons-alpha-{white,black,checker}.webp`, `review/legacy-food-icons-32px.webp`, and `review/legacy-food-icons-audit.json` record the delivery gate.

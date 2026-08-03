@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "path": "ui/items/food-apple.webp",
+      "size": [
+        192,
+        192
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        26,
+        20,
+        165,
+        172
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "safeBox": true,
+      "chromaHits": 0,
+      "bytes": 25972,
+      "manualGate": "pass"
+    },
+    {
+      "path": "ui/items/food-cake.webp",
+      "size": [
+        192,
+        192
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        20,
+        20,
+        172,
+        171
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "safeBox": true,
+      "chromaHits": 0,
+      "bytes": 32268,
+      "manualGate": "pass"
+    },
+    {
+      "path": "ui/items/food-fish.webp",
+      "size": [
+        192,
+        192
+      ],
+      "mode": "RGBA",
+      "alphaBounds": [
+        20,
+        33,
+        172,
+        159
+      ],
+      "transparentCorners": true,
+      "icc": true,
+      "safeBox": true,
+      "chromaHits": 0,
+      "bytes": 23032,
+      "manualGate": "pass"
+    }
+  ],
+  "reviewFiles": [
+    {
+      "path": "review/legacy-food-icons-alpha-white.webp",
+      "size": [
+        768,
+        320
+      ],
+      "mode": "RGB",
+      "icc": true,
+      "bytes": 79112
+    },
+    {
+      "path": "review/legacy-food-icons-alpha-black.webp",
+      "size": [
+        768,
+        320
+      ],
+      "mode": "RGB",
+      "icc": true,
+      "bytes": 75818
+    },
+    {
+      "path": "review/legacy-food-icons-alpha-checker.webp",
+      "size": [
+        768,
+        320
+      ],
+      "mode": "RGB",
+      "icc": true,
+      "bytes": 79714
+    },
+    {
+      "path": "review/legacy-food-icons-32px.webp",
+      "size": [
+        160,
+        64
+      ],
+      "mode": "RGBA",
+      "icc": true,
+      "bytes": 5514
+    }
+  ],
+  "checks": {
+    "dimensions": true,
+    "safeBox": true,
+    "transparentCorners": true,
+    "icc": true,
+    "chroma": true,
+    "manualIdentityAt32px": true
+  },
+  "knownIssues": []
+}
