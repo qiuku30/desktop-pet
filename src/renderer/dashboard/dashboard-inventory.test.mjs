@@ -149,6 +149,26 @@ test('Dashboard inventory consumers use universal inventory and atomic commits',
   assert.match(dashboardSource, /data-overlay-quantity-action=/)
 })
 
+test('warehouse, shop and home inventory share the project image boundary without item Emoji', () => {
+  assert.match(dashboardSource, /installDashboardItemIconBoundary\(document, ITEM_ICON_FALLBACK_SRC\)/)
+  assert.match(dashboardSource, /buildDashboardItemIcon\(item, \{ className: 'wh-item-icon', fallbackSrc: ITEM_ICON_FALLBACK_SRC \}\)/)
+  assert.match(dashboardSource, /buildDashboardItemIcon\(item, \{ className: 'shop-item-icon', fallbackSrc: ITEM_ICON_FALLBACK_SRC \}\)/)
+  assert.match(dashboardSource, /buildDashboardItemIcon\(food, \{ className: 'inventory-item-icon', fallbackSrc: ITEM_ICON_FALLBACK_SRC \}\)/)
+  assert.match(dashboardSource, /aria-label="\$\{buildDashboardItemAriaLabel\(food, count\)\}"/)
+  assert.doesNotMatch(dashboardSource, /wh-item-emoji">\$\{item\.emoji\}/)
+  assert.doesNotMatch(dashboardSource, /shop-item-emoji">\$\{item\.emoji\}/)
+  assert.doesNotMatch(dashboardSource, /<span>\$\{food\.emoji\}<\/span>/)
+
+  for (const contract of [
+    /data-item-id="\$\{item\.id\}"/,
+    /data-action="buy" data-item-id="\$\{item\.id\}"/,
+    /data-food-id="\$\{food\.id\}"/,
+    /<span class="wh-item-count">×\$\{item\.count\}<\/span>/,
+    /<span class="shop-item-count">×\$\{item\.count\}<\/span>/,
+    /<span class="inventory-count">×\$\{count\}<\/span>/,
+  ]) assert.match(dashboardSource, contract)
+})
+
 test('Dashboard quick feeding uses one setMany and emits after commit', () => {
   const feedStart = dashboardSource.indexOf('function handleFeed')
   const feedEnd = dashboardSource.indexOf('function buildTooltipHTML', feedStart)

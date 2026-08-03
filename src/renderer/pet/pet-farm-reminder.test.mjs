@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 
 import {
   createPetFarmReminder,
@@ -7,6 +8,8 @@ import {
 } from './pet-farm-reminder.mjs'
 
 const START = '2026-07-28T08:00:00.000Z'
+const reminderSource = await readFile(new URL('./pet-farm-reminder.mjs', import.meta.url), 'utf8')
+const petCssSource = await readFile(new URL('./pet.css', import.meta.url), 'utf8')
 
 function stateFixture() {
   return {
@@ -87,7 +90,7 @@ test('initial snapshot updates indicator immediately without a bubble and owns o
 test('indicator shows only mature count and hides at zero', () => {
   assert.deepEqual(formatFarmIndicator({ matureCount: 3 }), {
     visible: true,
-    text: '🌾 3',
+    text: '3',
   })
   assert.deepEqual(formatFarmIndicator({ matureCount: 0 }), {
     visible: false,
@@ -97,6 +100,23 @@ test('indicator shows only mature count and hides at zero', () => {
     visible: false,
     text: '',
   })
+  for (const invalid of [-1, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.deepEqual(formatFarmIndicator({ matureCount: invalid }), { visible: false, text: '' })
+  }
+})
+
+test('indicator CSS uses one project wheat image while fixed reminder copy stays unchanged', () => {
+  assert.match(petCssSource, /#farm-indicator::before\s*\{/)
+  assert.match(petCssSource, /crop-wheat\.webp/)
+  assert.match(petCssSource, /width:\s*1\.25em/)
+  assert.match(petCssSource, /height:\s*1\.25em/)
+  assert.match(petCssSource, /background-size:\s*contain/)
+  assert.doesNotMatch(petCssSource, /#farm-indicator::before[\s\S]*fallback\.webp/)
+  for (const text of [
+    '农场有作物成熟啦～ 🌾',
+    '加工台忙完啦～ ⚙️',
+    '有订单可以交付啦～ 📋',
+  ]) assert.ok(reminderSource.includes(text), `missing fixed reminder text: ${text}`)
 })
 
 test('timer discovers maturity once, updates count and never duplicates the bubble', () => {

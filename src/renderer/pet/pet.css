@@ -190,4 +190,17 @@ html, body {
   text-shadow: 0 .5vw 1.5vw rgba(0, 0, 0, .45);
 }
 
+#farm-indicator::before {
+  content: '';
+  display: inline-block;
+  width: 1.25em;
+  height: 1.25em;
+  margin-right: .25em;
+  vertical-align: -.25em;
+  background-image: url('../assets/farm/bright-homestead/ui/items/crop-wheat.webp');
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
 /* 喂食 flyout 已迁移至独立 BrowserWindow overlay（infra-03 showOverlay） */

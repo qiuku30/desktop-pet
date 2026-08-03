@@ -1,12 +1,61 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import {
+  ITEM_ICON_FALLBACK_SRC,
   ITEMS,
   getItem,
   listFeedableItems,
   listItems,
   listPurchasableItems,
 } from './item-config.js'
+
+const ICON_FILES = Object.freeze({
+  'seed:wheat': 'seed-wheat.webp',
+  'seed:carrot': 'seed-carrot.webp',
+  'seed:corn': 'seed-corn.webp',
+  'seed:strawberry': 'seed-strawberry.webp',
+  'seed:pumpkin': 'seed-pumpkin.webp',
+  'seed:star-dew-fruit': 'seed-star-dew-fruit.webp',
+  'crop:wheat': 'crop-wheat.webp',
+  'crop:carrot': 'crop-carrot.webp',
+  'crop:corn': 'crop-corn.webp',
+  'crop:strawberry': 'crop-strawberry.webp',
+  'crop:pumpkin': 'crop-pumpkin.webp',
+  'crop:star-dew-fruit': 'crop-star-dew-fruit.webp',
+  'food:apple': 'food-apple.webp',
+  'food:cake': 'food-cake.webp',
+  'food:fish': 'food-fish.webp',
+  'food:milk': 'food-milk.webp',
+  'food:cookie': 'food-cookie.webp',
+  'food:popcorn': 'food-popcorn.webp',
+  'food:carrot-juice': 'food-carrot-juice.webp',
+  'food:strawberry-milkshake': 'food-strawberry-milkshake.webp',
+  'food:pumpkin-pie': 'food-pumpkin-pie.webp',
+})
+
+test('catalog exposes exact immutable project icon URLs without changing business fields', () => {
+  assert.equal(Object.keys(ITEMS).length, Object.keys(ICON_FILES).length)
+  for (const [id, filename] of Object.entries(ICON_FILES)) {
+    assert.equal(new URL(ITEMS[id].iconSrc).pathname.endsWith(`/ui/items/${filename}`), true)
+  }
+  assert.equal(new URL(ITEM_ICON_FALLBACK_SRC).pathname.endsWith('/ui/items/fallback.webp'), true)
+
+  const legacy = Object.fromEntries(Object.entries(ITEMS).map(([id, value]) => {
+    const { iconSrc, ...business } = value
+    return [id, business]
+  }))
+  assert.equal(
+    createHash('sha256').update(JSON.stringify(legacy)).digest('hex'),
+    '2fb1a2572cd80567e3c35ab2177d402fb402da3b8e599c5c05ddffa2e162f21b',
+  )
+  assert.equal(Object.isFrozen(ITEMS), true)
+  for (const entry of Object.values(ITEMS)) {
+    assert.equal(Object.isFrozen(entry), true)
+    if (entry.feed) assert.equal(Object.isFrozen(entry.feed), true)
+    assert.equal(Object.isFrozen(entry.tooltipFields), true)
+  }
+})
 
 test('item table contains stable IDs for every launch crop seed and output', () => {
   for (const name of ['wheat', 'carrot', 'corn', 'strawberry', 'pumpkin', 'star-dew-fruit']) {

@@ -1,3 +1,34 @@
+const ITEM_ICON_FILES = Object.freeze({
+  'seed:wheat': 'seed-wheat.webp',
+  'seed:carrot': 'seed-carrot.webp',
+  'seed:corn': 'seed-corn.webp',
+  'seed:strawberry': 'seed-strawberry.webp',
+  'seed:pumpkin': 'seed-pumpkin.webp',
+  'seed:star-dew-fruit': 'seed-star-dew-fruit.webp',
+  'crop:wheat': 'crop-wheat.webp',
+  'crop:carrot': 'crop-carrot.webp',
+  'crop:corn': 'crop-corn.webp',
+  'crop:strawberry': 'crop-strawberry.webp',
+  'crop:pumpkin': 'crop-pumpkin.webp',
+  'crop:star-dew-fruit': 'crop-star-dew-fruit.webp',
+  'food:apple': 'food-apple.webp',
+  'food:cake': 'food-cake.webp',
+  'food:fish': 'food-fish.webp',
+  'food:milk': 'food-milk.webp',
+  'food:cookie': 'food-cookie.webp',
+  'food:popcorn': 'food-popcorn.webp',
+  'food:carrot-juice': 'food-carrot-juice.webp',
+  'food:strawberry-milkshake': 'food-strawberry-milkshake.webp',
+  'food:pumpkin-pie': 'food-pumpkin-pie.webp',
+})
+
+const itemIconUrl = filename => new URL(
+  `../assets/farm/bright-homestead/ui/items/${filename}`,
+  import.meta.url,
+).href
+
+export const ITEM_ICON_FALLBACK_SRC = itemIconUrl('fallback.webp')
+
 const item = (id, name, emoji, category, sellPrice = null, feed = null, extra = {}) => {
   const frozenFeed = feed ? Object.freeze({ ...feed }) : null
   const tooltipFields = extra.tooltipFields || [
@@ -9,6 +40,7 @@ const item = (id, name, emoji, category, sellPrice = null, feed = null, extra = 
     name,
     emoji,
     category,
+    iconSrc: itemIconUrl(ITEM_ICON_FILES[id]),
     sellPrice,
     feed: frozenFeed,
     ...(frozenFeed || {}),

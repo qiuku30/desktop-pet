@@ -16,7 +16,7 @@ export function formatFarmIndicator(summary) {
   if (!Number.isSafeInteger(count) || count <= 0) {
     return { visible: false, text: '' }
   }
-  return { visible: true, text: `🌾 ${count}` }
+  return { visible: true, text: String(count) }
 }
 
 export function createPetFarmReminder({

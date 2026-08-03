@@ -448,6 +448,14 @@ html, body {
   user-select: none;
 }
 
+.inventory-grid .inventory-item-icon {
+  width: min(70%, 40px);
+  height: min(70%, 40px);
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 .inventory-item:hover {
   background: rgba(255,255,255,0.12);
 }
@@ -580,9 +588,19 @@ html, body {
   background: #2c2c2c;
 }
 
-.wh-item-emoji {
-  font-size: 32px;
-  line-height: 1;
+.wh-grid .wh-item-icon,
+.shop-grid .shop-item-icon {
+  width: 40px;
+  height: 40px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.inventory-grid img[data-farm-item-icon="hidden"],
+.wh-grid img[data-farm-item-icon="hidden"],
+.shop-grid img[data-farm-item-icon="hidden"] {
+  visibility: hidden;
 }
 
 .wh-item-name {
@@ -687,11 +705,6 @@ html, body {
   text-align: center;
 }
 
-.shop-item-emoji {
-  font-size: 32px;
-  line-height: 1;
-}
-
 .shop-item-name {
   font-size: 12px;
   color: #aaa;
@@ -735,6 +748,20 @@ html, body {
   color: #555;
   cursor: default;
   pointer-events: none;
+}
+
+@media (max-width: 700px) {
+  .wh-grid,
+  .shop-grid {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .wh-grid .wh-item-icon,
+  .shop-grid .shop-item-icon {
+    width: 36px;
+    height: 36px;
+  }
 }
 
 /* ── 设置页面 ── */

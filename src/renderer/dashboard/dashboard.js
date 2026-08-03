@@ -94,7 +94,7 @@ document.addEventListener('pointerup', () => {
 
 import { PetState } from '../shared/pet-state.js'
 import { FOODS, FEED_CONFIG, calculateFeedTransaction, emitFed } from '../shared/feed-service.js'
-import { getItem, listFeedableItems, listItems, listPurchasableItems } from '../shared/item-config.js'
+import { ITEM_ICON_FALLBACK_SRC, getItem, listFeedableItems, listItems, listPurchasableItems } from '../shared/item-config.js'
 import { addItems, getItemCount, removeItems } from '../shared/inventory-service.js'
 import { calcRequiredExp, addExp, getFoodExp } from '../shared/exp-service.js'
 import { calcMaxSatiety } from '../shared/satiety-service.js'
@@ -104,7 +104,14 @@ import { loadRegisteredModule } from '../shared/module-registry.js'
 import { NAV_ITEMS, WAREHOUSE_CATEGORIES } from './nav-config.js'
 import { createPageNavigationCoordinator } from './page-navigation.js'
 import { SETTINGS_TABS } from './settings-config.js'
+import {
+  buildDashboardItemAriaLabel,
+  buildDashboardItemIcon,
+  installDashboardItemIconBoundary,
+} from './dashboard-item-icons.mjs'
 import * as Game2048UI from '../games/2048/2048-ui.js'
+
+installDashboardItemIconBoundary(document, ITEM_ICON_FALLBACK_SRC)
 
 // tooltip 字段 → 中文标签映射（字段驱动，加新字段只加一行）
 const TOOLTIP_FIELDS = {
@@ -278,7 +285,7 @@ function buildWarehousePage(container) {
     grid.innerHTML = filtered.map(item => {
       const emptyCls = item.count === 0 ? ' wh-item--empty' : ''
       return `<div class="wh-item${emptyCls}" data-item-id="${item.id}">
-        <span class="wh-item-emoji">${item.emoji}</span>
+        ${buildDashboardItemIcon(item, { className: 'wh-item-icon', fallbackSrc: ITEM_ICON_FALLBACK_SRC })}
         <span class="wh-item-name">${item.name}</span>
         <span class="wh-item-count">×${item.count}</span>
       </div>`
@@ -533,7 +540,7 @@ function buildShopPage(container) {
       const canBuy = !locked && coins >= item.buyPrice
       const lockCopy = locked ? `农场 Lv.${item.unlockFarmLevel} 解锁` : ''
       return `<div class="shop-item${locked ? ' shop-item--locked' : ''}" data-item-id="${item.id}">
-        <span class="shop-item-emoji">${item.emoji}</span>
+        ${buildDashboardItemIcon(item, { className: 'shop-item-icon', fallbackSrc: ITEM_ICON_FALLBACK_SRC })}
         <span class="shop-item-name">${item.name}</span>
         <span class="shop-item-count">×${item.count}</span>
         <span class="shop-item-price">💰${item.buyPrice}</span>
@@ -1423,8 +1430,8 @@ function renderInventory() {
   const cells = items.map(food => {
     const count = getItemCount(inventory, food.id)
     const emptyCls = count === 0 ? ' inventory-item--empty' : ''
-    return `<div class="inventory-item${emptyCls}" data-food-id="${food.id}">
-      <span>${food.emoji}</span>
+    return `<div class="inventory-item${emptyCls}" data-food-id="${food.id}" aria-label="${buildDashboardItemAriaLabel(food, count)}">
+      ${buildDashboardItemIcon(food, { className: 'inventory-item-icon', fallbackSrc: ITEM_ICON_FALLBACK_SRC })}
       <span class="inventory-count">×${count}</span>
     </div>`
   }).join('')
