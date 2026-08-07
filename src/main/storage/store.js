@@ -50,6 +50,19 @@ const DEFAULT_STATE = {
     savedGame: null,
   },
   farm: null,
+  wordProgress: {
+    settings: {
+      dailyGoal: 10,
+      learnGroupSize: 10,
+      reviewGroupSize: 15,
+      selectedBanks: ["cet4"],
+    },
+    streak: {
+      current: 0,
+      lastStudyDate: null,
+    },
+    words: {},  // key 为单词拼写，value 为 FSRS 状态对象
+  },
   lastSaved: null,
 };
 

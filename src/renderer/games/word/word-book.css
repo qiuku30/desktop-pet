@@ -1,0 +1,124 @@
+/* 英语单词本样式 — 独立参考文件 */
+/* 运行时由 word-book-ui.js 动态注入 <style> 标签，此文件仅供开发参考 */
+/* 暗色主题，与 word.css / dashboard.css 视觉一致 */
+
+/* ── 单词本主页 ── */
+.wb-main{display:flex;flex-direction:column;gap:16px;padding:16px}
+.wb-main-header{display:flex;align-items:center;gap:12px;user-select:none}
+.wb-main-back{background:none;border:1px solid #444;border-radius:6px;color:#999;font-size:13px;padding:6px 14px;cursor:pointer;font-family:inherit;transition:border-color .15s,color .15s}
+.wb-main-back:hover{border-color:#888;color:#ccc}
+.wb-main-title{font-size:18px;font-weight:bold;color:#fff}
+
+/* 搜索 */
+.wb-search-wrap{position:relative}
+.wb-search-input{width:100%;padding:10px 14px;border:1px solid #444;border-radius:8px;background:#2c2c2c;color:#ccc;font-size:14px;font-family:inherit;box-sizing:border-box;transition:border-color .15s}
+.wb-search-input:focus{outline:none;border-color:#2196f3}
+.wb-search-input::placeholder{color:#666}
+.wb-search-results{position:absolute;top:100%;left:0;right:0;max-height:340px;overflow-y:auto;background:#2c2c2c;border:1px solid #444;border-top:none;border-radius:0 0 8px 8px;z-index:5;display:none}
+.wb-search-results--visible{display:block}
+.wb-search-result-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:background .1s;border-bottom:1px solid #333}
+.wb-search-result-item:last-child{border-bottom:none}
+.wb-search-result-item:hover{background:#3a3a3a}
+.wb-search-result-word{font-size:15px;font-weight:bold;color:#fff;min-width:120px}
+.wb-search-result-def{font-size:13px;color:#999;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wb-search-result-bank{font-size:11px;color:#666;white-space:nowrap}
+.wb-search-result-badges{display:flex;gap:4px;font-size:13px;white-space:nowrap}
+.wb-search-count{font-size:12px;color:#666;padding:8px 14px;border-top:1px solid #333;display:none}
+.wb-search-count--visible{display:block}
+.wb-search-empty{padding:16px;text-align:center;color:#888;font-size:13px}
+
+/* 分区 */
+.wb-section{margin-top:4px}
+.wb-section-header{display:flex;align-items:center;gap:6px;margin-bottom:8px;user-select:none}
+.wb-section-icon{font-size:14px}
+.wb-section-title{font-size:12px;color:#888;text-transform:uppercase;letter-spacing:.5px}
+.wb-section-item{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#2c2c2c;border:1px solid #333;border-radius:8px;cursor:pointer;transition:border-color .15s,background .15s;user-select:none;margin-bottom:6px}
+.wb-section-item:hover{border-color:#2196f3;background:#333}
+.wb-section-item-icon{font-size:18px}
+.wb-section-item-label{flex:1;font-size:14px;color:#ccc}
+.wb-section-item-count{font-size:13px;color:#888}
+.wb-section-item-arrow{font-size:14px;color:#555}
+
+/* ── 单词列表页 ── */
+.wb-list{display:flex;flex-direction:column;height:100%}
+.wb-list-header{display:flex;align-items:center;gap:12px;padding:12px 16px;user-select:none;flex-shrink:0}
+.wb-list-back{background:none;border:1px solid #444;border-radius:6px;color:#999;font-size:13px;padding:6px 14px;cursor:pointer;font-family:inherit;transition:border-color .15s,color .15s}
+.wb-list-back:hover{border-color:#888;color:#ccc}
+.wb-list-title{font-size:17px;font-weight:bold;color:#fff}
+.wb-list-search-wrap{padding:0 16px 8px;flex-shrink:0}
+
+/* 筛选 Tab */
+.wb-list-tabs{display:flex;gap:4px;padding:0 16px 8px;flex-shrink:0;flex-wrap:wrap}
+.wb-list-tab{padding:6px 14px;border:1px solid #444;border-radius:16px;background:transparent;color:#999;font-size:12px;font-family:inherit;cursor:pointer;transition:background .15s,border-color .15s,color .15s;user-select:none;white-space:nowrap}
+.wb-list-tab:hover{border-color:#888;color:#ccc}
+.wb-list-tab--active{border-color:#2196f3;color:#2196f3;background:rgba(33,150,243,.1)}
+
+/* 列表主体 + 字母索引 */
+.wb-list-body{display:flex;flex:1;overflow:hidden;position:relative}
+.wb-list-content{flex:1;overflow-y:auto;padding:0 16px 16px}
+.wb-list-content::-webkit-scrollbar{width:4px}
+.wb-list-content::-webkit-scrollbar-thumb{background:#555;border-radius:2px}
+
+/* 字母索引 — 右侧固定 */
+.wb-alpha-index{display:flex;flex-direction:column;gap:1px;padding:4px 6px;user-select:none;flex-shrink:0;overflow-y:auto;justify-content:center}
+.wb-alpha-char{padding:1px 4px;font-size:10px;color:#888;cursor:pointer;text-align:center;border-radius:3px;transition:color .1s,background .1s;line-height:1.5}
+.wb-alpha-char:hover{color:#fff;background:#3a3a3a}
+.wb-alpha-char--active{color:#2196f3;font-weight:bold}
+
+/* 单词分组 */
+.wb-list-group{margin-bottom:2px}
+.wb-list-group-title{padding:10px 0 4px;font-size:14px;font-weight:bold;color:#2196f3;user-select:none;position:sticky;top:0;background:#1e1e1e;z-index:1}
+.wb-list-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;transition:background .1s;border-bottom:1px solid rgba(255,255,255,.04)}
+.wb-list-item:hover{background:#2c2c2c}
+.wb-list-item-word{font-size:14px;font-weight:bold;color:#e0e0e0;min-width:100px}
+.wb-list-item-def{font-size:13px;color:#999;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wb-list-item-def--loading{color:#555;font-style:italic}
+.wb-list-item-badges{display:flex;gap:3px;font-size:13px;flex-shrink:0}
+.wb-list-empty{padding:40px 20px;text-align:center;color:#888;font-size:14px}
+.wb-list-loading{text-align:center;padding:20px;color:#888;font-size:13px}
+
+/* ── 单词详情卡片 ── */
+.wb-detail{display:flex;flex-direction:column;height:100%}
+.wb-detail-header{padding:12px 16px;flex-shrink:0;user-select:none}
+.wb-detail-back{background:none;border:1px solid #444;border-radius:6px;color:#999;font-size:13px;padding:6px 14px;cursor:pointer;font-family:inherit;transition:border-color .15s,color .15s}
+.wb-detail-back:hover{border-color:#888;color:#ccc}
+.wb-detail-card-wrap{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:10px 16px 20px;overflow-y:auto}
+.wb-detail-card{width:100%;max-width:420px;background:#2c2c2c;border:1px solid #333;border-radius:12px;padding:28px 24px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.wb-detail-word{font-size:30px;font-weight:bold;color:#fff;letter-spacing:1px}
+.wb-detail-phonetic{font-size:15px;color:#888}
+.wb-detail-defs{width:100%;text-align:center}
+.wb-detail-def-item{font-size:16px;color:#e0e0e0;line-height:1.6}
+.wb-detail-def-pos{font-size:12px;color:#666;margin-right:4px}
+.wb-detail-example{width:100%;text-align:center;margin-top:4px;padding:12px;background:rgba(255,255,255,.03);border-radius:8px}
+.wb-detail-example-en{font-size:13px;color:#bbb;font-style:italic;line-height:1.5}
+.wb-detail-example-cn{font-size:12px;color:#777;margin-top:4px}
+.wb-detail-meta{width:100%;display:flex;justify-content:center;gap:16px;padding-top:4px;border-top:1px solid #333;margin-top:6px}
+.wb-detail-source{font-size:12px;color:#666}
+.wb-detail-status{font-size:12px;color:#4caf50}
+.wb-detail-actions{display:flex;gap:10px;margin-top:8px}
+.wb-detail-btn{padding:10px 20px;border:1px solid #444;border-radius:8px;background:transparent;font-size:14px;font-family:inherit;cursor:pointer;transition:background .15s,border-color .15s,color .15s;user-select:none;display:flex;align-items:center;gap:6px}
+.wb-detail-btn:hover{border-color:#888;color:#fff}
+.wb-detail-btn--fav{border-color:#ffc107;color:#ffc107}
+.wb-detail-btn--fav:hover{background:rgba(255,193,7,.15)}
+.wb-detail-btn--fav-active{background:rgba(255,193,7,.2);border-color:#ffc107;color:#ffc107}
+.wb-detail-btn--danger{border-color:#e81123;color:#e81123}
+.wb-detail-btn--danger:hover{background:rgba(232,17,35,.15)}
+
+/* ── 确认弹窗 ── */
+.wb-overlay{position:absolute;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:10}
+.wb-modal{background:#2c2c2c;border:1px solid #444;border-radius:12px;padding:24px;min-width:260px;max-width:320px;display:flex;flex-direction:column;gap:16px;user-select:none;animation:wb-modal-in .2s ease-out}
+@keyframes wb-modal-in{from{opacity:0;transform:scale(.9) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.wb-modal-title{font-size:17px;font-weight:bold;color:#fff;text-align:center}
+.wb-modal-body{font-size:13px;color:#999;text-align:center;line-height:1.5}
+.wb-modal-buttons{display:flex;gap:8px}
+.wb-modal-btn{flex:1;padding:10px 16px;border:1px solid #444;border-radius:8px;background:transparent;color:#ccc;font-size:14px;font-family:inherit;cursor:pointer;transition:background .15s,border-color .15s,color .15s;text-align:center}
+.wb-modal-btn:hover{border-color:#888;color:#fff}
+.wb-modal-btn--danger{border-color:#e81123;color:#e81123}
+.wb-modal-btn--danger:hover{background:rgba(232,17,35,.15)}
+.wb-modal-btn--secondary{color:#888}
+.wb-modal-btn--secondary:hover{color:#ccc}
+
+/* ── 通用 ── */
+.wb-loading{display:flex;align-items:center;justify-content:center;padding:40px 20px;color:#888;font-size:14px;gap:8px}
+.wb-spinner{display:inline-block;width:16px;height:16px;border:2px solid #555;border-top-color:#2196f3;border-radius:50%;animation:wb-spin .8s linear infinite}
+@keyframes wb-spin{to{transform:rotate(360deg)}}

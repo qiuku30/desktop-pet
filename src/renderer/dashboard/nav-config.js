@@ -41,5 +41,6 @@ export const NAV_ITEMS = [
   { id: 'pomodoro',  icon: '🍅', label: '番茄',  section: 'top',    enabled: true,  render: null },
   { id: 'farm',      icon: '🌾', label: '农场',  section: 'top',    enabled: true,  render: null },
   { id: 'game2048',  icon: '🎮', label: '2048',  section: 'top',    enabled: true,  render: null },
+  { id: 'word',      icon: '📝', label: '单词',  section: 'top',    enabled: true,  render: null },
   { id: 'settings',  icon: '⚙️', label: '设置',  section: 'bottom', enabled: true,  render: null },
 ]

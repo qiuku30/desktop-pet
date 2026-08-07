@@ -28,8 +28,11 @@ export const EVENTS = {
   FARM_BIRD_REWARDED:        'farm:bird:rewarded',
 
   // 单词
-  GAME_WORD_CORRECT:   'game:word:correct',
-  GAME_WORD_STREAK:    'game:word:streak',
+  WORD_LEARNED:         'word:learned',
+  WORD_REVIEWED:        'word:reviewed',
+  WORD_STREAK_CHANGED:  'word:streak:changed',
+  WORD_MILESTONE:       'word:milestone',
+
 
   // 番茄钟（主进程 → 渲染进程 IPC 推送，非 EventBus 事件，但常量集中管理）
   POMODORO_TICK:          'pomodoro:tick',

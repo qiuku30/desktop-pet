@@ -12,7 +12,7 @@
 | 🐾 宠物系统 | Phase 1 | ✅ 已完成 |
 | 🎨 桌宠形象化 | Phase 2 | ✅ pet-12 Canvas 动画 + dash-13 portrait；ui-fix-01 比例/flex、pet-fix-02 启动物种闪变已修复 |
 | 🍅 番茄钟 | Phase 2 | ✅ 已完成 |
-| 📝 英语单词 | Phase 2+ | ⏳ 待定 |
+| 📝 英语单词 | Phase 1 | ✅ 全部交付：word-01 共享层（FSRS + SQLite + 词库 10689 词）、word-02 面板（学习 + 复习含排到队尾 + 设置）、word-03 单词本（搜索联想 + 中文搜索）、word-fix-01 UI 修复（设置页 + 中文释义 + 查词搜索）、ARCH-09 自修（上限→目标、学完立即可复习、复习直接出选项、答错排队、搜索升级） |
 | 🎮 2048 | Phase 2 | ✅ 已完成 |
 | 🌾 农场经营 | Phase 2+ | ✅ farm-01～06 与 farm-fix-01 均已验收、提交并推送 |
 | 🏪 超市经营 | Phase 2+ | ⏳ 待定 |
@@ -146,6 +146,182 @@
 
 设计文档：`docs/superpowers/specs/2026-07-24-pet-visualization-design.md`
 实施计划：`docs/superpowers/plans/2026-07-24-pet-animation-foundation.md`
+
+---
+
+## 📝 英语单词 — word-01 共享层基础设施（2026-08-06）
+
+### FSRS 算法 (src/renderer/shared/)
+
+| 任务 | 状态 | 备注 |
+|------|------|------|
+| word-service.js — FSRS 纯函数服务 | ✅ | initFSRS / scheduleReview / initLearnedWord / getDueWords / getNextNewWords / getStats；13 个 w 参数使用默认值（Phase 2 可拟合替换） |
+| word-service.test.mjs — 43 个测试 | ✅ | node --test 全部通过，覆盖初始化/scheduleReview/good+again/getDueWords/getNextNewWords/getStats |
+
+### 主进程词库 (src/main/)
+
+| 任务 | 状态 | 备注 |
+|------|------|------|
+| word-service.js — SQLite 查询服务 | ✅ | better-sqlite3 同步 API；initWordDB / lookupWord / lookupWords / generateChoices / getWordCount；只读模式 + 8MB 缓存 |
+| 词库初始化 + IPC 接线 (index.js) | ✅ | app.whenReady 中 initWordDB()；3 个 IPC handler（word:lookup / word:batch-lookup / word:choices） |
+| preload.js — word 命名空间 | ✅ | lookup / batchLookup / choices |
+
+### 词库数据
+
+| 任务 | 状态 | 备注 |
+|------|------|------|
+| scripts/extract-words.mjs | ✅ | 从 ECDICT CSV 提取考试词条 → 生成 5 个 word-banks JSON + 精简 SQLite（10689 条） + 交叉验证 |
+| word-banks/*.json | ✅ | cet4 (3849) / cet6 (5407) / postgrad (4801) / ielts (5040) / toefl (6974) |
+| ecdict.db | ✅ | ~63MB SQLite，只含考试词库词条 |
+
+### 数据结构与配置
+
+| 任务 | 状态 | 备注 |
+|------|------|------|
+| store.js — DEFAULT_STATE 加 wordProgress | ✅ | settings + streak + words |
+| events.js — 新增 4 个事件常量 | ✅ | WORD_LEARNED / WORD_REVIEWED / WORD_STREAK_CHANGED / WORD_MILESTONE |
+| docs/events.md — 登记新事件 | ✅ | 4 个事件，含参数和触发时机 |
+| forge.config.js — extraResources | ✅ | ecdict.db + word-banks 目录 |
+| package.json — better-sqlite3 | ✅ | ^13.0.3 |
+
+### 已知问题
+
+- ✅ **ECDICT CSV 不完整**（已修复 — ARCH-09 通过 git clone 完整仓库获取 CSV，重新运行提取脚本 → 10689 条考试词条，5 个词库索引 + SQLite 全部更新，26,071 条交叉验证 0 缺失）
+- 🟡 **FSRS 默认 w 参数非标准值**：当前 13 个 w 参数来自任务说明，与真正的 FSRS 社区拟合默认值不同。Phase 2 需要用户积累足够 review logs 后调用 `fitParameters(reviewLogs)` 拟合替换。当前行为方向正确（答对→延长间隔、答错→缩短间隔），不影响日常使用。
+- ✅ **scheduleReview 不保留 isFavorited/sourceBank**（已在 word-01 续窗口中修复，改用 `{ ...word, ...result }` 合并返回）
+
+---
+
+## 📝 英语单词 — word-02 面板 UI（2026-08-06）
+
+### 面板页面 (src/renderer/games/word/)
+
+| 任务 | 状态 | 备注 |
+|------|------|------|
+| word-ui.js — 全部 UI 逻辑 | ✅ | 首页（进度统计 + 入口按钮 + 设置）+ 新词学习（翻卡 + 自评 + FSRS）+ 复习（两阶段 + 4选1）+ 设置（词库多选 + 每日上限 + 组大小）；导出 mountWordPage(container) → cleanup |
+| word.css — 全部样式 | ✅ | 暗色主题对齐面板，CSS 3D 翻卡动画，弹窗动画，响应式卡片 |
+| DESIGN.md — 设计文档 | ✅ | 组件树、数据流、状态机、接口契约、Phase 2 预留 |
+
+### 面板集成
+
+| 任务 | 状态 | 备注 |
+|------|------|------|
+| nav-config.js — 注册导航项 | ✅ | 📝 单词，排在 🎮 2048 下方、⚙️ 设置上方 |
+| dashboard.js — import + 注册 | ✅ | import mountWordPage + buildWordPage + initStatus 注册 render 函数 |
+
+### 功能覆盖
+
+| 功能 | 状态 | 备注 |
+|------|------|------|
+| 首页进度统计 | ✅ | 已学词汇 / 待复习 / 连续打卡 |
+| 入口按钮 | ✅ | 复习 / 学新词 / 单词本（置灰预留） |
+| 新词学习（翻卡） | ✅ | 正面单词 → 翻面（3D动画）→ 完整信息 + 自评 |
+| 新词 FSRS 调度 | ✅ | 首次学习用 initLearnedWord，已学词用 scheduleReview |
+| 复习（两阶段） | ✅ | 阶段1显示单词 → 点击 → 阶段2四选一 |
+| 选择题 4 选 1 | ✅ | IPC word:choices 生成干扰项，随机排列 |
+| 选错展示完整卡片 | ✅ | scheduleReview('again') + 完整信息 + 确认继续 |
+| 忘了看答案 | ✅ | 同选错处理 |
+| 分组完成弹窗 | ✅ | 继续/去另一个模式/今天就到这 |
+| ⭐ 收藏 | ✅ | 学习/复习卡片背面均可切换，即时保存 |
+| 设置即时保存 | ✅ | 词库多选（至少保留一个）+ 每日上限 + 组大小 |
+| 连续打卡 | ✅ | 跨天自动更新 streak，发 WORD_STREAK_CHANGED 事件 |
+| 今日新词配额 | ✅ | 受 dailyNewWordsLimit 限制，首页显示剩余配额 |
+| 加载/空状态 | ✅ | 词库加载中占位，无词可学/无需复习空状态提示 |
+| 填空题 | ⏸ | Phase 2（本期不实现，复习页无填空题 UI） |
+| 单词本 | ⏸ | word-03（首页入口按钮已置灰预留） → ✅ word-03 已完成 |
+| 宠物联动 | ⏸ | Phase 2（已发布 EventBus 事件，宠物模块可直接订阅） |
+
+### 已知问题
+
+- 词库文件通过动态 `import()` 加载，依赖 Chromium JSON import assertion 支持（Electron 43 的 Chromium 134+ 已支持）。
+- Toast 复用 dashboard.js 的全局 `.toast` 样式（`document.body.appendChild`），不单独注入 toast 样式。
+- `updateStreak` 按日期判断连续打卡：今天与昨天连续则 +1，否则重置为 1。首次使用 streak==0 直接设为 1。
+
+---
+
+## 📝 英语单词 — word-03 单词本（2026-08-06）
+
+### 新建文件
+
+| 任务 | 状态 | 备注 |
+|------|------|------|
+| word-book-ui.js — 单词本全部 UI | ✅ | 主页（全局搜索 + 我的 + 词库）+ 单词列表（字母分组 + 字母索引 + 筛选 Tab）+ 单词详情（完整卡片 + 收藏 + 重新学习）；导出 mountWordBook(container, opt) → cleanup |
+| word-book.css — 单词本样式 | ✅ | 独立参考文件；运行时由 word-book-ui.js 动态注入 `<style>` |
+
+### 修改文件
+
+| 任务 | 状态 | 备注 |
+|------|------|------|
+| word-ui.js — 集成单词本入口 | ✅ | import mountWordBook；navigateTo 加 'wordbook' case；首页单词本按钮从置灰→可点击；新增 click 事件调用 navigateTo('wordbook') |
+| DESIGN.md — 同步更新 | ✅ | 新增 word-03 组件树、导航状态机、数据流、释义缓存、导航机制 |
+
+### 功能覆盖
+
+| 功能 | 状态 | 备注 |
+|------|------|------|
+| 单词本主页 | ✅ | 全局搜索、我的单词本/收藏入口、词库列表（已学/总数） |
+| 单词列表页 | ✅ | 首字母分组、右侧字母索引 A-Z 快速跳转、筛选 Tab（全部/已学/未学 或 全部/⭐收藏/🕐最近学习）、词库内搜索 |
+| 字母索引滚动联动 | ✅ | 点击字母 → scrollIntoView 对应分组；滚动时自动高亮当前字母 |
+| 单词详情卡片 | ✅ | 完整信息（拼写/音标/释义/例句/来源词库/学习状态） |
+| ⭐ 收藏/取消收藏 | ✅ | 即时生效，支持收藏未学词（创建最小 state 记录） |
+| 🔄 重新学习 | ✅ | 二次确认弹窗 → 从 wordProgress.words 删除 → 清除 defCache → 返回列表 |
+| 全局搜索（主页） | ✅ | 跨所有已启用词库搜索，type-ahead 200ms debounce，结果最多 50 条，显示释义/来源词库/学习状态，点击→详情卡片 |
+| 词库内搜索 | ✅ | 限定当前词库/列表范围，实时过滤 |
+| 释义缓存 | ✅ | _defCache Map 全局复用，IPC batchLookup 每批 150 词，缓存命中跳过 |
+| 导航系统 | ✅ | navigate() + goBack() 双函数，backStack 管理历史，goBack 不重复推入 |
+
+### 已知问题
+
+- 词库 JSON 通过动态 import() 加载，与 word-ui.js 各自维护独立的 _bankCache（ES 模块系统自动缓存 module 实例，不会重复请求文件）
+- 大词库（如 TOEFL 3392 词）释义加载需要多批 IPC 调用，列表先显示拼写再异步填充释义
+- 未学词的收藏会创建一个最小 FSRS state（state: 'new'），该词不会出现在复习队列中，仅用于收藏标记
+
+---
+
+## 📝 英语单词 — word-04 UI 修复（2026-08-06）
+
+### 修复内容
+
+| 修复 | 描述 | 涉及文件 |
+|------|------|----------|
+| ① 设置独立页面 | 设置项从首页底部移至独立设置页（⚙️ 齿轮按钮入口），可滚动；首页只保留统计 + 入口按钮 + 查词搜索 + ⚙️ | `word-ui.js` `word.css` |
+| ② 中文释义优先 | `definition \|\| translation` → `translation \|\| definition`，学习/复习卡片和单词本全部展示中文 | `word-ui.js` `word-book-ui.js` |
+| ③ 首页查词搜索 | 首页新增搜索框，输入单词 → Enter → IPC `word:lookup` 查 SQLite，展示详情卡片（中文释义/音标/例句/收藏/学习状态），未找到提示 | `word-ui.js` `word.css` |
+
+### 详细变更
+
+| 文件 | 变更 |
+|------|------|
+| `word-ui.js` | ① 新增 CSS（设置页/查词结果卡片/搜索框/齿轮按钮/调节器）；② 新增 `BANK_INFO` 常量；③ `navigateTo` 加 `settings` case；④ `renderHome` 移除设置区 → 改为齿轮按钮 + 搜索框 + 查词 overlay；⑤ 新增 `renderSettings`（独立设置页，+/- 调节器即时保存）；⑥ 新增 `setupStepper` / `showLookupResult` / `showLookupNotFound` / `toggleFavoriteLookup` 辅助函数；⑦ 4 处 `definition \|\| translation` → `translation \|\| definition` |
+| `word-book-ui.js` | 4 处 `definition \|\| translation` → `translation \|\| definition`（全局搜索/列表项/详情卡/LoadCheck） |
+| `word.css` | 新增 ~200 行样式（顶部栏/齿轮/搜索框/设置页容器+调节器/查词结果卡片 overlay） |
+
+### 已知问题
+
+- 首页查词功能依赖 `word:lookup` IPC，该通道在 word-01 已实现并接线
+- 查词结果卡片的来源词库仅在单词已学时显示（从 `wordProgress.words[word].sourceBank` 读取），未学词不扫描词库索引（性能考虑）
+
+---
+
+## 📝 英语单词 — ARCH-09 自行修复（2026-08-07）
+
+### 修复清单
+
+| # | 修复 | 涉及文件 | 说明 |
+|---|------|----------|------|
+| ① | 初始 stability 0.5→0.001 | `word-service.js` `word-service.test.mjs` | 学完新词约 1.4 分钟后即可复习，无需等半天 |
+| ② | 每日上限→每日目标 | `store.js` `word-ui.js` | `dailyNewWordsLimit`→`dailyGoal`；去掉学词数量硬阻塞；达到目标才点亮打卡 🔥；组完成弹窗显示目标进度 |
+| ③ | "不太熟"排到队尾 | `word-ui.js` | 学习页点"不太熟"→排到本组末尾（最多 2 次），第 3 次走 again 罚分存 FSRS；完成计数只算最终确认的词 |
+| ④ | 复习选项直接展示 | `word-ui.js` | 去掉"点击单词→显示选项"两阶段，单词+4 选项+忘了按钮一次全展示 |
+| ⑤ | 答错/忘了排到队尾 | `word-ui.js` | 复习答错或点忘了→排到本组末尾→答对才存 FSRS；答对时按 `_wrongCount` 累加 again 罚分 |
+| ⑥ | 答对也展示卡片 | `word-ui.js` | 复习答对不再自动跳过，统一展示完整卡片（✅图标+释义+例句+继续下一张），三种结局一致 |
+| ⑦ | 搜索升级 | `main/word-service.js` `preload.js` `index.js` `word-ui.js` `word.css` | 新增 `word:search` IPC（英文前缀+中文包含双搜）；单字母只搜前缀避免噪声；输入联想下拉（200ms 防抖）；多结果列表 |
+| ⑧ | 首页显示当前词库 | `word-ui.js` `word.css` | 统计区下方显示 `📚 当前：CET-4 四级 / CET-6 六级` |
+
+### 已知问题
+
+- 搜索联想在容器滚动时下拉位置可能偏移（使用 `position:fixed` 相对视口定位，大面板滚动不受影响）
+- L3 模糊纠错（Levenshtein）留待下版本
 
 ---
 

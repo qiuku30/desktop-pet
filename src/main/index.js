@@ -5,6 +5,7 @@ const { registerPetIPC, isValidSnapshot } = require('./ipc/pet-ipc');
 const { initOverlayIPC, showOverlayWindow, closeOverlayWindow } = require('./overlay-manager');
 const { showTooltipWindow, hideTooltipWindow, closeTooltipWindow } = require('./tooltip-manager');
 const { getPomodoroState, handleCommand, updateSettings, initPomodoro } = require('./pomodoro');
+const { initWordDB, lookupWord, lookupWords, generateChoices, searchWords } = require('./word-service');
 
 // ── 窗口状态常量 ──
 const DASHBOARD_MODE = {
@@ -331,6 +332,12 @@ function setupIPC() {
   ipcMain.handle('pomodoro:state:get', () => getPomodoroState());
   ipcMain.on('pomodoro:command', (_, action) => handleCommand(action));
   ipcMain.on('pomodoro:settings:update', (_, s) => updateSettings(s));
+
+  // 单词词库
+  ipcMain.handle('word:lookup', (_, word) => lookupWord(word));
+  ipcMain.handle('word:batch-lookup', (_, words) => lookupWords(words));
+  ipcMain.handle('word:choices', (_, correct, count) => generateChoices(correct, count));
+  ipcMain.handle('word:search', (_, query, limit) => searchWords(query, limit || 20));
 }
 
 // ── 应用生命周期 ──
@@ -348,6 +355,16 @@ app.whenReady().then(async () => {
 
   // 番茄钟初始化（需在 createWindow 之后，因为 push tick 需要 mainWindow）
   initPomodoro(mainWindow, { getState, setState });
+
+  // 词库初始化
+  // 开发模式：ecdict.db 在项目根目录；打包后：extraResources 中
+  const fs = require('fs');
+  let wordDBPath = path.join(process.resourcesPath, 'ecdict.db');
+  if (!fs.existsSync(wordDBPath)) {
+    // 开发模式回退
+    wordDBPath = path.join(__dirname, '..', '..', 'ecdict.db');
+  }
+  initWordDB(wordDBPath);
 });
 
 app.on('window-all-closed', () => {

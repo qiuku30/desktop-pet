@@ -4,6 +4,16 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 module.exports = {
   packagerConfig: {
     asar: true,
+    extraResources: [
+      {
+        from: 'ecdict.db',
+        to: 'ecdict.db',
+      },
+      {
+        from: 'src/renderer/assets/word-banks',
+        to: 'word-banks',
+      },
+    ],
   },
   rebuildConfig: {},
   makers: [

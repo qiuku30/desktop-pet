@@ -110,6 +110,7 @@ import {
   installDashboardItemIconBoundary,
 } from './dashboard-item-icons.mjs'
 import * as Game2048UI from '../games/2048/2048-ui.js'
+import { mountWordPage } from '../games/word/word-ui.js'
 
 installDashboardItemIconBoundary(document, ITEM_ICON_FALLBACK_SRC)
 
@@ -1197,6 +1198,11 @@ function buildGame2048Page(container) {
   return () => { if (cleanup) cleanup() }
 }
 
+function buildWordPage(container) {
+  const cleanup = mountWordPage(container)
+  return () => { if (cleanup) cleanup() }
+}
+
 // ── 页面切换 ──
 const pageNavigation = createPageNavigationCoordinator({
   initialPageId: currentPageId,
@@ -1614,6 +1620,9 @@ async function initStatus() {
 
   const g2048Item = NAV_ITEMS.find(n => n.id === 'game2048')
   if (g2048Item) g2048Item.render = buildGame2048Page
+
+  const wordItem = NAV_ITEMS.find(n => n.id === 'word')
+  if (wordItem) wordItem.render = buildWordPage
 
   // 番茄钟：主进程切番茄页（右键菜单"专注中"/"休息中"点击 → navigate IPC）
   window.electronAPI.pomodoro.onNavigate(() => switchPage('pomodoro'))

@@ -49,6 +49,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 设置
   setAlwaysOnTop: (val) => ipcRenderer.send('settings:setAlwaysOnTop', val),
 
+  // 单词
+  word: {
+    lookup: (word) => ipcRenderer.invoke('word:lookup', word),
+    batchLookup: (words) => ipcRenderer.invoke('word:batch-lookup', words),
+    choices: (correct, count) => ipcRenderer.invoke('word:choices', correct, count),
+    search: (query, limit) => ipcRenderer.invoke('word:search', query, limit),
+  },
+
   // 番茄钟
   pomodoro: {
     getState: () => ipcRenderer.invoke('pomodoro:state:get'),

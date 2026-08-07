@@ -60,8 +60,12 @@
 
 | 事件名 | 参数 | 触发时机 |
 |--------|------|----------|
-| `game:word:correct` | `{ word: string }` | 答对单词 |
-| `game:word:streak` | `{ count: number }` | 连续答对 |
+| `word:learned` | `{ word: string }` | 学完一个新词（首次学习后进入 FSRS） |
+| `word:reviewed` | `{ word: string, rating: 'good'\|'again' }` | 完成一次复习评分 |
+| `word:streak:changed` | `{ current: number }` | 连续打卡天数变化 |
+| `word:milestone` | `{ total: number, milestone: number }` | 累计词汇量达到里程碑（100/200/500...） |
+| `game:word:correct` | `{ word: string }` | 答对单词（旧版，Phase 1 保留兼容） |
+| `game:word:streak` | `{ count: number }` | 连续答对（旧版，Phase 1 保留兼容） |
 
 ## 番茄钟（主进程 → 渲染进程 IPC 推送）
 
